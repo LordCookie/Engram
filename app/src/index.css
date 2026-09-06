@@ -7,17 +7,22 @@
  * "Cyberpunk-Haut, langweiliges Skelett" — der Look steckt zu ~90 % im CSS,
  * die Struktur bleibt neutral und schnell.
  */
+/*
+ * Als space-getrennte RGB-Kanäle (nicht Hex!), damit Tailwinds Opacity-Modifier
+ * `bg-accent/70` etc. funktionieren: der Config mappt sie als
+ * `rgb(var(--c-x) / <alpha-value>)`. Rohe CSS-Nutzung daher immer via `rgb(...)`.
+ */
 :root {
-  --c-bg: #0b0f14;
-  --c-surface: #121820;
-  --c-text: #e6edf3;
-  --c-muted: #8b98a5;
-  --c-accent: #f7d51d;
+  --c-bg: 11 15 20;
+  --c-surface: 18 24 32;
+  --c-text: 230 237 243;
+  --c-muted: 139 152 165;
+  --c-accent: 247 213 29;
 
-  --c-red: #ff4d5e;
-  --c-green: #3ddc84;
-  --c-blue: #4da6ff;
-  --c-yellow: #f7d51d;
+  --c-red: 255 77 94;
+  --c-green: 61 220 132;
+  --c-blue: 77 166 255;
+  --c-yellow: 247 213 29;
 }
 
 html,
@@ -28,8 +33,8 @@ body,
 
 body {
   margin: 0;
-  background: var(--c-bg);
-  color: var(--c-text);
+  background: rgb(var(--c-bg));
+  color: rgb(var(--c-text));
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* Nie horizontal scrollen — sonst verrutscht u. a. die fixierte Mobil-Navigation. */
   overflow-x: hidden;
