@@ -118,7 +118,17 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Combos** (§ 12): `domain/synergy.ts` `topCombos` (automatisch, stärkste Paare) +
   **kuratierte benannte Combos** (`data/combos.json`, committed, eigene Erklärungen §8)
   in der Synergie-Ansicht („Benannte Combos" + „Weitere Combos (automatisch)").
-- 147 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **Ingest-Pipeline** (§ 12 C, Phase 4a — Mechanismus steht, quellen-agnostisch):
+  `pipeline/ingest_decks.py` (stdlib-only) liest slug-basierte Decklisten aus
+  `pipeline/decklists/*.json`, verwirft illegale (Python-Port der vier § 1-Regeln,
+  `is_legal`), aggregiert `df`/`co`/`n` → `app/src/data/coplay.json` (gitignored).
+  Die App lädt es **optional** (`data/coplayCorpus.ts`, `import.meta.glob` eager) und
+  führt es via `mergeCorpora` (`domain/coplay.ts`) mit dem Live-Korpus (Starter +
+  eigene Decks) zusammen — fehlt die Datei (frischer Clone/CI), baut die App
+  unverändert. `SynergyPanel` weist die Ingest-Zahl gesondert aus. Decklisten +
+  `coplay.json` sind gitignored (eigene/fremde Deckdaten). **Offen:** Volumen-Quelle
+  (First-Party bleibt Default; Community-Simulator = Kandidat, ToS/robots.txt prüfen).
+- 148 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -132,12 +142,14 @@ Community-Decks sind oft illegal. Details in DECISIONS.md.)
 ```
 python pipeline/fetch_cards.py        # 151 Karten von api.netdeck.gg -> cards.json + printings.json
 python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> features.json, aus features_curated.json
+python pipeline/ingest_decks.py       # Decklisten aus pipeline/decklists/*.json -> coplay.json (Co-Play-Korpus)
 python pipeline/test_fetch_cards.py
 # bootstrap_features.py = Heuristik-Fallback (überschreibt features.json!) — nur ohne kuratierte Quelle nutzen
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
 ```
 
-Nächste sinnvolle Schritte: OCR-Scanner am Handy weiter tunen (Namensband gezielt
+Nächste sinnvolle Schritte: **Volumen-Quelle fürs Ingest-Korpus** klären (First-Party
+= eigene Listen, oder Community-Simulator/exburst mit ToS-Prüfung) und Decklisten nach
+`pipeline/decklists/` legen; OCR-Scanner am Handy weiter tunen (Namensband gezielt
 zuschneiden, Vorverarbeitung/Threshold für stilisierte Schrift), iOS-Kamera (Spike
-0.1), native App via Capacitor (Phase 5), Ingest weiterer legaler Deckquellen fürs
-Synergie-Korpus.
+0.1), native App via Capacitor (Phase 5).

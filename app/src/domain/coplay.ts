@@ -67,6 +67,30 @@ export interface Corpus {
   co: ReadonlyMap<string, ReadonlyMap<string, number>>;
 }
 
+/**
+ * Zwei Korpora zu einem zusammenführen (Summen von n, df, Ko-Vorkommen). So kann
+ * ein vorab aggregiertes Korpus (Ingest-Pipeline, § 12 C / Phase 4a) mit den live
+ * aus Dexie gebauten eigenen Decks kombiniert werden.
+ */
+export function mergeCorpora(a: Corpus, b: Corpus): Corpus {
+  const df = new Map<string, number>(a.df);
+  for (const [k, v] of b.df) df.set(k, (df.get(k) ?? 0) + v);
+  const co = new Map<string, Map<string, number>>();
+  const add = (src: Corpus['co']) => {
+    for (const [x, row] of src) {
+      let out = co.get(x);
+      if (!out) {
+        out = new Map<string, number>();
+        co.set(x, out);
+      }
+      for (const [y, v] of row) out.set(y, (out.get(y) ?? 0) + v);
+    }
+  };
+  add(a.co);
+  add(b.co);
+  return { n: a.n + b.n, df, co };
+}
+
 export function buildCorpus(decks: readonly CorpusDeck[]): Corpus {
   const df = new Map<string, number>();
   const co = new Map<string, Map<string, number>>();

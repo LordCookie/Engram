@@ -8,24 +8,28 @@ import {
   buildCorpus,
   dedupeDecks,
   legalCorpusDecks,
+  mergeCorpora,
   type Corpus,
 } from '../domain/coplay';
+import { ingestedCorpus, ingestedDeckCount } from './coplayCorpus';
 import type { ValidatableDeck } from '../rules/validate';
 import type { DeckDraft } from '../domain/deckDraft';
 
 /**
  * Baut das Deck-Korpus für die empirische Synergie (PLAN.md § 12 C).
  *
- * First-Party (Nutzer-Entscheidung 2026-09-04): das Korpus sind die offiziellen
- * Starter PLUS die eigenen in Dexie gespeicherten Decks. Kein Netzwerk, kein
- * Scraping. Reaktiv über `useLiveQuery` — jedes gespeicherte oder importierte
- * Deck fließt automatisch ein und wächst die Statistik. Nur legale Decks zählen
- * (Filter über unseren Validator).
+ * Quellen: (1) das vorab aggregierte **Ingest-Korpus** (`coplay.json`, Phase 4a,
+ * optional), (2) die offiziellen Starter, (3) die eigenen in Dexie gespeicherten
+ * Decks. Reaktiv über `useLiveQuery` — jedes gespeicherte/importierte Deck fließt
+ * live ein. Nur legale Decks zählen (Filter über unseren Validator; das Ingest-
+ * Korpus ist bereits legal gefiltert).
  */
 export interface CorpusInfo {
   corpus: Corpus;
-  /** Gesamtzahl der Decks im Korpus (Starter + eigene, dedupliziert). */
+  /** Gesamtzahl der Decks im Korpus (Ingest + Starter + eigene). */
   n: number;
+  /** Decks aus der Ingest-Pipeline. */
+  ingested: number;
   /** Wie viele eigene Decks es insgesamt gibt. */
   ownTotal: number;
   /** Wie viele davon legal (= zählen mit). */
@@ -46,10 +50,13 @@ export function useCorpus(): CorpusInfo {
   return useMemo(() => {
     const starterLegal = legalCorpusDecks(starterDecks, rulesetV1Loaded, cardIndex);
     const ownLegalDecks = legalCorpusDecks(own, rulesetV1Loaded, cardIndex);
-    const decks = dedupeDecks([...starterLegal, ...ownLegalDecks]);
+    const liveDecks = dedupeDecks([...starterLegal, ...ownLegalDecks]);
+    const live = buildCorpus(liveDecks);
+    const corpus = ingestedCorpus ? mergeCorpora(ingestedCorpus, live) : live;
     return {
-      corpus: buildCorpus(decks),
-      n: decks.length,
+      corpus,
+      n: corpus.n,
+      ingested: ingestedDeckCount,
       ownTotal: own.length,
       ownLegal: ownLegalDecks.length,
     };

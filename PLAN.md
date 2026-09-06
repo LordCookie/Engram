@@ -38,7 +38,15 @@ in [CLAUDE.md](CLAUDE.md). 142 JS-Tests + Python-Tests grün.
 - **README** (`README.md`) für den öffentlichen Push vorhanden (faktisch korrekt,
   mit Dev-Setup + Disclaimer). UX in zwei Runden aufgeräumt (mobile Navigation,
   Sammlung mit Suche/Filter, wiederverwendbares Kartendetail, Korb-Animation).
-- **Phase 4 (Stats-Service):** noch offen; die First-Party-Empirie (§ 12 C) nimmt den
+- **Phase 4a (Ingest-Pipeline):** Mechanismus **steht** und ist quellen-agnostisch:
+  `pipeline/ingest_decks.py` liest slug-basierte Decklisten aus `pipeline/decklists/`,
+  verwirft illegale (Python-Port unserer vier § 1-Regeln), aggregiert Co-Play →
+  `app/src/data/coplay.json` (gitignored). Die App lädt es optional (`coplayCorpus.ts`)
+  und führt es via `mergeCorpora` mit den live aus Dexie gebauten Decks zusammen —
+  so wächst die empirische Synergie mit jedem ingesteten Deck (EDHREC-Gedanke, lokal).
+  Fehlt die Datei (frischer Clone/CI), baut die App unverändert weiter. **Offen:** die
+  Volumen-Quelle (mit dem Nutzer zu klären) — First-Party bleibt der Default.
+- **Phase 4b (Stats-Service):** noch offen; die First-Party-Empirie (§ 12 C) nimmt den
   EDHREC-Gedanken lokal vorweg.
 - **Phase 5 (Capacitor):** noch offen.
 
@@ -478,11 +486,14 @@ ein Jahr hässlich sein.
 
 **Aufgaben:**
 
-1. `pipeline/ingest_decks.py`: Decklisten aus öffentlichen Quellen ziehen und
-   normalisieren. Interessanteste Quelle ist der Community-Simulator
-   (cyberpunk-tcg-sim.online) mit Turnieren und Deckregistrierung — digitale
-   Partien produzieren ein Vielfaches der Papierdecks. Cron-Job, roh und
-   normalisiert getrennt speichern.
+1. ✅ **Mechanismus steht** (Phase 4a): `pipeline/ingest_decks.py` liest slug-basierte
+   Decklisten aus `pipeline/decklists/*.json`, verwirft illegale (Port unserer vier
+   § 1-Regeln), aggregiert `df`/`co`/`n` → `app/src/data/coplay.json`. Stdlib-only.
+   Die App führt das via `mergeCorpora` mit den eigenen Decks zusammen. **Noch offen:**
+   die Volumen-Quelle. Interessanteste Kandidatin bleibt der Community-Simulator
+   (cyberpunk-tcg-sim.online) mit Turnieren und Deckregistrierung — digitale Partien
+   produzieren ein Vielfaches der Papierdecks; ToS/robots.txt vorher prüfen (§ 11).
+   Roh und normalisiert getrennt speichern; die Decklisten-Dateien sind gitignored.
 2. SQLite-Schema: `decks`, `deck_cards`, `tournaments`, `snapshots`.
    Rohdaten **niemals** überschreiben.
 3. Aggregation, gruppiert nach **Legend-Triple** (das Commander-Äquivalent,
@@ -640,7 +651,7 @@ Gutes Prompt-Muster:
 0.3  Kartenlayout prüfen
 1    Sammlungstracker (Export zuerst!)
 2    Validator + Legend-Solver   ← hier liegt der eigentliche Wert
-4a   Ingest-Pipeline starten     ← parallel, so früh wie möglich
+4a   Ingest-Pipeline starten     ← Mechanismus steht; Quelle noch offen
 3    Scanner
 4b   Stats-API + Frontend-Anbindung
 5    Capacitor

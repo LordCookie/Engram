@@ -21,6 +21,9 @@ app/src/data/printings.json
 app/src/data/features.json
 # Kuratierte LLM-Lesefassung (Quelle für features.json) enthält Regeltext-Belege → nicht verteilen.
 pipeline/features_curated.json
+# Ingest: Deckdaten (eigene/fremde) + generiertes Co-Play-Korpus → nicht verteilen.
+pipeline/decklists/*.json
+app/src/data/coplay.json
 # Keyword-Glossar-Transkription (CDPR-IP) → lokale Dev-Referenz, nicht verteilen.
 pipeline/glossary.md
 

@@ -40,7 +40,7 @@ export function SynergyPanel() {
   const combos = useMemo(() => (hasFeatures ? topCombos(featureDB, cardIndex, 12) : []), []);
 
   // Empirische Synergie (§ 12 C): was tatsächlich zusammen gespielt wird.
-  const { corpus, n, ownTotal, ownLegal } = useCorpus();
+  const { corpus, n, ingested, ownTotal, ownLegal } = useCorpus();
   const empirical = useMemo(
     () => (selectedId ? coPlayPartners(selectedId, corpus, cardIndex, { limit: 8 }) : []),
     [selectedId, corpus],
@@ -267,7 +267,8 @@ export function SynergyPanel() {
           {/* Empirische Synergie (§ 12 C): Beobachtung aus Decks, keine Vorhersage. */}
           <h3 className="mt-5 mb-1 font-mono text-sm">Zusammen gespielt</h3>
           <p className="mb-2 text-xs text-muted">
-            Beobachtet in <b>{n}</b> legalen Deck{n === 1 ? '' : 's'} (Starter + deine) —
+            Beobachtet in <b>{n}</b> legalen Deck{n === 1 ? '' : 's'}
+            {ingested > 0 ? ` (${ingested} aus dem Ingest + Starter + deine)` : ' (Starter + deine)'} —
             reine Statistik, keine Vorhersage.
           </p>
           {empirical.length === 0 ? (

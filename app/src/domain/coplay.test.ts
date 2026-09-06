@@ -6,6 +6,7 @@ import {
   legalCorpusDecks,
   dedupeDecks,
   buildCorpus,
+  mergeCorpora,
   coPlayPartners,
   coPlayLift,
   makeCoPlayScore,
@@ -115,6 +116,19 @@ describe('buildCorpus + coPlayPartners', () => {
 
   it('gibt für unbekannte oder nie gespielte Karten nichts zurück', () => {
     expect(coPlayPartners('unbekannt', corpus, index)).toEqual([]);
+  });
+});
+
+describe('mergeCorpora', () => {
+  it('summiert n, df und Ko-Vorkommen zweier Korpora', () => {
+    const a = buildCorpus([deck('X', 'Y')]);
+    const b = buildCorpus([deck('X', 'Y'), deck('X', 'Z')]);
+    const m = mergeCorpora(a, b);
+    expect(m.n).toBe(3);
+    expect(m.df.get('X')).toBe(3); // 1 + 2
+    expect(m.df.get('Y')).toBe(2); // 1 + 1
+    expect(m.co.get('X')!.get('Y')).toBe(2); // 1 + 1 (X&Y in beiden)
+    expect(m.co.get('X')!.get('Z')).toBe(1); // nur in b
   });
 });
 

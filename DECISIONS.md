@@ -934,3 +934,39 @@ konform: nichts im Repo/Bundle, nur ein lokaler Cache auf dem Gerät.
 Browser verifiziert: 151 Bilder im `card-images`-Cache, 151 URLs in Dexie
 gespiegelt; ein Bild mit ABSICHTLICH kaputter Signatur (normal 403) lädt in voller
 Größe (733×1024) aus dem Cache → Offline-Anzeige bewiesen. `npm test` 135/135 grün.
+
+---
+
+## 2026-09-06 — Ingest-Pipeline (Phase 4a, § 12 C): Mechanismus vor Quelle
+
+**Entscheidung:** Die Ingest-Pipeline für die statistische Synergie zuerst
+**quellen-agnostisch** bauen (liest lokale Decklisten), die **Volumen-Quelle**
+bewusst getrennt und mit dem Nutzer klären. Das folgt PLAN.md § 12 C / Zeitplan
+(„4a so früh wie möglich, parallel"): der Mechanismus darf nicht auf eine Quelle
+warten, und verpasste Decklisten lassen sich nicht rückwirkend sammeln.
+
+**Aufbau:**
+- `pipeline/ingest_decks.py` (stdlib-only, wie `fetch_cards.py`): liest slug-basierte
+  Decklisten aus `pipeline/decklists/*.json` (`{legends:[3], cards:{slug:n}}`),
+  **verwirft illegale** über einen Python-Port unserer vier § 1-Regeln (`is_legal`:
+  3 unterschiedliche Legends, Deckgröße 40–50, ≤ 3 Kopien, **Per-Farbe-RAM-Cap**),
+  aggregiert `df` (in wie vielen Decks) und `co` (paarweises Ko-Vorkommen) → schreibt
+  `app/src/data/coplay.json` (`{version, generatedBy, n, df, co}`).
+- App-Anbindung ohne Bruch bei fehlender Datei: `data/coplayCorpus.ts` lädt
+  `coplay.json` **optional** per `import.meta.glob(..., {eager:true})` (fehlt auf
+  frischem Clone/CI → `ingestedCorpus = null`, App baut unverändert). `data/deckCorpus.ts`
+  führt es via neuem `mergeCorpora` (`domain/coplay.ts`, summiert `n`/`df`/`co`,
+  getestet) mit dem Live-Korpus (Starter + eigene Dexie-Decks) zusammen. `SynergyPanel`
+  weist die Ingest-Zahl gesondert aus.
+
+**§ 8 / § 11 / Datenschutz:** Es werden nur Karten-Slugs + Zahlen aggregiert, **kein
+Regeltext**. Decklisten-Dateien und `coplay.json` sind **gitignored** (können eigene
+oder fremde Deckdaten enthalten) — nur `decklists/README.md` und der Code sind
+versioniert. **Kein Scraping** im Mechanismus; eine Community-Quelle (Simulator,
+exburst) wird erst nach ToS-/robots.txt-Prüfung und ausdrücklicher Nutzer-Zusage
+angebunden. First-Party (eigene Listen + Starter) bleibt der Default.
+
+**Verifiziert:** 3 Demo-Heist-Varianten → 3 legal, 0 verworfen, Co-Play korrekt
+aggregiert (Heist-Paare Count 3); Leerlauf (frischer Clone) → `n=0`, App lädt `null`.
+Demo-Dateien danach entfernt (keine synthetischen „empirischen" Zahlen in der App).
+`npm test` 148/148 grün, `npm run build` sauber.
