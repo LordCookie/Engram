@@ -15,6 +15,25 @@ Card data is sourced from the **NetDeck API** (`api.netdeck.gg`), the same data 
 the official card lists. No card images are stored in this repository or the app bundle —
 they are linked from the official CDN and cached locally on your device for offline use.
 
+## 📸 Screenshots
+
+> Card artwork appears as engram's **own colored placeholders** in these shots — the app links
+> card images from the official CDN at runtime and never bundles or redistributes them (see
+> *Disclaimer & Legal*). The mobile-first UI is pictured; it scales up to desktop as well.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/01-sammlung.png" alt="Collection tracking" width="240"><br><sub><b>Collection</b> — per-color progress, search &amp; filter</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/02-erfassen.png" alt="Quick add and starter decks" width="240"><br><sub><b>Quick add</b> — keyboard entry &amp; starter decks</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/06-scannen.png" alt="Webcam OCR scanner" width="240"><br><sub><b>Scanner</b> — on-device OCR, ManaBox-style</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/03-deck.png" alt="Deck editor with synergy suggestions" width="240"><br><sub><b>Deck editor</b> — Legends, RAM &amp; live synergy picks</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/03b-deck-stats.png" alt="Deck statistics, cost curve and legality" width="240"><br><sub><b>Deck stats</b> — cost curve, RAM caps &amp; legality</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/04-synergie.png" alt="Synergy view with curated combos" width="240"><br><sub><b>Synergy</b> — text predictions &amp; named combos</sub></td>
+  </tr>
+</table>
+
 ## ✨ Core Philosophy: Why engram?
 
 There are already several deckbuilders out there. engram exists to do the three things the
@@ -116,9 +135,15 @@ from a phone on your LAN: `LAN=1 npm run dev` serves over self-signed HTTPS on p
   normalized combination.
 - **Phase 3 — Scanner:** 🔄 In progress. On-device OCR name + collector-number matching; running
   on mobile over LAN HTTPS.
-- **Phase 4 — Stats service:** ⏳ Upcoming. A FastAPI/SQLite service to aggregate community
-  decklist data and broaden the empirical synergy signal.
-- **Phase 5 — Mobile app:** ⏳ Upcoming. Wrapping the PWA into native iOS/Android via Capacitor.
+- **Phase 4 — Stats service:** 🔄 In progress. The **local ingest pipeline** is already in place
+  (`pipeline/ingest_decks.py` aggregates legal decklists into a co-play corpus that the app
+  merges with your own decks); a FastAPI/SQLite service to broaden the signal from community
+  decklist data is the next step.
+- **Phase 5 — Native mobile app:** ⏳ Upcoming. Wrapping the PWA into a **native Android app**
+  (and iOS) via **Capacitor**, for a real installable app with camera access.
+- **Playtest / simulation mode:** ⏳ Planned. A **practice-turn simulator** to try a deck before
+  taking it to the table — draw sample hands, walk through turns, and sanity-check your RAM
+  curve and combos against real draws.
 
 ## 📄 License
 
