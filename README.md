@@ -1,5 +1,8 @@
 # engram 🖧
 
+[![CI](https://github.com/LordCookie/Engram/actions/workflows/ci.yml/badge.svg)](https://github.com/LordCookie/Engram/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A **local-first, cloud-free** collection tracker and synergy-aware deckbuilder for the
 **Cyberpunk TCG** (WeirdCo / CD PROJEKT RED).
 
@@ -116,6 +119,11 @@ from a phone on your LAN: `LAN=1 npm run dev` serves over self-signed HTTPS on p
 - **Phase 4 — Stats service:** ⏳ Upcoming. A FastAPI/SQLite service to aggregate community
   decklist data and broaden the empirical synergy signal.
 - **Phase 5 — Mobile app:** ⏳ Upcoming. Wrapping the PWA into native iOS/Android via Capacitor.
+
+## 📄 License
+
+The engram **source code** is released under the **MIT License** — see [LICENSE](LICENSE).
+This does **not** cover the Cyberpunk TCG intellectual property (see the Disclaimer below).
 
 ## ⚖️ Disclaimer & Legal
 

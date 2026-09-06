@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Kartendaten liegen bewusst NICHT im Repo (§ 8, CDPR-IP) — die App importiert
+      # sie aber statisch, daher hier per Pipeline erzeugen (kein API-Key nötig).
+      - name: Kartendaten generieren
+        run: |
+          python pipeline/fetch_cards.py
+          python pipeline/bootstrap_features.py
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Abhängigkeiten installieren
+        working-directory: app
+        run: npm ci
+
+      - name: Tests (Vitest)
+        working-directory: app
+        run: npm run test
+
+      - name: Typecheck + Produktionsbuild
+        working-directory: app
+        run: npm run build
