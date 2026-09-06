@@ -1,0 +1,34 @@
+{
+  "version": "v1-2026-09-03",
+  "note": "Kontrolliertes Merkmals-Vokabular fuer die Synergie-Extraktion (PLAN.md § 12). Quelle, nicht generiert. STATE-Tokens matchen provides<->payoffFor, THEME-Tokens symmetrisch (themes<->themes), TAGPAYOFF gegen die classifications einer Karte (tags<->tagPayoff).",
+  "state": {
+    "EDDIE": "Bereitet Eddies (provides: ready Eddie, Sell) bzw. will Eddies als Kosten (payoff, €$).",
+    "HIGH_GIG": "Treibt Gig-Werte hoch (provides) bzw. belohnt hohe/8+/max Gigs (payoff).",
+    "LOW_GIG": "Senkt Gig-Werte (provides) bzw. belohnt min-Gigs (payoff).",
+    "GIG_STEAL": "Stiehlt Gigs (provides) bzw. belohnt das Stehlen (payoff).",
+    "GEAR": "Ist Ausruestung/Gear (provides) bzw. belohnt equipped Units/Gears (payoff).",
+    "PROGRAM": "Ist ein Program (provides) bzw. belohnt das Spielen von Programs (payoff).",
+    "LEGEND_BOARD": "Bringt Legends ins Spiel/Call (provides) bzw. belohnt face-up Legends (payoff).",
+    "FIGHT": "Bufft Power fuers Kaempfen (provides) bzw. belohnt gewonnene/verlorene Kaempfe (payoff)."
+  },
+  "themes": {
+    "GIG_PARITY": "Dreht sich um gerade/ungerade Werte, Wert-Paare, unterschiedliche Werte.",
+    "STREET_CRED": "Interessiert sich fuer Street Cred (☆).",
+    "BRAINDANCE": "Braindance-Archetyp.",
+    "GO_SOLO": "Dreht sich um die {Go Solo}-Mechanik.",
+    "BLOCKER": "Dreht sich um {Blocker}.",
+    "ADRENALINE": "Dreht sich um {Adrenaline}.",
+    "DISCARD": "Zwingt Rivalen zum Abwerfen.",
+    "TRASH_RECUR": "Fuellt den Trash und/oder spielt aus dem Trash zurueck.",
+    "DICE_FIX": "Manipuliert Wuerfel/Gigs aktiv: rollen, rerollen, Wert setzen/tauschen (Glossar: Fixer)."
+  },
+  "tagPayoff": {
+    "ARASAKA": "Belohnt ARASAKA-Karten.",
+    "CORPO": "Belohnt/agiert gegen CORPO-Karten.",
+    "GANGER": "Belohnt GANGER-Karten.",
+    "MERC": "Belohnt MERC-Karten.",
+    "CYBERWARE": "Belohnt CYBERWARE-Gear.",
+    "ROCKER": "Belohnt ROCKER-Karten.",
+    "NETRUNNER": "Belohnt NETRUNNER-Karten."
+  }
+}

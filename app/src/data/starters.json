@@ -1,0 +1,62 @@
+[
+  {
+    "id": "the-heist",
+    "name": "The Heist",
+    "faction": "Mercs",
+    "note": "Offizielle 40-Karten-Retail-Starterliste. Quelle: Preset-Decks des Community-Simulators (cyberpunk-tcg-sim.online), die die offiziellen Retail-Produktlisten spiegeln (PLAN.md § 11.3).",
+    "legendIds": [
+      "v-corporate-exile",
+      "viktor-vektor-sit-down-and-relax",
+      "jackie-welles-pour-one-out-for-me"
+    ],
+    "cards": {
+      "dexter-deshawn-one-last-chance": 2,
+      "heywood-ripperdoc": 2,
+      "offduty-malfini": 2,
+      "secondhand-bombus": 2,
+      "t-bug-amateur-philosopher": 2,
+      "kiroshi-optics": 3,
+      "mandibular-upgrade": 3,
+      "zetatech-faceplate": 3,
+      "afterparty-at-lizzie-s": 2,
+      "delamain-cab": 3,
+      "evelyn-parker-scheming-siren": 3,
+      "mt0d12-flathead": 2,
+      "psycho-squad": 2,
+      "dying-night-v-s-pistol": 2,
+      "tetratronic-rippler": 2,
+      "floor-it": 3,
+      "reboot-optics": 2
+    }
+  },
+  {
+    "id": "embracing-power",
+    "name": "Embracing Power",
+    "faction": "Arasaka",
+    "note": "Offizielle 40-Karten-Retail-Starterliste. Quelle: Preset-Decks des Community-Simulators (cyberpunk-tcg-sim.online), die die offiziellen Retail-Produktlisten spiegeln (PLAN.md § 11.3).",
+    "legendIds": [
+      "goro-takemura-hands-unclean",
+      "yorinobu-arasaka-embracing-destruction",
+      "saburo-arasaka-stubborn-patriarch"
+    ],
+    "cards": {
+      "chrome-fang": 2,
+      "minotaur": 2,
+      "ruthless-lowlife": 3,
+      "swordwise-huscle": 2,
+      "emergency-atlus": 2,
+      "field-operator": 2,
+      "goro-takemura-losing-his-way": 2,
+      "maxtac-av": 2,
+      "arasaka-emergency-radioport": 2,
+      "mantis-blades": 3,
+      "satori-sword-of-saburo": 3,
+      "industrial-assembly": 2,
+      "over-the-edge": 2,
+      "shattered-memories": 2,
+      "corpo-security": 3,
+      "sandevistan": 3,
+      "corporate-surveillance": 3
+    }
+  }
+]

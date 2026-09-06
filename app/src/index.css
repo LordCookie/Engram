@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design-Tokens an genau einer Stelle (PLAN.md § 6).
+ * "Cyberpunk-Haut, langweiliges Skelett" — der Look steckt zu ~90 % im CSS,
+ * die Struktur bleibt neutral und schnell.
+ */
+:root {
+  --c-bg: #0b0f14;
+  --c-surface: #121820;
+  --c-text: #e6edf3;
+  --c-muted: #8b98a5;
+  --c-accent: #f7d51d;
+
+  --c-red: #ff4d5e;
+  --c-green: #3ddc84;
+  --c-blue: #4da6ff;
+  --c-yellow: #f7d51d;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Nie horizontal scrollen — sonst verrutscht u. a. die fixierte Mobil-Navigation. */
+  overflow-x: hidden;
+}
+
+/* Kleine Rückmeldungs-Animationen (z. B. „in den Scan-Korb gelegt"). */
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 0.3s ease-out;
+}
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1);
+  }
+}
+.animate-rise {
+  animation: rise 0.9s ease-out forwards;
+}
+
+/* Effekte respektieren die Systemeinstellung (PLAN.md § 6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

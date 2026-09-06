@@ -1,0 +1,65 @@
+{
+  "note": "Kuratierte, benannte Combos (Agent/Opus, aus dem Lesen der 151 Karten). Erklärungen in EIGENEN Worten (§ 8: kein Abtippen von Regeltext). `cards` = Karten-Slugs.",
+  "combos": [
+    {
+      "name": "Value-Pair-Motor",
+      "cards": ["peace-offering", "hanako-arasaka-daughter-of-the-emperor", "pepe-najarro-working-doubles"],
+      "why": "Peace Offering setzt einen Gig auf den Wert eines anderen und erzeugt so ein Value-Pair. Hanako zieht zu Rundenbeginn eine Karte je Value-Pair, Pepe verwandelt es in bereite MERC-Legends — ein Motor, der sich selbst befeuert."
+    },
+    {
+      "name": "Braindance-Maschine",
+      "cards": ["judy-a-lvarez-braindance-maestro", "peace-offering", "v-streetkid"],
+      "why": "Jedes BRAINDANCE-Programm gibt mit Judy einer Unit +1 Power, und sie gräbt nebenbei nach weiteren Programs. V holt ein verbrauchtes BRAINDANCE-Programm aus dem Trash zurück, damit der Nachschub nie ausgeht."
+    },
+    {
+      "name": "Cyberware-Kreislauf",
+      "cards": ["viktor-vektor-sit-down-and-relax", "viktor-vektor-you-might-feel-a-little-pinch", "gorilla-arms"],
+      "why": "Viktor (Sit Down) fischt günstige Gears aus dem Deck, Viktor (Pinch) spielt CYBERWARE gratis aus dem Trash. Auf einer Unit macht Gorilla Arms aus jedem Angriff einen Extra-Klau."
+    },
+    {
+      "name": "Klau-Kettenreaktion",
+      "cards": ["gorilla-arms", "wraith-marauders", "v-roamer-of-the-badlands"],
+      "why": "Alle drei triggern beim Stehlen: Gorilla Arms klaut einen zusätzlichen Gig, Wraith macht eine weitere Unit bereit, V erhöht den frisch geklauten Gig — ein Angriff wird zur Kettenreaktion."
+    },
+    {
+      "name": "ARASAKA-Tribal",
+      "cards": ["saburo-arasaka-stubborn-patriarch", "yorinobu-arasaka-embracing-destruction", "minotaur"],
+      "why": "Saburo bufft alle ARASAKA-Units im Angriff, Yorinobu zieht beim ersten ARASAKA-Angriff jeder Runde, und Minotaur räumt als ARASAKA-Unit gegnerische Bedrohungen weg."
+    },
+    {
+      "name": "Legenden ins Rampenlicht",
+      "cards": ["tyger-s-whisper", "panam-palmer-strength-through-family", "synapse-burnout"],
+      "why": "Tyger's Whisper und Panam rufen Legends gratis ins offene Spiel — dann zahlt sich jede face-up Legend aus: Panam zieht Karten, Synapse gibt Power pro Legend im Kampf."
+    },
+    {
+      "name": "High-Gig-Rampe",
+      "cards": ["industrial-assembly", "carnage-at-the-colosseum", "v-roamer-of-the-badlands"],
+      "why": "Industrial Assembly treibt einen Gig auf 8+. Danach wird Carnage pro 8+-Gig billiger und V zieht Karten — hohe Werte werden zur Ressource."
+    },
+    {
+      "name": "Min-Gig-Kontrolle",
+      "cards": ["trust-no-one", "three-mouths-one-desire", "pyramid-song"],
+      "why": "Trust No One drückt einen Gig zum niedrigsten. Three Mouths zieht dann extra Karten und Pyramid Song darf beide Effekte nehmen — kleine Werte, große Wirkung."
+    },
+    {
+      "name": "Eddie-Rampe & -Sink",
+      "cards": ["delamain-cab", "dying-night-v-s-pistol", "johnny-silverhand-rocking-renegade"],
+      "why": "Delamain und Dying Night machen zusätzliche Eddies bereit; Johnnys teure Fähigkeit lässt eine Unit verbrauchte Rivalen angreifen und wird mit 8+-Gigs noch günstiger — Ramp trifft Payoff."
+    },
+    {
+      "name": "Der Friedhof arbeitet",
+      "cards": ["the-heist", "the-relic-experimental-biochip", "trauma-team-operatives"],
+      "why": "The Heist wirft Karten in den Trash und zieht Gear heraus; The Relic spielt beim Sterben eine teure Unit von dort aus, und Trauma Team wird pro Unit im Trash billiger."
+    },
+    {
+      "name": "Blocker mit Vorteil",
+      "cards": ["goro-takemura-vengeful-bodyguard", "augmented-negotiators", "la-llorona-ghost-of-the-past"],
+      "why": "Goro verteilt Blocker und zieht, wenn eine Unit blockt. Augmented lässt beim Blocken Rivalen abwerfen, La Llorona erhöht dabei einen Gig — Verteidigung, die Vorteil bringt."
+    },
+    {
+      "name": "Go-Solo-Tempo",
+      "cards": ["nocturne-op55-n1", "adam-smasher-ender-of-legends", "arasaka-emergency-radioport"],
+      "why": "Nocturne verbilligt {Go Solo}, sodass Adam Smasher früh als Unit angreift und eine gegnerische Unit vernichtet; Radioport ruft eine Go-Solo-Legend gratis ins Spiel."
+    }
+  ]
+}

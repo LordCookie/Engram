@@ -1,0 +1,10 @@
+{
+  "version": "beta-2026-05-29",
+  "legendCount": 3,
+  "legendNamesMustBeUnique": true,
+  "deckMin": 40,
+  "deckMax": 50,
+  "maxCopiesPerCard": 3,
+  "colors": ["RED", "GREEN", "BLUE", "YELLOW"],
+  "ramScope": "perColor"
+}

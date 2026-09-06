@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+app/node_modules/
+
+# Builds
+dist/
+app/dist/
+app/dev-dist/
+
+# Test / TS caches
+coverage/
+app/coverage/
+**/.tmp/
+*.tsbuildinfo
+
+# Generierte Kartendaten NICHT verteilen (PLAN.md § 11 Leitplanken).
+# Bei öffentlichem Repo zieht der Nutzer sie beim Build selbst (pipeline/fetch_cards.py).
+app/src/data/cards.json
+app/src/data/printings.json
+# Synergie-Merkmale enthalten kurze Regeltext-Belege (CDPR-IP, § 8) → nicht verteilen.
+app/src/data/features.json
+# Kuratierte LLM-Lesefassung (Quelle für features.json) enthält Regeltext-Belege → nicht verteilen.
+pipeline/features_curated.json
+# Keyword-Glossar-Transkription (CDPR-IP) → lokale Dev-Referenz, nicht verteilen.
+pipeline/glossary.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
