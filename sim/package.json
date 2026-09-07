@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Konsolen-Test-Engine (Dev-Werkzeug) zum groben Durchspielen von Decks/Synergien.",
   "scripts": {
-    "test": "tsx engine.test.ts",
+    "test": "tsx engine.test.ts && tsx engine2.test.ts",
     "verify": "tsx verify.ts",
     "build-decks": "tsx build.ts",
     "decks": "tsx run.ts decks",

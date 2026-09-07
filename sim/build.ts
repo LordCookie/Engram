@@ -7,6 +7,8 @@ import { rulesetV1Loaded } from '../app/src/rules/ruleset';
 import type { Card, Color } from '../app/src/domain/types';
 import { createGame, playGame, type SimConfig, type SimDeck } from './engine';
 import { heuristic } from './policies';
+import { createGame2, playGame2, DEFAULT2 } from './engine2';
+import { heuristic2 } from './policies2';
 import { synPair, makeConfig, loadDecks } from './data';
 
 /**
@@ -153,6 +155,12 @@ console.log(`${built.length} legale Kandidaten gebaut.`);
 
 // --- Rundenturnier -------------------------------------------------------
 const cfg: SimConfig = makeConfig();
+const MODEL = process.argv.includes('v2') ? 'v2' : 'v1';
+// Spielfunktion je Modell: v1 = Power-Proxy, v2 = Kampf/Keywords/Interaktion.
+const playWinner =
+  MODEL === 'v2'
+    ? (A: SimDeck, B: SimDeck, seed: number) => playGame2(createGame2(A, B, DEFAULT2, seed), DEFAULT2, heuristic2, heuristic2).winner
+    : (A: SimDeck, B: SimDeck, seed: number) => playGame(createGame(A, B, cfg, seed), cfg, { a: heuristic, b: heuristic }).winner;
 const candidates = built.map(toSimDeck);
 const starters = loadDecks(); // 2 Starter als Gegner/Benchmark
 const field: SimDeck[] = [...candidates, ...starters];
@@ -165,9 +173,8 @@ function winRate(deck: SimDeck, oppField: SimDeck[], N = 50): number {
       const seed = 1 + i * 7919;
       for (const swap of [false, true]) {
         const [d1, d2] = swap ? [opp, deck] : [deck, opp];
-        const r = playGame(createGame(d1, d2, cfg, seed), cfg, { a: heuristic, b: heuristic });
-        const won = swap ? r.winner === 'b' : r.winner === 'a';
-        if (won) wins++;
+        const w = playWinner(d1, d2, seed);
+        if ((swap ? w === 'b' : w === 'a')) wins++;
         total++;
       }
     }
@@ -175,7 +182,7 @@ function winRate(deck: SimDeck, oppField: SimDeck[], N = 50): number {
   return (100 * wins) / total;
 }
 
-console.log('spiele Rundenturnier …');
+console.log(`spiele Rundenturnier (Modell ${MODEL}) …`);
 const results = built
   .map((d, i) => ({ d, sim: candidates[i], wr: winRate(candidates[i], field), wrS: winRate(candidates[i], starters) }))
   .sort((a, b) => b.wr - a.wr);
@@ -239,14 +246,16 @@ for (const r of results) { // auffüllen, falls Vielfalt < 3 Decks hergibt
 
 const outDir = join(HERE, 'decks');
 mkdirSync(outDir, { recursive: true });
+const suffix = MODEL === 'v2' ? '-v2' : '';
 top3.forEach((r, i) => {
   const label = ['A', 'B', 'C'][i];
-  r.d.name = `Top ${label}`;
-  console.log(`\n########## Top ${label} — Siegquote ${r.wr.toFixed(1)}% ##########`);
+  r.d.name = `Top ${label}${MODEL === 'v2' ? ' (v2)' : ''}`;
+  console.log(`\n########## Top ${label} — Siegquote ${r.wr.toFixed(1)}% (Modell ${MODEL}) ##########`);
   for (const line of describe(r.d)) console.log(line);
   // Slug-JSON für die Sim + .txt für den App-Import (beide gitignored)
   const slugJson = { name: r.d.name, legends: r.d.legendIds, cards: Object.fromEntries(r.d.cards) };
-  writeFileSync(join(outDir, `top-${label.toLowerCase()}.json`), JSON.stringify(slugJson, null, 2));
-  writeFileSync(join(outDir, `top-${label.toLowerCase()}.txt`), toDeckText(r.d));
+  const base = `top-${label.toLowerCase()}${suffix}`;
+  writeFileSync(join(outDir, `${base}.json`), JSON.stringify(slugJson, null, 2));
+  writeFileSync(join(outDir, `${base}.txt`), toDeckText(r.d));
 });
-console.log(`\nDecklisten geschrieben nach sim/decks/ (top-a/b/c .json + .txt).`);
+console.log(`\nDecklisten geschrieben nach sim/decks/ (top-a/b/c${suffix} .json + .txt).`);

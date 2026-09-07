@@ -1072,3 +1072,38 @@ für keinen Seed existiert eine Gewinnlinie. **Kernbefund:** die Engine ist
 Spielerskill (gewünscht), die Heuristik ist bereits ~optimal. Ehrlichkeitsgrenze
 bleibt: grober Proxy (kein Kampf/Blocken/Keywords, Klau-Formel erfunden) → die
 Quoten sind ein Richtungssignal, keine Vorhersage echter Partien.
+
+---
+
+## 2026-09-07 — Kampf-Modell (engine2, `--model v2`): Interaktion statt Power-Proxy
+
+**Anlass/Entscheidung:** Der Power-Proxy (engine.ts) belohnte fast nur rohe Board-
+Power → die „stärksten" Decks waren 3-Farben-Piles der höchsten Einheiten. Für
+aussagekräftigeres Deck-Testen ein zweites Modell `engine2.ts` mit echtem **Kampf,
+Keywords und Interaktion** — soweit belegbar.
+
+**Belegt umgesetzt (aus Glossar/Kartentext):** Einheiten aufs Feld mit **Lag**;
+**Angriff → Blocken → Kampf** (niedrigere Power wird besiegt, Gleichstand überlebt;
+geblockt = kein Klau); Gig-Klau bei unblocked = `1 + floor(Power/10)`; Keywords
+**Adrenaline** (kein Lag), **Blocker** (blockt auch gespendet), **Go Solo**; einfache
+`{Play}`-Effekte **Defeat/Removal** (inkl. „cost N or less" / „all other Units") und
+**Draw**, per Regex aus rules_text (`model.ts`, nur LOKAL gelesen — CDPR-IP); Eddies
+= Legends (3) + Ramp + Eddie-Quellen. **Synergie ist hier emergent** (aus echter
+Interaktion), kein flacher Bonus mehr.
+
+**Bewusst abstrahiert (Ehrlichkeit § 12):** einzelne Kartentexte jenseits der obigen
+Muster, Reaktionen/`{Quick}`, Würfel-/Street-Cred-Details, `{Defeated}`-Trigger. Es
+bleibt ein Modell, kein Regel-Nachbau.
+
+**Verifiziert:** 13 Tests (`engine2.test.ts`) — Combat-Auflösung, Block-Eignung
+(Blocker blockt gespendet, Nicht-Blocker gespendet nicht), Removal, Lag/Adrenaline,
+Auskarten, Determinismus, **Spiegel ≈ 50 %**, **Dominanz** (gleiche Kosten, mehr
+Power ⇒ 100 %). Gefundene/behobene Fehler: fehlender Eddie-Ramp (Cost>3 unspielbar),
+Verteidiger-Perspektive beim Blocken, `{Play} Defeat all`-Zweig.
+
+**Effekt aufs Deck-Testen (der Sinn der Sache):** Im Kampf-Modell verlieren die
+3-Farben-Power-Piles ihren Vorsprung; **fokussierte** Decks steigen (mono-Grün und
+RED/YELLOW an die Spitze), und der **offizielle Heist-Starter** ist im Feld das
+stärkste Deck (~68 %) — was der Proxy (Heist ~46 %) nicht zeigte. `build-decks
+--model v2` rankt im Kampf-Modell und schreibt `sim/decks/top-*-v2.*`. Nächster
+Schritt wäre ein **v2-getunter Deckbau** (Kurve/Blocker/Removal statt Power-greedy).

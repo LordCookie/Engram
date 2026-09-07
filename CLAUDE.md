@@ -160,6 +160,18 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   legalen Legend-Triples synergie-/kurvenoptimierte Decks (RAM-legal, `validate()`)
   und ermittelt per Rundenturnier die stärksten → `sim/decks/` (gitignored, .json für
   die Sim + .txt für den App-Import). Szenario-Decklisten + Läufe sind gitignored.
+- **Kampf-Modell (`engine2.ts`, `--model v2`):** näher an den echten Regeln als der
+  Proxy — Einheiten aufs Feld (mit **Lag**), **Angriff → Blocken → Kampf → besiegt**,
+  Gig-Klau per Angriff (1 + Power/10), Keywords **Adrenaline/Blocker/Go Solo** und
+  einfache `{Play}`-Effekte (**Defeat/Removal**, **Draw**) aus dem Kartentext (`model.ts`,
+  liest rules_text nur LOKAL), Eddies aus Legends + Ramp + Eddie-Quellen. Synergie
+  entsteht hier aus echter Interaktion, kein flacher Bonus. `battle`/`game`/`build-decks`
+  nehmen `--model v2`. 13 Kampf-Tests (`engine2.test.ts`: Combat, Blocken, Removal, Lag/
+  Adrenaline, Determinismus, Spiegel≈50 %, Dominanz). **Effekt aufs Deck-Testen:** die
+  3-Farben-Power-Piles verlieren ihren Riesenvorsprung, fokussierte (mono/2-farbige)
+  Decks steigen; der offizielle Heist-Starter ist im Kampf-Modell das stärkste Feld-Deck
+  (~68 %). Bleibt ein Modell (Einzeltexte/Reaktionen/Würfel abstrahiert), aber Interaktion
+  zählt jetzt echt.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

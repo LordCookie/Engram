@@ -15,9 +15,12 @@ import {
   type SimParams,
   type Decision,
   type GameResult,
+  type SimDeck,
   DEFAULT_PARAMS,
 } from './engine';
 import { heuristic } from './policies';
+import { createGame2, playGame2, DEFAULT2, type Sim2Params } from './engine2';
+import { heuristic2 } from './policies2';
 import { loadDecks, findDeck, makeConfig } from './data';
 
 /**
@@ -74,46 +77,62 @@ function cmdDecks() {
   for (const d of decks) console.log(`  · ${d.name} (${d.cardIds.length} Karten)`);
 }
 
+interface PlayResult { winner: 'a' | 'b' | null; turns: number; gigsA: number; gigsB: number; reason: string; log: string[]; }
+/** Wählt Modell v1 (Power-Proxy) oder v2 (Kampf/Keywords/Interaktion). */
+function makePlay(a: Record<string, string>) {
+  if (a.model === 'v2') {
+    const p: Sim2Params = { ...DEFAULT2 };
+    if (a.gigwin) p.gigWin = Number(a.gigwin);
+    if (a.turncap) p.turnCap = Number(a.turncap);
+    const play = (A: SimDeck, B: SimDeck, seed: number): PlayResult => {
+      const r = playGame2(createGame2(A, B, p, seed), p, heuristic2, heuristic2);
+      return { winner: r.winner, turns: r.turns, gigsA: r.finalGigs.a, gigsB: r.finalGigs.b, reason: r.reason, log: r.log };
+    };
+    return { label: 'v2 (Kampf/Keywords/Interaktion)', play };
+  }
+  const cfg = makeConfig(paramsFrom(a));
+  const play = (A: SimDeck, B: SimDeck, seed: number): PlayResult => {
+    const r = playGame(createGame(A, B, cfg, seed), cfg, { a: heuristic, b: heuristic });
+    return { winner: r.winner, turns: r.turns, gigsA: r.finalGigs.a, gigsB: r.finalGigs.b, reason: r.reason, log: r.log };
+  };
+  return { label: `v1 (Power-Proxy${cfg.synergyBonus === 0 ? ', Synergie AUS' : ''})`, play };
+}
+
 function cmdBattle(a: Record<string, string>) {
   const { A, B } = pickDecks(a);
-  const cfg = makeConfig(paramsFrom(a));
+  const { label, play } = makePlay(a);
   const games = Number(a.games ?? 200);
   const seed0 = Number(a.seed ?? 1);
-  // Jede Paarung in BEIDEN Sitzpositionen spielen → der Anzieh-Vorteil hebt sich
-  // auf, die Quote misst die Deckstärke statt „wer zuerst dran ist".
+  // Jede Paarung in BEIDEN Sitzpositionen → Anzieh-Vorteil hebt sich auf.
   let winA = 0, winB = 0, draw = 0, turnsSum = 0, first = 0;
   const total = games * 2;
   for (let i = 0; i < games; i++) {
     const seed = seed0 + i * 7919;
     for (const swap of [false, true]) {
       const [d1, d2] = swap ? [B, A] : [A, B];
-      const r = playGame(createGame(d1, d2, cfg, seed), cfg, { a: heuristic, b: heuristic });
-      // Nach ROLLE zählen (nicht Objekt-Identität — sonst bricht der Spiegel-Match):
-      // swap=false → Deck A sitzt auf 'a'; swap=true → Deck A sitzt auf 'b'.
-      const roleAWon = swap ? r.winner === 'b' : r.winner === 'a';
+      const r = play(d1, d2, seed);
+      const roleAWon = swap ? r.winner === 'b' : r.winner === 'a'; // nach Rolle, nicht Identität
       if (r.winner === null) draw++;
       else if (roleAWon) winA++;
       else winB++;
-      if (r.winner === 'a') first++; // Anziehender hat gewonnen
+      if (r.winner === 'a') first++;
       turnsSum += r.turns;
     }
   }
   const pct = (n: number) => ((100 * n) / total).toFixed(1) + '%';
-  console.log(`Battle · ${A.name} vs ${B.name} · ${total} Spiele (beide Sitzpositionen)` +
-    (cfg.synergyBonus === 0 ? ' · Synergie AUS' : ''));
+  console.log(`Battle · ${A.name} vs ${B.name} · ${total} Spiele (beide Sitzpositionen) · Modell ${label}`);
   console.log(`  ${A.name}: ${winA} (${pct(winA)})   ${B.name}: ${winB} (${pct(winB)})   Remis: ${draw} (${pct(draw)})`);
   console.log(`  Ø Züge: ${(turnsSum / total).toFixed(1)} · Anzieh-Vorteil: ${pct(first)} Siege für den Startenden`);
 }
 
 function cmdGame(a: Record<string, string>) {
   const { A, B } = pickDecks(a);
-  const cfg = makeConfig(paramsFrom(a));
-  const g = createGame(A, B, cfg, Number(a.seed ?? 1));
-  const r = playGame(g, cfg, { a: heuristic, b: heuristic });
+  const { label, play } = makePlay(a);
+  const r = play(A, B, Number(a.seed ?? 1));
   for (const line of r.log) console.log(line);
-  console.log('—');
+  console.log(`— Modell ${label}`);
   console.log(`Ergebnis: ${r.winner ? (r.winner === 'a' ? A.name : B.name) : 'Remis'} — ${r.reason}`);
-  console.log(`Gigs: ${A.name} ${r.finalGigs.a} : ${r.finalGigs.b} ${B.name} · ${r.turns} Züge`);
+  console.log(`Gigs: ${A.name} ${r.gigsA} : ${r.gigsB} ${B.name} · ${r.turns} Züge`);
 }
 
 // --- Schrittbetrieb für einen Subagenten --------------------------------
