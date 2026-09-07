@@ -6,6 +6,7 @@
   "description": "Konsolen-Test-Engine (Dev-Werkzeug) zum groben Durchspielen von Decks/Synergien.",
   "scripts": {
     "test": "tsx engine.test.ts",
+    "verify": "tsx verify.ts",
     "decks": "tsx run.ts decks",
     "battle": "tsx run.ts battle",
     "game": "tsx run.ts game",

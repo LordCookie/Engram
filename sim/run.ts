@@ -88,10 +88,12 @@ function cmdBattle(a: Record<string, string>) {
     for (const swap of [false, true]) {
       const [d1, d2] = swap ? [B, A] : [A, B];
       const r = playGame(createGame(d1, d2, cfg, seed), cfg, { a: heuristic, b: heuristic });
-      const winnerDeck = r.winner === 'a' ? d1 : r.winner === 'b' ? d2 : null;
-      if (winnerDeck === A) winA++;
-      else if (winnerDeck === B) winB++;
-      else draw++;
+      // Nach ROLLE zählen (nicht Objekt-Identität — sonst bricht der Spiegel-Match):
+      // swap=false → Deck A sitzt auf 'a'; swap=true → Deck A sitzt auf 'b'.
+      const roleAWon = swap ? r.winner === 'b' : r.winner === 'a';
+      if (r.winner === null) draw++;
+      else if (roleAWon) winA++;
+      else winB++;
       if (r.winner === 'a') first++; // Anziehender hat gewonnen
       turnsSum += r.turns;
     }

@@ -147,9 +147,16 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Modi `decks`/`battle`/`game` + Schrittbetrieb `agent-init`/`agent-step`, über den ein
   **Subagent** eine Seite spielen kann. Unsere Synergie-Vorhersage fließt als Power-
   Bonus ein; im A/B-Test (`--synergy off`) verschiebt sie die Siegquote messbar
-  (Heist vs Embracing Power: 82 % → 62 % ohne Synergie). `battle` spielt beide
-  Sitzpositionen (Anzieh-Vorteil neutralisiert). 7 Engine-Tests (`npm test`, tsx).
-  Szenario-Decklisten (slug-JSON) + Läufe sind gitignored.
+  (Heist vs Embracing Power: ~89 % → ~67 % ohne Synergie). `battle` spielt beide
+  Sitzpositionen (Anzieh-Vorteil neutralisiert) und zählt **nach Rolle**, nicht nach
+  Objekt-Identität (sonst bräche der Spiegel-Match). Anzieh-Malus (Regel „first player
+  spends 2 Legends") als Parameter → Startvorteil im Modell ~66 % statt 76 %.
+  **`npm run verify`** prüft die Engine: Determinismus, Schritt-Modus == Batch,
+  Invarianten (Gigs≥0/Budget/Terminierung), Spiegel≈50 %, Dominanz, Monte-Carlo-
+  Stabilität, Synergie-Monotonie — alle grün. 7 Engine-Tests (`npm test`, tsx).
+  **Befund:** die Engine ist deck-dominiert (ein Subagent mit Baumsuche fand über
+  6 Seeds keine Gewinnlinie fürs schwächere Deck → Heuristik ≈ optimal). Bleibt ein
+  grober Proxy, kein Regel-Simulator. Szenario-Decklisten + Läufe sind gitignored.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

@@ -1035,3 +1035,40 @@ spielte Embracing Power near-optimal, 7:8 knapp verloren).
 verschiebt das Ergebnis deutlich und verkürzt die Spiele (Ø 6,0 statt 6,7 Züge).
 7 Engine-Tests grün. `sim/node_modules`, `sim/.state.json`, `sim/decks/*.json`
 gitignored (Abhängigkeiten, Läufe, Deckdaten).
+
+---
+
+## 2026-09-07 — Test-Engine verifiziert (`sim/verify.ts`) + zwei Fixes
+
+**Anlass:** „Wie richtig ist die Engine?" → ein Prüfskript auf zwei Ebenen.
+
+**A) Implementierungs-Korrektheit (harte Checks, alle grün):** Determinismus
+(gleicher Seed → gleicher Ausgang); **Schritt-Modus == Batch** über 200 Seeds
+(der `agent-init`/`agent-step`-Pfad liefert exakt dasselbe wie `playGame`, wenn der
+Agent die Heuristik spielt); Invarianten über 500 Spiele (Gigs nie negativ, Zug-
+zähler +1/Zug, Terminierung ≤ Cap, **Eddies-Budget nie überschritten**); kein
+negativer Gig-Klau bei starker Verteidigung.
+
+**B) Modell-Plausibilität:** Spiegel Heist vs Heist = 50,0 % (seat-fair);
+Dominanz starkes vs schwaches Deck = 100 %; Monte-Carlo-Schätzung stabil (Spanne
+0,5 Punkte über 3 Seed-Basen); Synergie-Monotonie (mehr Bonus ⇒ das synergistischere
+Deck nicht schlechter: 67→82→89→90 %).
+
+**Fix 1 (durch die Prüfung gefunden):** `battle`/`winRate` zählten nach **Objekt-
+Identität** (`w === A`) — im Spiegel-Match (`--a` == `--b`, dasselbe Deck-Objekt)
+fiel dadurch jeder Sieg Deck A zu (100 % statt 50 %). Umgestellt auf Zählung **nach
+Rolle/Sitz**.
+
+**Fix 2 (Modelltreue):** Der Anzieh-Vorteil war mit 76 % zu hoch. Das echte Spiel
+gibt dem Startenden einen Malus (2 Legends vorab spenden), genau dagegen. Als
+Parameter `firstPlayerPenalty` (Default 2 Eddies weniger in Zug 1) abgebildet →
+Startvorteil sinkt auf ~66 %, Schätzung wird sogar stabiler.
+
+**Auswertung mehrerer Subagent-Runden:** Ein general-purpose-Subagent spielte das
+schwächere Deck (Embracing Power, Nachziehender) über 6 Seeds — **0/6**, identisch
+zur Heuristik-Baseline. Er suchte zusätzlich den **gesamten Entscheidungsbaum** ab:
+für keinen Seed existiert eine Gewinnlinie. **Kernbefund:** die Engine ist
+**deck-dominiert, nicht piloting-dominiert** — sie misst Deckqualität statt
+Spielerskill (gewünscht), die Heuristik ist bereits ~optimal. Ehrlichkeitsgrenze
+bleibt: grober Proxy (kein Kampf/Blocken/Keywords, Klau-Formel erfunden) → die
+Quoten sind ein Richtungssignal, keine Vorhersage echter Partien.

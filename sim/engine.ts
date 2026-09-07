@@ -29,6 +29,9 @@ export interface SimParams {
   synergyBonus: number;
   lag: boolean;
   turnCap: number;
+  /** Anzieh-Malus: der startende Spieler hat in Zug 1 so viele Eddies weniger
+   *  (Abbildung der Regel „first player spends 2 Legends" gegen den Startvorteil). */
+  firstPlayerPenalty: number;
 }
 
 /** Params + injizierte Funktionen (Kartenwerte, paarweise Synergie). */
@@ -45,6 +48,7 @@ export const DEFAULT_PARAMS: SimParams = {
   synergyBonus: 3,
   lag: true,
   turnCap: 40,
+  firstPlayerPenalty: 2,
 };
 
 export type PlayerId = 'a' | 'b';
@@ -103,6 +107,13 @@ export function shuffle<T>(arr: readonly T[], rng: () => number): T[] {
 
 export function eddiesFor(turn: number, cfg: SimParams): number {
   return cfg.eddiesBase + Math.floor((turn - 1) / cfg.eddiesRampEvery);
+}
+
+/** Verfügbare Eddies des aktiven Spielers: Ramp minus Anzieh-Malus in dessen Zug 1. */
+export function eddiesAvail(g: Game, cfg: SimConfig): number {
+  const p = g.active;
+  const penalty = p === 'a' && g.turnNo[p] === 1 ? cfg.firstPlayerPenalty : 0;
+  return Math.max(0, eddiesFor(g.turnNo[p], cfg) - penalty);
 }
 
 function newSide(deck: SimDeck, cfg: SimConfig, rng: () => number): Side {
@@ -198,7 +209,7 @@ export function view(g: Game, cfg: SimConfig): TurnView {
   const p = g.active;
   const me = g[p];
   const op = g[other(p)];
-  const eddies = eddiesFor(g.turnNo[p], cfg);
+  const eddies = eddiesAvail(g, cfg);
   return {
     you: p,
     turn: g.turnNo[p],
@@ -232,7 +243,7 @@ export function applyDecision(g: Game, cfg: SimConfig, d: Decision): void {
   if (g.winner) return;
   const p = g.active;
   const me = g[p];
-  let eddies = eddiesFor(g.turnNo[p], cfg);
+  let eddies = eddiesAvail(g, cfg);
 
   // Eindeutige, gültige Hand-Indizes in gewählter Reihenfolge.
   const seen = new Set<number>();
