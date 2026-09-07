@@ -125,6 +125,24 @@ npm run typecheck  # type-check only
 Testing the scanner needs a camera and a **secure context** (`localhost` or HTTPS). To try it
 from a phone on your LAN: `LAN=1 npm run dev` serves over self-signed HTTPS on port 5174.
 
+### 🧪 Deck simulation (developer tool)
+
+A small console-only test engine lives in `sim/` for **comparing decks and sanity-checking
+synergy claims** — it plays decks head-to-head and reports win rates. It is a **rough model,
+not a rules-accurate simulator**: single card texts, reactions and dice are abstracted. Two
+models are available — a fast aggregate **power proxy** (`--model v1`, default) and a fuller
+**combat model** (`--model v2`) with real units, blocking, keywords (Adrenaline / Blocker /
+Go Solo) and simple `{Play}` effects (removal, draw). It is a development aid; it is not part
+of the app, the bundle, or the CI.
+
+```bash
+cd sim && npm install
+npm run battle -- --a "The Heist" --b "Embracing Power" --games 300 --model v2
+npm run game   -- --a "The Heist" --b "Embracing Power" --seed 7 --model v2   # one game, verbose log
+npm run build-decks -- --model v2    # assemble strong decks from legal Legend trios
+npm test                             # engine tests (determinism, mirror ≈ 50%, dominance …)
+```
+
 ## 🗺 Roadmap & Current Status
 
 - **Phase 1 — Tracker:** ✅ Done. Fast manual entry, Dexie persistence, collection views with
