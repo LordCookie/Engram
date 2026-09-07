@@ -27,6 +27,12 @@ app/src/data/coplay.json
 # Keyword-Glossar-Transkription (CDPR-IP) → lokale Dev-Referenz, nicht verteilen.
 pipeline/glossary.md
 
+# sim (Konsolen-Test-Engine): Abhängigkeiten, Szenario-Decks (Deckdaten), Läufe.
+sim/node_modules/
+sim/decks/*.json
+sim/.state.json
+sim/out/
+
 # Python
 __pycache__/
 *.pyc

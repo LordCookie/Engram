@@ -1002,3 +1002,36 @@ Tab „Mehr". **Nur legale eigene Decks + die Starter** sind spielbar (Filter ü
 `validate()`, Nutzerwunsch). 12 neue Tests (Determinismus, Ziehen, Mulligan,
 Zugwechsel, Zonenwechsel, Kartenerhaltung, Gig-Sieg). 160 Tests grün, Build sauber,
 Browser verifiziert (Starthand 6, Zugwechsel zieht/+Gig, Feld/Legends/Trash-Moves).
+
+---
+
+## 2026-09-07 — Konsolen-Test-Engine (sim/): Messwerkzeug, kein Simulator
+
+**Entscheidung:** Eine separate **Konsolen-Test-Engine** in `sim/` (eigenes Node-
+Paket, läuft mit `tsx`), die Decks deck-vs-deck durchspielt, um **Decks und unsere
+vorhergesagten Synergien in Szenarien** zu vergleichen. Bewusst **kein** regeltreuer
+Simulator und **kein** App-Feature — nur ein internes Dev-Werkzeug. Auf ausdrücklichen
+Wunsch **nicht beworben** (nicht im öffentlichen README, keine große Ankündigung).
+
+**Warum so grob:** Ein echtes Regelwerk-Modell (Fixer/Würfel, Kämpfe, Keywords,
+Reaktionen) wäre riesig und würde Regeln vortäuschen (Ehrlichkeitsgebot § 12). Das
+Modell hier ist ein simpler Proxy: Eddies-Ramp, Karten spielen = Feld-Power (Support
+mit Basiswert), **Synergie (unsere Vorhersage) = Power-Bonus**, Angriff klaut Gigs
+(`floor((bereite Power − ½·Gegnerfeld)/10)`), Fixer +1 Gig/Zug, Sieg bei genug Gigs
+zu Zugbeginn oder Auskarten. Legends sind nur „Eddie-Quelle". Es ist ein Messgerät:
+gewinnt ein synergistischeres/besseres Deck hier öfter, ist das ein schwaches Signal.
+
+**Aufbau:** rein & deterministisch (Seed, mulberry32) → reproduzierbar/testbar; Zufall
+nur beim Mischen, danach serialisierbarer Zustand (Schritt-Modus). `engine.ts` (Kern),
+`policies.ts` (Heuristik/Zufall), `data.ts` (Brücke zu `cards.json`/`features.json`
++ `validate()` für Szenario-Decks), `run.ts` (CLI). `battle` spielt beide Sitz-
+positionen → der Anzieh-Vorteil (~65–75 %) wird herausgemittelt. **Subagent-Spiel**
+über `agent-init`/`agent-step`: der Zustand wird als JSON ausgegeben, ein Agent wählt
+`--play`/`--attack` bis zum Spielende (verifiziert: ein general-purpose-Subagent
+spielte Embracing Power near-optimal, 7:8 knapp verloren).
+
+**Ergebnis (erste Messung):** The Heist schlägt Embracing Power sitz-fair 81,8 %
+(Synergie an) vs. 62,2 % (aus) über je 600 Spiele — unsere Vorhersage-Synergie
+verschiebt das Ergebnis deutlich und verkürzt die Spiele (Ø 6,0 statt 6,7 Züge).
+7 Engine-Tests grün. `sim/node_modules`, `sim/.state.json`, `sim/decks/*.json`
+gitignored (Abhängigkeiten, Läufe, Deckdaten).

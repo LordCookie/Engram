@@ -1,0 +1,18 @@
+{
+  "name": "engram-sim",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Konsolen-Test-Engine (Dev-Werkzeug) zum groben Durchspielen von Decks/Synergien.",
+  "scripts": {
+    "test": "tsx engine.test.ts",
+    "decks": "tsx run.ts decks",
+    "battle": "tsx run.ts battle",
+    "game": "tsx run.ts game",
+    "agent-init": "tsx run.ts agent-init",
+    "agent-step": "tsx run.ts agent-step"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

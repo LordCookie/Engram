@@ -140,6 +140,16 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   **Drag & Drop** zwischen Hand/Feld/Trash/Deck (Pointer-Events + `window`-Listener,
   touch-fähig — kein HTML5-DnD; Feldkarte **tippen** = spenden/bereit), „Call a
   Legend", Gig/Eddie-Zähler.
+- **Konsolen-Test-Engine** (`sim/`, internes Dev-Werkzeug, **kein App-Feature**,
+  nicht im Bundle/CI): grobes Heuristik-Modell, das Decks **deck-vs-deck** durchspielt,
+  um Decks/Synergien in Szenarien zu vergleichen — kein regeltreuer Simulator. Läuft
+  mit `tsx` (eigenes `package.json`), lädt die App-Domäne direkt (`../app/src/...`).
+  Modi `decks`/`battle`/`game` + Schrittbetrieb `agent-init`/`agent-step`, über den ein
+  **Subagent** eine Seite spielen kann. Unsere Synergie-Vorhersage fließt als Power-
+  Bonus ein; im A/B-Test (`--synergy off`) verschiebt sie die Siegquote messbar
+  (Heist vs Embracing Power: 82 % → 62 % ohne Synergie). `battle` spielt beide
+  Sitzpositionen (Anzieh-Vorteil neutralisiert). 7 Engine-Tests (`npm test`, tsx).
+  Szenario-Decklisten (slug-JSON) + Läufe sind gitignored.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
