@@ -136,8 +136,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   (`rules/playtest.ts`): Starthand 6, 1 ziehen/Zug, +1 Gig/Zug, **Gig-Ziel 7**
   (Beta-Variante 6/7 → als Parameter, nicht erzwungen). UI `ui/PlaytestPanel.tsx`
   im Tab **„Mehr"**; spielbar **nur mit legalen eigenen Decks + Startern** (Filter
-  über `validate()`). Start-Phase = bereitstellen → ziehen → +Gig; Karten-Aktions-
-  menü (Ausspielen/Trash/Deck/Spenden), „Call a Legend", Gig/Eddie-Zähler.
+  über `validate()`). Start-Phase = bereitstellen → ziehen → +Gig; Karten per
+  **Drag & Drop** zwischen Hand/Feld/Trash/Deck (Pointer-Events + `window`-Listener,
+  touch-fähig — kein HTML5-DnD; Feldkarte **tippen** = spenden/bereit), „Call a
+  Legend", Gig/Eddie-Zähler.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
