@@ -8,6 +8,8 @@
     "test": "tsx engine.test.ts && tsx engine2.test.ts",
     "verify": "tsx verify.ts",
     "build-decks": "tsx build.ts",
+    "pull-meta": "tsx pull_meta.ts",
+    "eval-meta": "tsx eval_meta.ts",
     "decks": "tsx run.ts decks",
     "battle": "tsx run.ts battle",
     "game": "tsx run.ts game",

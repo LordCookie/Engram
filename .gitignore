@@ -32,6 +32,8 @@ sim/node_modules/
 sim/decks/
 sim/.state.json
 sim/out/
+# Gezogene Online-Meta-Decks (fremde Deckdaten + HTML-Cache) → nur lokal, § 8.
+sim/meta-decks/
 
 # Python
 __pycache__/

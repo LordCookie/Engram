@@ -172,6 +172,18 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Decks steigen; der offizielle Heist-Starter ist im Kampf-Modell das stärkste Feld-Deck
   (~68 %). Bleibt ein Modell (Einzeltexte/Reaktionen/Würfel abstrahiert), aber Interaktion
   zählt jetzt echt.
+- **Meta-Test (`pull_meta.ts` + `eval_meta.ts`, `npm run pull-meta`/`eval-meta`):**
+  zieht öffentliche Online-Meta-Decklisten (Default cyberpunkmeta.org, robots `Allow: /`;
+  exburst.dev nennt `anthropic-ai` in robots → bewusst gemieden) in den **gitignoreten**
+  Ordner `sim/meta-decks/` (HTML-Cache + slug-JSON + `index.json`; höflich: UA + Delay).
+  § 8: nur Slugs + Stückzahlen, keine Kartentexte/-bilder. `eval_meta` fährt eine Matrix
+  (v2, mit 95%-CI), nimmt die Starter als **Kontrolle**, rankt die Meta-Decks intern und
+  misst „Engine-Lesbarkeit" (Körper/Effekt vs. blinde Effekt-/Gear-/Control-Karten) →
+  `sim/meta-decks/REPORT.md`. **Befund (10 Meta-Decks, je 1000 Spiele):** eigene Ø
+  **80,6 %**, Heist-Kontrolle **80,6 %**, schwacher Starter **72,7 %** — alle Power-Decks
+  liegen dicht beieinander ⇒ die Höhe misst v. a. **Modell-Bias** (Power/Kurve schlägt
+  Effekt), kein reales Meta-Ranking. Die **Kette** (ziehen→parsen→validieren→spielen) ist
+  belastbar; das **Zahlurteil** nicht. Motiviert echte Effekt-Modellierung im v2.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

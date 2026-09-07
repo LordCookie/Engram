@@ -1107,3 +1107,36 @@ RED/YELLOW an die Spitze), und der **offizielle Heist-Starter** ist im Feld das
 stärkste Deck (~68 %) — was der Proxy (Heist ~46 %) nicht zeigte. `build-decks
 --model v2` rankt im Kampf-Modell und schreibt `sim/decks/top-*-v2.*`. Nächster
 Schritt wäre ein **v2-getunter Deckbau** (Kurve/Blocker/Removal statt Power-greedy).
+
+## Meta-Test gegen Online-Decks (`pull_meta` + `eval_meta`, 2026-09-07)
+
+**Warum:** finaler Funktionstest — spielen unsere Decks (und die ganze Kette) auch
+gegen fremde, reale Meta-Decks? Und liefert das belastbare Daten?
+
+**Quelle:** öffentliche Meta-Listen von **cyberpunkmeta.org** (robots `Allow: /`,
+geprüft). Vorteil: Deckseiten sind SSR und verlinken jede Karte als `/cards/<slug>`
+— **dieselben Slugs wie unsere `cards.json`**, also kein Namens-Matching, sondern
+Ground-Truth. **exburst.dev bewusst gemieden:** dessen robots nennt `anthropic-ai`
+ausdrücklich und die Deckseite gab 403 → Präferenz respektiert. Keine JSON-Deck-API
+gefunden (nur ein Bild-Proxy) → sauberes HTML-Parsing (`href="/cards/<slug>"` + `×N`).
+
+**Mechanik/Leitplanken:** `pull_meta.ts` discovert IDs über `/decks`+`/meta`, zieht
+höflich (selbst-nennender UA, 1,2 s Delay, **HTML-Cache** → Re-Runs ohne Netz),
+parst Legends/Karten über den Katalog-Typ, **validiert** (vier §1-Regeln) und legt
+slug-JSON in **`sim/meta-decks/` (gitignored)** ab. § 8: nur Slugs + Stückzahlen,
+nie Kartentext/-bild. Der Ordner hält die Decks aus dem Chat-Kontext heraus.
+
+**Alle 10 gezogenen Meta-Decks sind unter unserem Regelwerk legal** (deckMin 40 /
+deckMax 50, Per-Farbe-RAM) und spielen im Modell real (Einheiten, Blocken, Gig-Klau).
+
+**Befund (10 Decks, je 1000 Spiele, v2, 95%-CI):** unsere Top A/B/C schlagen jedes
+Meta-Deck (Ø **80,6 %**). ABER die **Kontrolle** entlarvt das als Modell-Bias: der
+Heist-Starter liegt bei Ø **80,6 %**, selbst der schwache „Embracing Power"-Starter
+bei Ø **72,7 %** — alle Power-Decks clustern eng. Wenn *jedes* Power-Deck die Meta
+73–82 % schlägt, misst der Test die **Engine**, nicht die Decks. Die
+„Engine-Lesbarkeit" (Körper/Effekt vs. blinde Gear-/Programm-/Control-Karten) ist ein
+Teilfaktor, aber **kein sauberer Prädiktor** (auch die Starter haben 45–50 % blinde
+Karten und gewinnen). **Fazit:** die Kette (ziehen→parsen→validieren→spielen) ist
+belastbar und funktioniert; das **Zahlurteil** ist es nicht. Das re-motiviert die
+eigentliche Aufgabe: **mehr Karteneffekte im v2-Modell** (Gear/Programme/Control statt
+Power-Blank), erst danach ein v2-getunter Deckbau. Report: `sim/meta-decks/REPORT.md`.
