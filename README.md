@@ -141,9 +141,10 @@ from a phone on your LAN: `LAN=1 npm run dev` serves over self-signed HTTPS on p
   decklist data is the next step.
 - **Phase 5 — Native mobile app:** ⏳ Upcoming. Wrapping the PWA into a **native Android app**
   (and iOS) via **Capacitor**, for a real installable app with camera access.
-- **Playtest / simulation mode:** ⏳ Planned. A **practice-turn simulator** to try a deck before
-  taking it to the table — draw sample hands, walk through turns, and sanity-check your RAM
-  curve and combos against real draws.
+- **Playtest / simulation mode:** 🔄 First version live (under **More**). A **manual
+  practice-turn sandbox** (ManaBox-style — real zones, you move the cards, no forced rule
+  engine): pick a legal own deck or a starter, draw your opening hand, mulligan, and walk
+  through turns (ready → draw → gig) to sanity-check your curve and combos before the table.
 
 ## 📄 License
 

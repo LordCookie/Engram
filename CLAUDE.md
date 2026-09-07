@@ -128,7 +128,17 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   unverändert. `SynergyPanel` weist die Ingest-Zahl gesondert aus. Decklisten +
   `coplay.json` sind gitignored (eigene/fremde Deckdaten). **Offen:** Volumen-Quelle
   (First-Party bleibt Default; Community-Simulator = Kandidat, ToS/robots.txt prüfen).
-- 148 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **Simulationsmodus / Playtest** (Roadmap „Proberunden") — **manuelles** Playtest
+  wie ManaBox: echte Zonen (Deck/Hand/Feld/Trash + verdeckte Legends), du bewegst
+  Karten selbst, **keine erzwungene Regel-Engine** (Ehrlichkeit). Reine Maschine
+  `domain/playtest.ts` (getestet: Determinismus per Seed, Ziehen, Mulligan, Zug-
+  wechsel, Zonenwechsel, Kartenerhaltung), Parameter aus `rules/playtest.v1.json`
+  (`rules/playtest.ts`): Starthand 6, 1 ziehen/Zug, +1 Gig/Zug, **Gig-Ziel 7**
+  (Beta-Variante 6/7 → als Parameter, nicht erzwungen). UI `ui/PlaytestPanel.tsx`
+  im Tab **„Mehr"**; spielbar **nur mit legalen eigenen Decks + Startern** (Filter
+  über `validate()`). Start-Phase = bereitstellen → ziehen → +Gig; Karten-Aktions-
+  menü (Ausspielen/Trash/Deck/Spenden), „Call a Legend", Gig/Eddie-Zähler.
+- 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

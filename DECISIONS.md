@@ -970,3 +970,35 @@ angebunden. First-Party (eigene Listen + Starter) bleibt der Default.
 aggregiert (Heist-Paare Count 3); Leerlauf (frischer Clone) → `n=0`, App lädt `null`.
 Demo-Dateien danach entfernt (keine synthetischen „empirischen" Zahlen in der App).
 `npm test` 148/148 grün, `npm run build` sauber.
+
+---
+
+## 2026-09-07 — Simulationsmodus: manuelles Playtest statt Regel-Engine
+
+**Entscheidung:** Der Simulationsmodus (Roadmap „Proberunden") wird als
+**manuelles Playtest-Sandbox** gebaut — Vorbild **ManaBox**: echte Zonen, der
+Nutzer bewegt Karten selbst, es gibt **keine erzwungene Regel-Engine**.
+
+**Warum nicht ein echter Spiel-Simulator:** Eine vollständige Regel-Engine des
+Cyberpunk TCG (Fixer/Würfel, Kämpfe, Reaktionen, Keywords, Gegner-KI) wäre riesig
+und würde Regeln *vortäuschen*, die wir nicht sicher belegen können — das verstößt
+gegen das Ehrlichkeitsgebot (§ 12). Ein manuelles Sandbox ist ehrlich, sofort
+nützlich (Starthand/Curve/Combos testen) und robust.
+
+**Regel-Recherche (offizielle Quellen + How-to-Play, Beta):** Startaufstellung
+= 3 Legends verdeckt, Gig-Würfel in den Fixer-Bereich, Deck mischen, **6 ziehen**,
+**einmal** Mulligan (ohne Nachteil), kein Hand-Limit; Zug = **Start-Phase**
+(bereitstellen → 1 ziehen → 1 Würfel in den Gig-Bereich) + **Main-Phase** (spielen,
+angreifen); Sieg = Zugbeginn mit genug Gigs **oder** Gegner deckt aus. **Gig-
+Schwelle uneindeutig:** transkribierter „Printable Gameplay Guide" nennt **7+**,
+ein Beta-How-to nennt **6** → als **Parameter** `gigWinThreshold` in
+`rules/playtest.v1.json`, im UI als „Ziel" angezeigt, **nicht** hart erzwungen
+(der Gig-Zähler ist würfelgetrieben/manuell). Alle Parameter aus JSON, nie
+hardcodiert (wie die Deckbau-Regeln).
+
+**Umsetzung:** `domain/playtest.ts` (rein, immutabel, deterministischer PRNG für
+reproduzierbare Tests), `rules/playtest.ts`/`.v1.json`, `ui/PlaytestPanel.tsx` im
+Tab „Mehr". **Nur legale eigene Decks + die Starter** sind spielbar (Filter über
+`validate()`, Nutzerwunsch). 12 neue Tests (Determinismus, Ziehen, Mulligan,
+Zugwechsel, Zonenwechsel, Kartenerhaltung, Gig-Sieg). 160 Tests grün, Build sauber,
+Browser verifiziert (Starthand 6, Zugwechsel zieht/+Gig, Feld/Legends/Trash-Moves).

@@ -1,0 +1,8 @@
+{
+  "version": "beta-2026-05-29",
+  "openingHand": 6,
+  "drawPerTurn": 1,
+  "gigPerTurn": 1,
+  "gigWinThreshold": 7,
+  "mulligansAllowed": 1
+}
