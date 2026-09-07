@@ -1,0 +1,252 @@
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { catalog, cardIndex } from '../app/src/data/catalog';
+import { computeRamCaps, validate } from '../app/src/rules/validate';
+import { rulesetV1Loaded } from '../app/src/rules/ruleset';
+import type { Card, Color } from '../app/src/domain/types';
+import { createGame, playGame, type SimConfig, type SimDeck } from './engine';
+import { heuristic } from './policies';
+import { synPair, makeConfig, loadDecks } from './data';
+
+/**
+ * Baut aus allen legalen Legend-Triples synergie-/kurvenoptimierte Decks und lässt
+ * die aussichtsreichsten im Rundenturnier (seat-fair) gegeneinander + gegen die
+ * Starter spielen. Ausgabe: die 3 stärksten. „Stärkste" = beste Siegquote in der
+ * (groben) Sim, aufgebaut auf unserer Synergie-Vorhersage + RAM-Legalität.
+ *
+ * ACHTUNG Ehrlichkeit: die Sim ist ein grober Proxy — das Ergebnis ist ein
+ * Richtungssignal, keine Turnier-Wahrheit.
+ */
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+// --- Synergie memoisiert -------------------------------------------------
+const synMemo = new Map<string, number>();
+function syn(a: string, b: string): number {
+  const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+  let v = synMemo.get(k);
+  if (v === undefined) { v = synPair(a, b) + synPair(b, a); synMemo.set(k, v); }
+  return v;
+}
+const base = (c: Card) => ((c.power ?? 0) > 0 ? (c.power as number) : 2);
+const cost = (c: Card) => c.cost ?? 0;
+
+// --- Legends & Triples ---------------------------------------------------
+const legends = catalog.filter((c) => c.type === 'LEGEND');
+const nonLegends = catalog.filter((c) => c.type !== 'LEGEND');
+console.log(`${legends.length} Legends, ${nonLegends.length} Nicht-Legend-Karten.`);
+
+function* triples(): Generator<Card[]> {
+  for (let i = 0; i < legends.length; i++)
+    for (let j = i + 1; j < legends.length; j++)
+      for (let k = j + 1; k < legends.length; k++) {
+        const t = [legends[i], legends[j], legends[k]];
+        const names = new Set(t.map((c) => c.name));
+        if (names.size === 3) yield t; // unterschiedliche Namen (§1)
+      }
+}
+
+function eligiblePool(caps: Record<Color, number>): Card[] {
+  return nonLegends.filter((c) => (c.ram ?? 0) <= (caps[c.color] ?? 0));
+}
+
+function synToLegends(cardId: string, legendIds: string[]): number {
+  let s = 0;
+  for (const l of legendIds) s += syn(cardId, l);
+  return s;
+}
+
+// --- Deckbau (greedy: Power − Kosten + Synergie) -------------------------
+interface BuiltDeck {
+  name: string;
+  legendIds: string[];
+  cards: Map<string, number>;
+}
+
+function buildDeck(t: Card[], name: string): BuiltDeck | null {
+  const caps = computeRamCaps(t, rulesetV1Loaded);
+  const pool = eligiblePool(caps);
+  if (pool.length < 15) return null; // zu wenig freigeschaltet
+  const legendIds = t.map((c) => c.id);
+  const count = new Map<string, number>();
+  const distinct: string[] = [];
+  let total = 0;
+  while (total < 40) {
+    let best: Card | null = null;
+    let bestVal = -Infinity;
+    for (const c of pool) {
+      if ((count.get(c.id) ?? 0) >= 3) continue;
+      let synChosen = 0;
+      for (const d of distinct) synChosen += syn(c.id, d);
+      const val = 2 * base(c) - 1.4 * cost(c) + 1.0 * synChosen + 0.7 * synToLegends(c.id, legendIds);
+      if (val > bestVal) { bestVal = val; best = c; }
+    }
+    if (!best) break;
+    const n = (count.get(best.id) ?? 0) + 1;
+    count.set(best.id, n);
+    if (n === 1) distinct.push(best.id);
+    total += 1;
+  }
+  if (total < 40) return null;
+  return { name, legendIds, cards: count };
+}
+
+function toSimDeck(d: BuiltDeck): SimDeck {
+  const cardIds: string[] = [];
+  for (const [id, n] of d.cards) for (let i = 0; i < n; i++) cardIds.push(id);
+  return { name: d.name, cardIds };
+}
+
+/** Karten-Überschneidung zweier Decks (0–1, geteilte Kopien / 40). */
+function overlap(a: BuiltDeck, b: BuiltDeck): number {
+  let shared = 0;
+  for (const [id, n] of a.cards) shared += Math.min(n, b.cards.get(id) ?? 0);
+  return shared / 40;
+}
+
+// --- Kandidaten: Triples billig vorranken, Top-N voll bauen -------------
+function tripleCeiling(t: Card[]): number {
+  const caps = computeRamCaps(t, rulesetV1Loaded);
+  const pool = eligiblePool(caps);
+  const legendIds = t.map((c) => c.id);
+  const scored = pool
+    .map((c) => 2 * base(c) - 1.4 * cost(c) + 0.7 * synToLegends(c.id, legendIds))
+    .sort((a, b) => b - a);
+  // beste 40 „Slots" (bis zu 3 je Karte ⇒ grob Top-Karten mehrfach) — Näherung:
+  let s = 0;
+  for (let i = 0; i < Math.min(scored.length, 20); i++) s += scored[i] * 2; // ~2 Kopien
+  return s;
+}
+
+console.log('ranke Triples …');
+const ranked = [...triples()]
+  .map((t) => ({ t, c: tripleCeiling(t), colors: [...new Set(t.map((x) => x.color))].sort() }))
+  .sort((a, b) => b.c - a.c);
+console.log(`${ranked.length} legale Triples.`);
+
+// Kandidaten-Triples: Top-Ceiling (meist dreifarbige Power-Piles) + je bestes
+// mono- und zweifarbiges Triple → Archetyp-Vielfalt fürs Turnier.
+const chosenTriples: Card[][] = ranked.slice(0, 14).map((x) => x.t);
+const bestByKey = new Map<string, Card[]>();
+for (const x of ranked) {
+  if (x.colors.length === 3) continue;
+  const key = x.colors.length === 1 ? `mono-${x.colors[0]}` : `pair-${x.colors.join('/')}`;
+  if (!bestByKey.has(key)) bestByKey.set(key, x.t); // ranked ist absteigend → erstes = bestes
+}
+for (const t of bestByKey.values()) chosenTriples.push(t);
+console.log(`Baue ${chosenTriples.length} Kandidaten (Top-Ceiling + mono/2-farbig) …`);
+
+const built: BuiltDeck[] = [];
+const seen = new Set<string>();
+for (const t of chosenTriples) {
+  const d = buildDeck(t, `Deck-${built.length + 1}`);
+  if (!d) continue;
+  const sig = [...d.cards.entries()].map(([id, n]) => `${id}:${n}`).sort().join(',');
+  if (seen.has(sig)) continue; // identische Kartenmenge überspringen
+  seen.add(sig);
+  const vd = { legendIds: d.legendIds, cards: [...d.cards].map(([cardId, c]) => ({ cardId, count: c })) };
+  if (!validate(vd, rulesetV1Loaded, cardIndex).ok) continue; // Legalität hart prüfen
+  built.push(d);
+}
+console.log(`${built.length} legale Kandidaten gebaut.`);
+
+// --- Rundenturnier -------------------------------------------------------
+const cfg: SimConfig = makeConfig();
+const candidates = built.map(toSimDeck);
+const starters = loadDecks(); // 2 Starter als Gegner/Benchmark
+const field: SimDeck[] = [...candidates, ...starters];
+
+function winRate(deck: SimDeck, oppField: SimDeck[], N = 50): number {
+  let wins = 0, total = 0;
+  for (const opp of oppField) {
+    if (opp === deck) continue;
+    for (let i = 0; i < N; i++) {
+      const seed = 1 + i * 7919;
+      for (const swap of [false, true]) {
+        const [d1, d2] = swap ? [opp, deck] : [deck, opp];
+        const r = playGame(createGame(d1, d2, cfg, seed), cfg, { a: heuristic, b: heuristic });
+        const won = swap ? r.winner === 'b' : r.winner === 'a';
+        if (won) wins++;
+        total++;
+      }
+    }
+  }
+  return (100 * wins) / total;
+}
+
+console.log('spiele Rundenturnier …');
+const results = built
+  .map((d, i) => ({ d, sim: candidates[i], wr: winRate(candidates[i], field), wrS: winRate(candidates[i], starters) }))
+  .sort((a, b) => b.wr - a.wr);
+
+// Starter-Referenz
+const starterWr = starters.map((s) => ({ name: s.name, wr: winRate(s, field) }));
+
+// Volle Bestenliste (Transparenz): Farb-Identität + beide Messgrößen.
+console.log('\n--- Bestenliste (alle Kandidaten) ---');
+console.log('  #  Feld%  vsStarter%  Farben        Legends');
+results.forEach((r, i) => {
+  const legs = r.d.legendIds.map((id) => cardIndex.get(id)!);
+  const colors = [...new Set(legs.map((l) => l.color))].sort().join('/');
+  console.log(
+    `  ${String(i + 1).padStart(2)}  ${r.wr.toFixed(1).padStart(5)}  ${r.wrS.toFixed(1).padStart(9)}   ${colors.padEnd(12)}  ${legs.map((l) => l.name).join(', ')}`,
+  );
+});
+
+// --- Ausgabe -------------------------------------------------------------
+const colorOrder: Record<Color, number> = { RED: 0, GREEN: 1, BLUE: 2, YELLOW: 3 };
+function describe(d: BuiltDeck): string[] {
+  const lines: string[] = [];
+  const legs = d.legendIds.map((id) => cardIndex.get(id)!);
+  const colors = new Set(legs.map((l) => l.color));
+  lines.push(`Legends: ${legs.map((l) => `${l.name}${l.subtitle ? ` (${l.subtitle})` : ''} [${l.color} RAM ${l.ram ?? 0}]`).join(' · ')}`);
+  lines.push(`Farben: ${[...colors].join('/')}`);
+  const entries = [...d.cards.entries()]
+    .map(([id, n]) => ({ c: cardIndex.get(id)!, n }))
+    .sort((a, b) => colorOrder[a.c.color] - colorOrder[b.c.color] || (a.c.cost ?? 0) - (b.c.cost ?? 0) || a.c.name.localeCompare(b.c.name));
+  const total = entries.reduce((s, e) => s + e.n, 0);
+  lines.push(`Deck (${total}):`);
+  for (const e of entries) lines.push(`  ${e.n}× ${e.c.name}${e.c.subtitle ? ` (${e.c.subtitle})` : ''}  [${e.c.color} · Cost ${e.c.cost ?? 0} · Power ${e.c.power ?? 0}${e.c.ram != null ? ` · RAM ${e.c.ram}` : ''}]`);
+  return lines;
+}
+
+function toDeckText(d: BuiltDeck): string {
+  const dn = (c: Card) => (c.subtitle ? `${c.name}: ${c.subtitle}` : c.name);
+  const lines = [`// engram deck: ${d.name}`, '// Legends'];
+  for (const id of d.legendIds) lines.push(`1 ${dn(cardIndex.get(id)!)}`);
+  lines.push('// Deck');
+  for (const [id, n] of d.cards) lines.push(`${n} ${dn(cardIndex.get(id)!)}`);
+  return lines.join('\n') + '\n';
+}
+
+console.log('\n===== ERGEBNIS =====');
+console.log('Starter-Referenz (Siegquote im Feld):');
+for (const s of starterWr) console.log(`  ${s.name}: ${s.wr.toFixed(1)}%`);
+console.log('');
+
+// Diverse Top-3: bestes Deck, dann die besten mit < 55 % Überschneidung zu den
+// bereits Gewählten → 3 echte Alternativen statt drei Varianten desselben Piles.
+const top3: typeof results = [];
+for (const r of results) {
+  if (top3.every((p) => overlap(r.d, p.d) < 0.55)) top3.push(r);
+  if (top3.length === 3) break;
+}
+for (const r of results) { // auffüllen, falls Vielfalt < 3 Decks hergibt
+  if (top3.length === 3) break;
+  if (!top3.includes(r)) top3.push(r);
+}
+
+const outDir = join(HERE, 'decks');
+mkdirSync(outDir, { recursive: true });
+top3.forEach((r, i) => {
+  const label = ['A', 'B', 'C'][i];
+  r.d.name = `Top ${label}`;
+  console.log(`\n########## Top ${label} — Siegquote ${r.wr.toFixed(1)}% ##########`);
+  for (const line of describe(r.d)) console.log(line);
+  // Slug-JSON für die Sim + .txt für den App-Import (beide gitignored)
+  const slugJson = { name: r.d.name, legends: r.d.legendIds, cards: Object.fromEntries(r.d.cards) };
+  writeFileSync(join(outDir, `top-${label.toLowerCase()}.json`), JSON.stringify(slugJson, null, 2));
+  writeFileSync(join(outDir, `top-${label.toLowerCase()}.txt`), toDeckText(r.d));
+});
+console.log(`\nDecklisten geschrieben nach sim/decks/ (top-a/b/c .json + .txt).`);

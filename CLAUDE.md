@@ -156,7 +156,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Stabilität, Synergie-Monotonie — alle grün. 7 Engine-Tests (`npm test`, tsx).
   **Befund:** die Engine ist deck-dominiert (ein Subagent mit Baumsuche fand über
   6 Seeds keine Gewinnlinie fürs schwächere Deck → Heuristik ≈ optimal). Bleibt ein
-  grober Proxy, kein Regel-Simulator. Szenario-Decklisten + Läufe sind gitignored.
+  grober Proxy, kein Regel-Simulator. **`npm run build-decks`** konstruiert aus allen
+  legalen Legend-Triples synergie-/kurvenoptimierte Decks (RAM-legal, `validate()`)
+  und ermittelt per Rundenturnier die stärksten → `sim/decks/` (gitignored, .json für
+  die Sim + .txt für den App-Import). Szenario-Decklisten + Läufe sind gitignored.
 - 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

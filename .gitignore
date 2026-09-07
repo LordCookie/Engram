@@ -29,7 +29,7 @@ pipeline/glossary.md
 
 # sim (Konsolen-Test-Engine): Abhängigkeiten, Szenario-Decks (Deckdaten), Läufe.
 sim/node_modules/
-sim/decks/*.json
+sim/decks/
 sim/.state.json
 sim/out/
 
