@@ -8,6 +8,7 @@ import { CollectionIoPanel } from './ui/CollectionIoPanel';
 import { OfflineImagesPanel } from './ui/OfflineImagesPanel';
 import { HowToPlay } from './ui/HowToPlay';
 import { PlaytestPanel } from './ui/PlaytestPanel';
+import { DeckTestPanel } from './ui/DeckTestPanel';
 import { SynergyPanel } from './ui/SynergyPanel';
 import { DeckEditor } from './ui/DeckEditor';
 import { ScannerPanel } from './ui/ScannerPanel';
@@ -79,6 +80,7 @@ export default function App() {
       {tab === 'synergie' && <SynergyPanel />}
       {tab === 'mehr' && (
         <>
+          <DeckTestPanel />
           <PlaytestPanel />
           <HowToPlay />
           <CollectionIoPanel />

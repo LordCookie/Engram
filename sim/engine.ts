@@ -12,6 +12,11 @@
  * deshalb ist der Spielzustand ohne RNG serialisierbar (für den Schritt-Modus).
  */
 
+// Geteilter RNG + SimDeck-Typ leben jetzt in der App (einzige Quelle der Wahrheit).
+import { mulberry32, shuffle, type SimDeck } from '../app/src/domain/sim/rng';
+export { mulberry32, shuffle };
+export type { SimDeck };
+
 export interface SimCardStat {
   id: string;
   name: string;
@@ -74,11 +79,7 @@ export interface Game {
   log: string[];
 }
 
-export interface SimDeck {
-  name: string;
-  /** 40 Deckkarten-Slugs (ohne Legends), Legends sind im Modell nur „Eddie-Quelle". */
-  cardIds: string[];
-}
+// SimDeck: siehe ../app/src/domain/sim/rng (oben re-exportiert).
 
 export interface Decision {
   /** Hand-Indizes, die (in dieser Reihenfolge) gespielt werden. */
@@ -86,24 +87,7 @@ export interface Decision {
   attack: boolean;
 }
 
-export function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function shuffle<T>(arr: readonly T[], rng: () => number): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// mulberry32 / shuffle: siehe ../app/src/domain/sim/rng (oben re-exportiert).
 
 export function eddiesFor(turn: number, cfg: SimParams): number {
   return cfg.eddiesBase + Math.floor((turn - 1) / cfg.eddiesRampEvery);

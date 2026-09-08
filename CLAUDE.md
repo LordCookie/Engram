@@ -198,7 +198,17 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Turnier-Decks. Ergebnis: **Unique-1 Gig-Swing/Tempo (BLAU/GRÜN, 57 %)** und **Unique-2
   Control/Removal (ROT/BLAU, 53 %)** — beide BLAU-basiert (die Tops meiden BLAU), < 25 %
   Kartenüberschneidung mit Top A.
-- 160 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 17 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **Deck-Test im App (`ui/DeckTestPanel.tsx`, Tab „Mehr"):** das Kampf-Modell läuft
+  jetzt **clientseitig in der App**. Die framework-freie Engine liegt in
+  `app/src/domain/sim/` (`rng.ts`, `model.ts`, `engine2.ts`, `policies2.ts`) als
+  **einzige Quelle der Wahrheit**; das Konsolen-`sim/` re-exportiert sie (`sim/model.ts`
+  etc. sind nur noch `export * from '../app/src/domain/sim/…'`, `sim/engine.ts` bezieht
+  rng/SimDeck von dort). `domain/sim/deckTest.ts` (rein, getestet) spielt zwei legale
+  Decks seat-fair (engine2) und liefert Siegquote + 95%-CI + Beispiel-Log; das Panel
+  wählt eigenes Deck vs. Gegner (eigene legale Decks + Starter), zeigt Balken/Log und
+  ist ehrlich als **grobes Modell** beschriftet (Gear/Reaktionen/Würfel abstrahiert,
+  Legends nur Eddie-Basis). **160→164 App-Tests** (`domain/sim/deckTest.test.ts`).
+- 164 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 17 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
