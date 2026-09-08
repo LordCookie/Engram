@@ -1,10 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeName, fuzzySubstringDistance, matchCardName } from './nameMatch';
+import { normalizeName, foldOcr, fuzzySubstringDistance, matchCardName } from './nameMatch';
 
 describe('normalizeName', () => {
   it('vereinheitlicht auf A–Z/0–9 in Großbuchstaben', () => {
     expect(normalizeName('Maxtac Heavy')).toBe('MAXTACHEAVY');
     expect(normalizeName("V — Corporate Exile")).toBe('VCORPORATEEXILE');
+  });
+});
+
+describe('foldOcr', () => {
+  it('faltet häufige OCR-Verwechsler (0/O, 1/I, 5/S, 8/B)', () => {
+    expect(foldOcr('R0GUE')).toBe('ROGUE');
+    expect(foldOcr('AMEND1ARE5')).toBe('AMENDIARES');
+    expect(foldOcr('8LACK')).toBe('BLACK');
+    expect(foldOcr('MAXTAC')).toBe('MAXTAC'); // ohne Verwechsler unverändert
   });
 });
 
@@ -25,6 +34,17 @@ describe('matchCardName', () => {
     { id: 'alt-mother', name: 'Alt Cunningham', subtitle: 'Mother of Daemons' },
     { id: 'alt-soul', name: 'Alt Cunningham', subtitle: 'Soulkiller Architect' },
   ];
+
+  it('erkennt Namen trotz Ziffer-für-Buchstabe-Verlesern (0/O, 1/I, 5/S)', () => {
+    const rogue = [
+      { id: 'rogue-amendiares', name: 'Rogue Amendiares' },
+      { id: 'riding-nomad', name: 'Riding Nomad' },
+    ];
+    // OCR liest O→0, I→1, S→5 in der stilisierten Schrift.
+    const top = matchCardName('R0GUE AMEND1ARE5', rogue, 2);
+    expect(top[0].cardId).toBe('rogue-amendiares');
+    expect(top[0].score).toBeGreaterThan(0.85);
+  });
 
   it('erkennt den Namen trotz OCR-Rauschen als Top-Treffer', () => {
     const top = matchCardName('07 MAXTAG HEAVV NCPD Play this Unit 08', cards, 3);

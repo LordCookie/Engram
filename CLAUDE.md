@@ -98,8 +98,13 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   **Sammlernummer als Entscheider** (nur pro Farbe eindeutig → an Namens-Treffer
   gekoppelt), **Scan-Korb → „In Sammlung übernehmen"**. Rahmen-/Zoom-Regler, zeigt
   den erkannten Text (zum Tunen). Kamera nur im eigenen Browser (localhost/HTTPS =
-  secure), nicht im Vorschaufenster. LAN fürs Handy: `LAN=1 npm run dev`
-  (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
+  secure) oder in der **nativen App** (CAMERA-Permission + Torch), nicht im Vorschau-
+  fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
+  **OCR-Tuning:** Vorverarbeitung binarisiert jetzt per **Otsu** (nach Kontrast-
+  Streckung/Invert) — sauberes Schwarz-Weiß liest Tesseract besser; Namensband höher
+  aufgelöst (900 px). `nameMatch` faltet häufige **OCR-Verwechsler** (0/O, 1/I, 5/S,
+  8/B) beidseitig für den Namensvergleich (`foldOcr`), die Sammlernummer bleibt auf
+  dem Roh-Text. (Namensband-Position/PSM-Feintuning bleibt Gerät-abhängig offen.)
 - **Deckbau-Synergie & Filter** (§ 5/§ 12): `domain/deckSynergy.ts` (rein/getestet)
   — `suggestAdditions` (RAM-legale, synergistische Vorschläge zu den Legends) +
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)

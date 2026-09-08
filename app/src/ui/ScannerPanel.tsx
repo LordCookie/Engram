@@ -43,6 +43,25 @@ function confidence(score: number): { label: string; cls: string } {
   return { label: 'unsicher', cls: 'text-card-red' };
 }
 
+/** Otsu-Schwellwert aus einem 256-Bin-Histogramm (globale Binarisierung). */
+function otsuThreshold(hist: number[], total: number): number {
+  let sumAll = 0;
+  for (let t = 0; t < 256; t++) sumAll += t * hist[t];
+  let sumB = 0, wB = 0, maxVar = -1, thr = 127;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+    const wF = total - wB;
+    if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sumAll - sumB) / wF;
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if (between > maxVar) { maxVar = between; thr = t; }
+  }
+  return thr;
+}
+
 interface ZoomCaps {
   min: number;
   max: number;
@@ -184,12 +203,22 @@ export function ScannerPanel() {
       }
     }
     const range = Math.max(1, hi - lo);
-    const invert = sum / n < 128;
+    const invert = sum / n < 128; // dunkler Grund → invertieren (dunkle Schrift auf hell)
+    const bhist = new Array<number>(256).fill(0);
     for (let i = 0; i < d.length; i += 4) {
       let v = ((d[i] - lo) / range) * 255;
       v = v < 0 ? 0 : v > 255 ? 255 : v;
       if (invert) v = 255 - v;
-      d[i] = d[i + 1] = d[i + 2] = v;
+      const iv = v | 0;
+      d[i] = iv; // gestreckte Graustufe (nur R; G/B werden bei der Binarisierung gesetzt)
+      bhist[iv]++;
+    }
+    // Otsu-Binarisierung: reines Schwarz/Weiß liest Tesseract am besten — die
+    // stilisierte, fette Schrift wird knackig statt „matschig".
+    const thr = otsuThreshold(bhist, n);
+    for (let i = 0; i < d.length; i += 4) {
+      const bw = d[i] >= thr ? 255 : 0;
+      d[i] = d[i + 1] = d[i + 2] = bw;
     }
     ctx.putImageData(img, 0, 0);
     return canvas;
@@ -198,12 +227,13 @@ export function ScannerPanel() {
   async function scan() {
     const worker = workerRef.current;
     if (!worker || busyRef.current) return;
-    const whole = regionCanvas([0, 0, 1, 1], 700);
+    const whole = regionCanvas([0, 0, 1, 1], 800);
     if (!whole) return;
     // Namensband: bei diesen Karten sitzt der Name grob im mittleren Drittel.
     // Ein separater, stärker gezoomter Durchgang liest ihn sauberer als die Ganzkarte;
-    // die Ganzkarte liefert weiterhin die Sammlernummer (unten).
-    const band = regionCanvas([0.04, 0.44, 0.92, 0.24], 640);
+    // die Ganzkarte liefert weiterhin die Sammlernummer (unten). Höhere Zielbreite =
+    // größere Glyphen für Tesseract (~30 px Höhe ist ideal).
+    const band = regionCanvas([0.04, 0.44, 0.92, 0.24], 900);
     busyRef.current = true;
     setScanning(true);
     try {

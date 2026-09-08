@@ -14,6 +14,20 @@ export function normalizeName(s: string): string {
   return s.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+/** Häufige OCR-Verwechsler Ziffer↔Buchstabe auf eine gemeinsame Form falten. */
+const OCR_FOLD: Record<string, string> = { '0': 'O', '1': 'I', '5': 'S', '8': 'B' };
+/**
+ * Verwechsler falten (z. B. „R0GUE" → „ROGUE"). Wird BEIDSEITIG angewandt
+ * (Kartenname + OCR-Text), damit die Faltung konsistent ist. Nur für den
+ * NAMENS-Vergleich — die Sammlernummer wird aus dem ROH-Text gelesen und bleibt
+ * unberührt, sonst würden echte Ziffern zu Buchstaben.
+ */
+export function foldOcr(norm: string): string {
+  let out = '';
+  for (const ch of norm) out += OCR_FOLD[ch] ?? ch;
+  return out;
+}
+
 /**
  * Kleinste Editierdistanz, um `pattern` als Teilstring in `text` zu finden
  * (Auslassungen am Anfang/Ende von `text` sind gratis). Klassische „fuzzy search".
@@ -107,14 +121,15 @@ export function matchCardName(
 ): NameCandidate[] {
   const ocrNorm = normalizeName(ocrText);
   if (!ocrNorm) return [];
-  const numberTokens = ocrNumberTokens(ocrText);
+  const ocrFold = foldOcr(ocrNorm); // Verwechsler-tolerant vergleichen
+  const numberTokens = ocrNumberTokens(ocrText); // Nummer bleibt auf dem ROH-Text
   const out: NameCandidate[] = [];
   for (const c of cards) {
     const patterns = [normalizeName(c.name)];
     if (c.subtitle) patterns.push(normalizeName(c.name + c.subtitle));
     let best = { score: 0, matched: 0 };
     for (const p of patterns) {
-      const f = fit(p, ocrNorm);
+      const f = fit(foldOcr(p), ocrFold);
       if (f.score > best.score || (f.score === best.score && f.matched > best.matched)) best = f;
     }
     // Die Sammlernummer ist nur PRO FARBE eindeutig (z. B. „012" tragen mehrere
