@@ -57,7 +57,8 @@ function composition(deck: SimDeck): Comp {
     const m = model(id);
     total++;
     const body = m.isUnit && m.power > 0;
-    const effect = !!m.onPlay.defeat || (m.onPlay.draw ?? 0) > 0 || m.eddieSource || m.blocker || m.adrenaline;
+    const op = m.onPlay;
+    const effect = !!op.defeat || !!op.spendRival || !!op.gig || !!op.buff || (op.draw ?? 0) > 0 || !!m.onAttack.gig || m.eddieSource || m.blocker || m.adrenaline;
     if (body) bodies++;
     if (body || effect) legible++;
   }
@@ -70,7 +71,7 @@ const all = loadDecks();
 const meta = loadMetaDecks();
 if (meta.length === 0) { console.error('Keine Meta-Decks in sim/meta-decks/. Erst `npm run pull-meta`.'); process.exit(1); }
 
-const testNames = ['Top A (v2)', 'Top B (v2)', 'Top C (v2)', 'The Heist', 'Embracing Power'];
+const testNames = ['Top A (v2)', 'Top B (v2)', 'Top C (v2)', 'Unique 1', 'Unique 2', 'The Heist', 'Embracing Power'];
 const tests = testNames.map((n) => findDeck(all, n)).filter((d): d is SimDeck => !!d);
 const controls = new Set(['The Heist', 'Embracing Power']);
 

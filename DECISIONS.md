@@ -1140,3 +1140,39 @@ Karten und gewinnen). **Fazit:** die Kette (ziehen→parsen→validieren→spiel
 belastbar und funktioniert; das **Zahlurteil** ist es nicht. Das re-motiviert die
 eigentliche Aufgabe: **mehr Karteneffekte im v2-Modell** (Gear/Programme/Control statt
 Power-Blank), erst danach ein v2-getunter Deckbau. Report: `sim/meta-decks/REPORT.md`.
+
+## Echte Karteneffekte im v2-Modell + „unique" Deckbau (2026-09-08)
+
+**Warum:** Der Meta-Test hatte gezeigt, dass das v2-Modell effektlastige Decks
+unterschätzt (Programme/Control als 0-Power-Blanks). Ziel: die häufigsten,
+belegbaren Effekte modellieren, dann alle Decks neu testen.
+
+**Datengetrieben ausgewählt:** von 124 Nicht-Legend-Karten waren 54 „blind".
+Größte parsebare Eimer: Draw 15, Gig-Swing 13, Removal 9, Buff 4, Spend-Rival 3;
+Trigger v. a. `{Play}`/`{Attack}`. `model.ts` parst jetzt **imperative Ein-Karten-
+Effekte**: Removal (spent/all/cost≤N), **Spend-Rival** (Einheit erschöpfen),
+**Gig-Swing** (`{Play}` + `{Attack}` „decrease/gain a Gig"), **Power-Buff**, **Draw**.
+Programme = ganze imperative Sätze; **Einheiten** nur die `{Play}`/`{Attack}`-Klausel.
+
+**Ehrlichkeits-Entscheidung — Gear NICHT modellieren:** Gear ist anhängend und
+laufend getriggert („When this Unit is spent, draw", „{Attack} decrease a Gig" am
+Träger). Ein erster Wurf verbuchte das fälschlich als Sofort-Effekt (Dying Night,
+Zetatech Faceplate). Korrektur: Effekt-Parsing nur für **PROGRAM**; „When/At/If/
+Then-if …"-Sätze werden verworfen. Gear/`{Defeated}`/`{Spend}`-Aktivierungen/`{Quick}`/
+Recursion/Würfel bleiben abstrahiert. Ergebnis: 30/124 Karten mit sauberem Effekt.
+`engine2` wendet die Effekte an (Spend vor Defeat wegen „Spend all … Then defeat a
+spent Unit"); die Heuristik (`policies2`) bewertet Removal/Spend/Gig/Buff/Draw, damit
+Effektkarten auch gespielt werden. **+4 Tests** (Spend-all, Gig `{Play}`/`{Attack}`, Buff).
+
+**Effekt aufs Deck-Testen (der Sinn):** Im Meta-Test fällt die eigene Ø von **80,6 %
+auf ~69 %**, die Meta-interne Spanne staucht (Spitze 70→59 %) — die Meta wehrt sich.
+Der Heist-Starter steigt auf **82,5 %** und schlägt jetzt die eigenen Power-Piles;
+der Bias ist kleiner, aber nicht weg (Starter schlagen die Meta weiter klar).
+
+**„unique" Decks (`build.ts`):** neben Top A/B/C werden 2 bewusst andere Decks
+gewählt — **Distinktheit × Viabilität** (Farb-/Struktur-/Label-Neuheit gegenüber den
+Top-3 + Mindest-Feld-Siegquote 40 %), gespeist aus themen-gebauten Decks (Control,
+Go-Wide, Gig-Swing) UND abweichenden Turnier-Decks. Heraus kamen **Unique-1
+Gig-Swing/Tempo (BLAU/GRÜN, 57 %)** und **Unique-2 Control/Removal (ROT/BLAU, 53 %)** —
+beide BLAU-basiert (die Tops meiden BLAU), < 25 % Überschneidung mit Top A, und
+mechanisch klar profiliert. Ausgabe `sim/decks/unique-1/2-v2.*` (gitignored).

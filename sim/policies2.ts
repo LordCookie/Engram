@@ -11,15 +11,24 @@ import type { Policy2, View2, HandCardV, UnitV } from './engine2';
  */
 
 function playValue(c: HandCardV, v: View2): number {
-  if (c.isUnit) return c.power + (c.adrenaline ? 1 : 0) + (c.blocker ? 1 : 0);
-  if (c.defeat) {
-    // Wert = stärkste gegnerische Einheit, die wir treffen könnten
-    const best = v.oppBoard.reduce((m, u) => Math.max(m, u.power), 0);
-    return best > 0 ? best + 2 : 1;
+  const oppBest = v.oppBoard.reduce((m, u) => Math.max(m, u.power), 0);
+  if (c.isUnit) {
+    let val = c.power + (c.adrenaline ? 1 : 0) + (c.blocker ? 1 : 0);
+    if (c.defeat && oppBest > 0) val += oppBest * 0.6 + 1; // Removal am Körper
+    if (c.gig) val += 3 * c.gig;
+    if (c.buff) val += c.buff;
+    if (c.draw) val += 1 + c.draw;
+    return val;
   }
-  if (c.eddie) return 4; // laufender Ramp
-  if (c.draw > 0) return 2 + c.draw;
-  return 1;
+  // Nicht-Unit (Programm): reiner Effektwert, nur wertvoll bei Zielen
+  let val = 0;
+  if (c.defeat) val = Math.max(val, oppBest > 0 ? oppBest + 2 : 1);
+  if (c.spend) val = Math.max(val, oppBest > 0 ? oppBest * 0.5 + 1 : 0.5); // Blocker/Tempo-Denial
+  if (c.gig) val = Math.max(val, 3 * c.gig); // direkt aufs Siegziel
+  if (c.buff) val = Math.max(val, c.buff * Math.max(1, v.yourBoard.length));
+  if (c.eddie) val = Math.max(val, 4); // laufender Ramp
+  if (c.draw > 0) val = Math.max(val, 2 + c.draw);
+  return val > 0 ? val : 1;
 }
 
 export const heuristic2: Policy2 = {

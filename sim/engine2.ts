@@ -1,5 +1,5 @@
 import { mulberry32, shuffle, type SimDeck } from './engine';
-import { model, type CardModel } from './model';
+import { model, type Effect } from './model';
 
 /**
  * engine2 — Kampf-/Keyword-/Interaktions-Modell (näher an den echten Regeln als
@@ -104,7 +104,7 @@ export function beginTurn2(g: Game2, cfg: Sim2Params): boolean {
 }
 
 // --- Sichten für die Policies -------------------------------------------
-export interface HandCardV { i: number; id: string; name: string; type: string; cost: number; power: number; isUnit: boolean; adrenaline: boolean; blocker: boolean; defeat: boolean; draw: number; eddie: boolean; }
+export interface HandCardV { i: number; id: string; name: string; type: string; cost: number; power: number; isUnit: boolean; adrenaline: boolean; blocker: boolean; defeat: boolean; spend: boolean; gig: number; buff: number; draw: number; eddie: boolean; }
 export interface UnitV { uid: string; name: string; power: number; spent: boolean; lag: boolean; blocker: boolean; }
 export interface View2 {
   you: PlayerId; turn: number; eddies: number; gigWin: number;
@@ -124,7 +124,7 @@ export function view2For(g: Game2, cfg: Sim2Params, who: PlayerId): View2 {
     yourGigs: me.gigs, oppGigs: op.gigs, deckLeft: me.deck.length,
     hand: me.hand.map((id, i) => {
       const m = model(id);
-      return { i, id, name: m.name, type: m.type, cost: m.cost, power: m.power, isUnit: m.isUnit, adrenaline: m.adrenaline, blocker: m.blocker, defeat: !!m.onPlay.defeat, draw: m.onPlay.draw ?? 0, eddie: m.eddieSource };
+      return { i, id, name: m.name, type: m.type, cost: m.cost, power: m.power, isUnit: m.isUnit, adrenaline: m.adrenaline, blocker: m.blocker, defeat: !!m.onPlay.defeat, spend: !!m.onPlay.spendRival, gig: (m.onPlay.gig?.self ?? 0) + (m.onPlay.gig?.rival ?? 0), buff: m.onPlay.buff?.power ?? 0, draw: m.onPlay.draw ?? 0, eddie: m.eddieSource };
     }),
     yourBoard: me.board.map((u) => ({ uid: u.uid, name: model(u.cardId).name, power: u.power, spent: u.spent, lag: u.lag, blocker: u.blocker })),
     oppBoard: op.board.map((u) => ({ uid: u.uid, name: model(u.cardId).name, power: u.power, spent: u.spent, lag: u.lag, blocker: u.blocker })),
@@ -138,24 +138,41 @@ function defeatUnit(g: Game2, side: PlayerId, uid: string) {
   if (i >= 0) s.board.splice(i, 1); // in den Trash (nicht weiter modelliert)
 }
 
-function applyOnPlay(g: Game2, cfg: Sim2Params, m: CardModel) {
+function checkGigWin(g: Game2, cfg: Sim2Params, p: PlayerId) {
+  if (!g.winner && g[p].gigs >= cfg.gigWin) { g.winner = p; g.reason = `${g[p].name} erreicht ${g[p].gigs} Gigs`; }
+}
+
+/** Imperativen Karteneffekt anwenden (Removal, Spend-Rival, Gig-Swing, Buff, Draw). */
+function applyEffect(g: Game2, cfg: Sim2Params, e: Effect) {
   const p = g.active, me = g[p], op = g[other(p)];
-  if (m.onPlay.defeat) {
-    if (m.onPlay.defeat.all) {
-      // alle ANDEREN Einheiten (beide Felder) besiegen; die gerade gespielte bleibt
-      const keep = me.board[me.board.length - 1]?.uid;
+  // Spend zuerst (Text „Spend all … Then defeat a spent Unit" braucht diese Reihenfolge).
+  if (e.spendRival) {
+    const targets = op.board
+      .filter((u) => !u.spent && (e.spendRival!.maxCost == null || model(u.cardId).cost <= e.spendRival!.maxCost))
+      .sort((x, y) => y.power - x.power); // stärkste zuerst erschöpfen
+    const n = e.spendRival.all ? targets.length : e.spendRival.count ?? 1;
+    for (const u of targets.slice(0, n)) u.spent = true;
+  }
+  if (e.defeat) {
+    if (e.defeat.all) {
+      const keep = me.board[me.board.length - 1]?.uid; // gerade gespielte Einheit bleibt
       op.board = [];
       me.board = me.board.filter((u) => u.uid === keep);
     } else {
-      const cap = m.onPlay.defeat.maxCost;
-      const targets = op.board.filter((u) => cap == null || model(u.cardId).cost <= cap);
-      if (targets.length) {
-        targets.sort((x, y) => y.power - x.power); // stärkste zuerst
-        defeatUnit(g, other(p), targets[0].uid);
-      }
+      let targets = op.board.filter((u) => e.defeat!.maxCost == null || model(u.cardId).cost <= e.defeat!.maxCost);
+      if (e.defeat.spent) { const sp = targets.filter((u) => u.spent); if (sp.length) targets = sp; }
+      if (targets.length) { targets.sort((x, y) => y.power - x.power); defeatUnit(g, other(p), targets[0].uid); }
     }
   }
-  if (m.onPlay.draw) for (let k = 0; k < m.onPlay.draw; k++) if (me.deck.length) me.hand.push(me.deck.shift()!);
+  if (e.gig) {
+    if (e.gig.self) { const s = Math.min(e.gig.self, op.gigs); op.gigs -= s; me.gigs += s; g.log.push(`  ${me.name}: Effekt klaut ${s} Gig(s)`); checkGigWin(g, cfg, p); }
+    if (e.gig.rival) op.gigs = Math.max(0, op.gigs - e.gig.rival);
+  }
+  if (e.buff) {
+    if (e.buff.allies) for (const u of me.board) u.power += e.buff.power;
+    else { const best = [...me.board].sort((x, y) => y.power - x.power)[0]; if (best) best.power += e.buff.power; }
+  }
+  if (e.draw) for (let k = 0; k < e.draw; k++) if (me.deck.length) me.hand.push(me.deck.shift()!);
 }
 
 /** Karten spielen (bezahlbar, in gegebener Reihenfolge). */
@@ -175,7 +192,7 @@ export function playCards(g: Game2, cfg: Sim2Params, handIdx: number[]) {
       me.board.push({ uid: `u${g.uid++}`, cardId: id, power: m.power, spent: false, lag: !m.adrenaline, blocker: m.blocker });
     }
     if (m.eddieSource) me.eddieSources += 1;
-    applyOnPlay(g, cfg, m);
+    applyEffect(g, cfg, m.onPlay);
   }
   me.hand = me.hand.filter((_, i) => !played.has(i));
 }
@@ -195,6 +212,8 @@ export function attackPhase(g: Game2, cfg: Sim2Params, attackerUids: string[], d
     const A = me.board.find((u) => u.uid === uid);
     if (!A || A.spent || A.lag) continue; // muss bereit & ohne Lag sein
     A.spent = true;
+    const am = model(A.cardId); // {Attack} Gig-Swing (z. B. „decrease a Gig")
+    if (am.onAttack.gig) { const d = Math.min(am.onAttack.gig, op.gigs); if (d > 0) { op.gigs -= d; g.log.push(`  ${me.name}: {Attack} senkt Rival-Gig um ${d}`); } }
     const dv = view2For(g, cfg, other(p)); // Sicht des Verteidigers
     const bUid = defender.block({ uid: A.uid, name: model(A.cardId).name, power: A.power, spent: A.spent, lag: A.lag, blocker: A.blocker }, dv);
     const B = bUid ? op.board.find((u) => u.uid === bUid) : undefined;

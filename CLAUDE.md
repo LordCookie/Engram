@@ -163,11 +163,16 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Kampf-Modell (`engine2.ts`, `--model v2`):** näher an den echten Regeln als der
   Proxy — Einheiten aufs Feld (mit **Lag**), **Angriff → Blocken → Kampf → besiegt**,
   Gig-Klau per Angriff (1 + Power/10), Keywords **Adrenaline/Blocker/Go Solo** und
-  einfache `{Play}`-Effekte (**Defeat/Removal**, **Draw**) aus dem Kartentext (`model.ts`,
-  liest rules_text nur LOKAL), Eddies aus Legends + Ramp + Eddie-Quellen. Synergie
-  entsteht hier aus echter Interaktion, kein flacher Bonus. `battle`/`game`/`build-decks`
-  nehmen `--model v2`. 13 Kampf-Tests (`engine2.test.ts`: Combat, Blocken, Removal, Lag/
-  Adrenaline, Determinismus, Spiegel≈50 %, Dominanz). **Effekt aufs Deck-Testen:** die
+  **echte Karteneffekte** aus dem Kartentext (`model.ts`, liest rules_text nur LOKAL):
+  **Removal** (inkl. „spent"/„all"/„cost N or less"), **Spend-Rival** (gegnerische Einheit
+  erschöpfen = Blocker-/Tempo-Denial), **Gig-Swing** (`{Play}` und `{Attack}` „decrease/
+  gain a Gig"), **Power-Buff** und **Draw**. Programme werden als imperative Ein-Karten-
+  Spells geparst; **Gear bleibt bewusst abstrahiert** (anhängend/laufend getriggert), ebenso
+  `{Defeated}`/`{Quick}`/Reaktionen/Würfel (Ehrlichkeit). Eddies aus Legends + Ramp +
+  Eddie-Quellen. Synergie entsteht aus echter Interaktion, kein flacher Bonus.
+  `battle`/`game`/`build-decks` nehmen `--model v2`. **17 Kampf-Tests** (`engine2.test.ts`:
+  Combat, Blocken, Removal, Spend-all, Gig-Swing `{Play}`/`{Attack}`, Buff, Lag/Adrenaline,
+  Determinismus, Spiegel≈50 %, Dominanz). **Effekt aufs Deck-Testen:** die
   3-Farben-Power-Piles verlieren ihren Riesenvorsprung, fokussierte (mono/2-farbige)
   Decks steigen; der offizielle Heist-Starter ist im Kampf-Modell das stärkste Feld-Deck
   (~68 %). Bleibt ein Modell (Einzeltexte/Reaktionen/Würfel abstrahiert), aber Interaktion
@@ -179,12 +184,21 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   § 8: nur Slugs + Stückzahlen, keine Kartentexte/-bilder. `eval_meta` fährt eine Matrix
   (v2, mit 95%-CI), nimmt die Starter als **Kontrolle**, rankt die Meta-Decks intern und
   misst „Engine-Lesbarkeit" (Körper/Effekt vs. blinde Effekt-/Gear-/Control-Karten) →
-  `sim/meta-decks/REPORT.md`. **Befund (10 Meta-Decks, je 1000 Spiele):** eigene Ø
-  **80,6 %**, Heist-Kontrolle **80,6 %**, schwacher Starter **72,7 %** — alle Power-Decks
-  liegen dicht beieinander ⇒ die Höhe misst v. a. **Modell-Bias** (Power/Kurve schlägt
-  Effekt), kein reales Meta-Ranking. Die **Kette** (ziehen→parsen→validieren→spielen) ist
-  belastbar; das **Zahlurteil** nicht. Motiviert echte Effekt-Modellierung im v2.
-- 160 JS-Tests + Python-Tests grün. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+  `sim/meta-decks/REPORT.md`. **Befund mit dem Effekt-Modell (10 Meta-Decks, je 1000
+  Spiele):** eigene Ø **~69 %** (Top A 77,7 · Top C 73,9 · Top B 67,4 · Unique-1 67,2 ·
+  Unique-2 59,8), Heist-Kontrolle **82,5 %**, schwacher Starter 69,3 %. Die Effekte haben
+  den Abstand **verkleinert** (vor den Effekten: eigene 80,6 %) und die Meta-interne
+  Spanne gestaucht (Spitze 70→59 %) — die Meta wehrt sich jetzt. Aber der Bias bleibt:
+  auch die Starter schlagen die Meta klar, d. h. das **Zahlurteil** ist weiter kein reales
+  Meta-Ranking; belastbar ist die **Kette** (ziehen→parsen→validieren→spielen).
+- **Effekt-getunter Deckbau + „unique" Decks (`build-decks --model v2`):** `build.ts`
+  schreibt neben Top A/B/C zwei **bewusst andere** Decks (`unique-1/2-v2`): Auswahl über
+  **Distinktheit × Viabilität** (Farb-/Struktur-/Mechanik-Neuheit + Mindest-Siegquote 40 %),
+  themen-gebaut (Control/Removal, Go-Wide/Adrenaline, Gig-Swing/Tempo) plus abweichende
+  Turnier-Decks. Ergebnis: **Unique-1 Gig-Swing/Tempo (BLAU/GRÜN, 57 %)** und **Unique-2
+  Control/Removal (ROT/BLAU, 53 %)** — beide BLAU-basiert (die Tops meiden BLAU), < 25 %
+  Kartenüberschneidung mit Top A.
+- 160 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 17 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

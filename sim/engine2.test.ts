@@ -145,6 +145,44 @@ test('{Play} Defeat entfernt eine gegnerische Einheit', () => {
   assert.ok(g.b.board.length < before, 'gegnerische Einheit sollte besiegt sein');
 });
 
+test('{Play} Spend-all erschöpft alle gegnerischen Einheiten', () => {
+  const prog = catalog.find((c) => model(c.id).onPlay.spendRival?.all);
+  if (!prog) { console.log('    (kein Spend-all in den Daten — übersprungen)'); return; }
+  const cheap = catalog.find((c) => c.type === 'UNIT' && (c.cost ?? 0) <= 2)?.id ?? 'x';
+  const g = mkGame();
+  g.b.board = [unit(5, { cardId: cheap }), unit(3, { cardId: cheap })];
+  g.a.hand = [prog.id]; g.turnNo.a = 20;
+  playCards(g, cfg, [0]);
+  assert.ok(g.b.board.length >= 1 && g.b.board.every((u) => u.spent), 'verbliebene gegnerische Einheiten gespendet');
+});
+
+test('{Play} Gig-Swing senkt Rival-Gigs', () => {
+  const prog = catalog.find((c) => !model(c.id).isUnit && model(c.id).onPlay.gig?.rival);
+  if (!prog) { console.log('    (kein Gig-Programm — übersprungen)'); return; }
+  const dec = model(prog.id).onPlay.gig!.rival!;
+  const g = mkGame(); g.b.gigs = 6; g.a.hand = [prog.id]; g.turnNo.a = 20;
+  playCards(g, cfg, [0]);
+  assert.equal(g.b.gigs, 6 - dec);
+});
+
+test('{Attack} Gig-Swing senkt Rival-Gigs zusätzlich zum Klau', () => {
+  const atk = catalog.find((c) => model(c.id).onAttack.gig);
+  if (!atk) { console.log('    (kein {Attack}-Gig — übersprungen)'); return; }
+  const ag = model(atk.id).onAttack.gig!;
+  const g = mkGame(); g.a.board = [unit(4, { cardId: atk.id })]; g.b.gigs = 5;
+  attackPhase(g, cfg, [g.a.board[0].uid], noBlock);
+  assert.equal(g.b.gigs, 5 - ag - 1); // {Attack} senkt, dann unblocked Klau (P4 → 1)
+});
+
+test('{Play} Buff erhöht die Power einer eigenen Einheit', () => {
+  const prog = catalog.find((c) => { const m = model(c.id); return !m.isUnit && m.onPlay.buff && !m.onPlay.buff.allies; });
+  if (!prog) { console.log('    (kein Einzel-Buff — übersprungen)'); return; }
+  const amt = model(prog.id).onPlay.buff!.power;
+  const g = mkGame(); g.a.board = [unit(4)]; g.a.hand = [prog.id]; g.turnNo.a = 20;
+  playCards(g, cfg, [0]);
+  assert.equal(g.a.board[0].power, 4 + amt);
+});
+
 test('Auskarten beendet das Spiel für den Ziehenden', () => {
   const tiny = { name: 'Tiny', cardIds: H.cardIds.slice(0, 7) };
   const r = playGame2(createGame2(tiny, H, { ...cfg, gigWin: 999 }, 1), { ...cfg, gigWin: 999 }, heuristic2, heuristic2);

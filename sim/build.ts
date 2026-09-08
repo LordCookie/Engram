@@ -10,6 +10,7 @@ import { heuristic } from './policies';
 import { createGame2, playGame2, DEFAULT2 } from './engine2';
 import { heuristic2 } from './policies2';
 import { synPair, makeConfig, loadDecks } from './data';
+import { model, type CardModel } from './model';
 
 /**
  * Baut aus allen legalen Legend-Triples synergie-/kurvenoptimierte Decks und lässt
@@ -66,7 +67,10 @@ interface BuiltDeck {
   cards: Map<string, number>;
 }
 
-function buildDeck(t: Card[], name: string): BuiltDeck | null {
+/** Optionaler Themen-Bonus (für „unique" Decks: Mechanik-Fokus statt reiner Power). */
+type ThemeBonus = (m: CardModel) => number;
+
+function buildDeck(t: Card[], name: string, themeBonus?: ThemeBonus): BuiltDeck | null {
   const caps = computeRamCaps(t, rulesetV1Loaded);
   const pool = eligiblePool(caps);
   if (pool.length < 15) return null; // zu wenig freigeschaltet
@@ -81,7 +85,8 @@ function buildDeck(t: Card[], name: string): BuiltDeck | null {
       if ((count.get(c.id) ?? 0) >= 3) continue;
       let synChosen = 0;
       for (const d of distinct) synChosen += syn(c.id, d);
-      const val = 2 * base(c) - 1.4 * cost(c) + 1.0 * synChosen + 0.7 * synToLegends(c.id, legendIds);
+      const theme = themeBonus ? 1.7 * themeBonus(model(c.id)) : 0;
+      const val = 2 * base(c) - 1.4 * cost(c) + 1.0 * synChosen + 0.7 * synToLegends(c.id, legendIds) + theme;
       if (val > bestVal) { bestVal = val; best = c; }
     }
     if (!best) break;
@@ -92,6 +97,24 @@ function buildDeck(t: Card[], name: string): BuiltDeck | null {
   }
   if (total < 40) return null;
   return { name, legendIds, cards: count };
+}
+
+// --- Themen für „unique" Decks (Mechanik-Archetypen aus dem Effekt-Modell) ----
+interface Theme { key: string; label: string; bonus: ThemeBonus; }
+const THEMES: Theme[] = [
+  { key: 'control', label: 'Control / Removal', bonus: (m) => (m.onPlay.defeat ? 3 : 0) + (m.onPlay.spendRival ? 2.5 : 0) + (m.blocker ? 1.5 : 0) + ((m.onPlay.draw ?? 0) > 0 ? 1 : 0) },
+  { key: 'wide', label: 'Go-Wide / Adrenaline', bonus: (m) => (m.adrenaline ? 2.5 : 0) + (m.onPlay.buff?.allies ? 2.5 : 0) + (m.isUnit && m.cost <= 3 && m.power > 0 ? 1.2 : 0) },
+  { key: 'gig', label: 'Gig-Swing / Tempo', bonus: (m) => (m.onAttack.gig ? 3 : 0) + (m.onPlay.gig ? 2.5 : 0) + (m.isUnit && m.cost <= 4 && m.power > 0 ? 0.8 : 0) },
+];
+/** Wie gut passt ein Triple zu einem Thema (Summe der besten Themen-Boni im Pool). */
+function themeFit(t: Card[], bonus: ThemeBonus): number {
+  const caps = computeRamCaps(t, rulesetV1Loaded);
+  return eligiblePool(caps).map((c) => bonus(model(c.id))).sort((a, b) => b - a).slice(0, 15).reduce((s, x) => s + x, 0);
+}
+/** Archetyp-Label eines fertigen Decks: dominantes Thema oder „Beatdown". */
+function archetypeLabel(d: BuiltDeck): string {
+  const scored = THEMES.map((th) => ({ th, s: [...d.cards].reduce((sum, [id, n]) => sum + n * th.bonus(model(id)), 0) })).sort((a, b) => b.s - a.s);
+  return scored[0].s >= 10 ? scored[0].th.label : 'Beatdown (Power/Kurve)';
 }
 
 function toSimDeck(d: BuiltDeck): SimDeck {
@@ -244,6 +267,46 @@ for (const r of results) { // auffüllen, falls Vielfalt < 3 Decks hergibt
   if (!top3.includes(r)) top3.push(r);
 }
 
+// --- 2 „unique" Decks: bewusst anders als die Top-3 (Farbe/Struktur/Mechanik),
+//     aber noch spielbar. Distinktheit × Viabilität statt starrer Ausschlüsse. ---
+interface UniqueCand { d: BuiltDeck; wr: number; label: string; }
+const deckColors = (d: BuiltDeck) => new Set(d.legendIds.map((id) => cardIndex.get(id)!.color));
+const top3Labels = new Set(top3.map((r) => archetypeLabel(r.d)));
+const top3Colors = new Set(top3.flatMap((r) => [...deckColors(r.d)]));
+const uniqueCands: UniqueCand[] = [];
+// (a) je Thema das best passende Triple themen-gebaut + gegen das Feld gemessen
+for (const th of THEMES) {
+  let bestT: Card[] | null = null, bestFit = -Infinity;
+  for (const x of ranked) { const f = themeFit(x.t, th.bonus); if (f > bestFit) { bestFit = f; bestT = x.t; } }
+  if (!bestT) continue;
+  const d = buildDeck(bestT, `Unique-${th.key}`, th.bonus);
+  if (!d) continue;
+  const vd = { legendIds: d.legendIds, cards: [...d.cards].map(([cardId, c]) => ({ cardId, count: c })) };
+  if (!validate(vd, rulesetV1Loaded, cardIndex).ok) continue;
+  uniqueCands.push({ d, wr: winRate(toSimDeck(d), field), label: th.label });
+}
+// (b) auch natürlich abweichende Turnier-Decks (nicht in Top-3) — oft die stärkeren Uniques
+for (const r of results) if (!top3.includes(r)) uniqueCands.push({ d: r.d, wr: r.wr, label: archetypeLabel(r.d) });
+
+/** Wie „unique" ist der Kandidat? Farb-/Struktur-/Label-Neuheit + Restsiegquote. */
+function uniqScore(c: UniqueCand): number {
+  const maxOv = Math.max(0, ...top3.map((p) => overlap(c.d, p.d)));
+  const novelColors = [...deckColors(c.d)].filter((x) => !top3Colors.has(x)).length;
+  const labelNovel = top3Labels.has(c.label) ? 0 : 1;
+  return c.wr + (1 - maxOv) * 45 + novelColors * 14 + labelNovel * 8;
+}
+const VIABLE = 40; // Mindest-Feld-Siegquote — „unique" soll nicht „schlecht" heißen
+const unique: UniqueCand[] = [];
+function pick(minWr: number) {
+  for (const cand of uniqueCands.filter((c) => c.wr >= minWr).sort((a, b) => uniqScore(b) - uniqScore(a))) {
+    if (unique.length === 2) break;
+    if (unique.some((u) => u.d === cand.d)) continue;
+    if (unique.every((u) => overlap(cand.d, u.d) < 0.5)) unique.push(cand); // untereinander verschieden
+  }
+}
+pick(VIABLE);
+if (unique.length < 2) pick(0); // Notfalls Viabilitäts-Floor fallenlassen
+
 const outDir = join(HERE, 'decks');
 mkdirSync(outDir, { recursive: true });
 const suffix = MODEL === 'v2' ? '-v2' : '';
@@ -258,4 +321,19 @@ top3.forEach((r, i) => {
   writeFileSync(join(outDir, `${base}.json`), JSON.stringify(slugJson, null, 2));
   writeFileSync(join(outDir, `${base}.txt`), toDeckText(r.d));
 });
-console.log(`\nDecklisten geschrieben nach sim/decks/ (top-a/b/c${suffix} .json + .txt).`);
+
+// „unique" Decks: eigene Identität, ausgewiesen mit Label + Abstand zu Top-A.
+unique.forEach((u, i) => {
+  const n = i + 1;
+  u.d.name = `Unique ${n} — ${u.label}${MODEL === 'v2' ? ' (v2)' : ''}`;
+  const ovTopA = top3[0] ? Math.round(100 * overlap(u.d, top3[0].d)) : 0;
+  console.log(`\n########## Unique ${n} — ${u.label} — Siegquote ${u.wr.toFixed(1)}% (Modell ${MODEL}) ##########`);
+  console.log(`(Identität: ${u.label} · nur ${ovTopA}% Kartenüberschneidung mit Top A)`);
+  for (const line of describe(u.d)) console.log(line);
+  const slugJson = { name: u.d.name, legends: u.d.legendIds, cards: Object.fromEntries(u.d.cards) };
+  const base = `unique-${n}${suffix}`;
+  writeFileSync(join(outDir, `${base}.json`), JSON.stringify(slugJson, null, 2));
+  writeFileSync(join(outDir, `${base}.txt`), toDeckText(u.d));
+});
+
+console.log(`\nDecklisten geschrieben nach sim/decks/ (top-a/b/c${suffix} + unique-1/2${suffix} .json + .txt).`);
