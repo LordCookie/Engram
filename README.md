@@ -157,8 +157,11 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
   (`pipeline/ingest_decks.py` aggregates legal decklists into a co-play corpus that the app
   merges with your own decks); a FastAPI/SQLite service to broaden the signal from community
   decklist data is the next step.
-- **Phase 5 — Native mobile app:** ⏳ Upcoming. Wrapping the PWA into a **native Android app**
-  (and iOS) via **Capacitor**, for a real installable app with camera access.
+- **Phase 5 — Native mobile app:** 🔄 In progress. The PWA is wrapped for **native Android**
+  via **Capacitor** — the project lives in `app/android/`. Build it with `npm run cap:sync`
+  (builds the web + copies it into the native shell) and then Android Studio, or
+  `gradlew assembleDebug`. **Note:** the Android Gradle toolchain needs **JDK 17** (up to 21);
+  a newer JDK 25 is not yet supported by AGP. iOS is a later step.
 - **Playtest / simulation mode:** 🔄 First version live (under **More**). A **manual
   practice-turn sandbox** (ManaBox-style — real zones, you move the cards, no forced rule
   engine): pick a legal own deck or a starter, draw your opening hand, mulligan, and walk

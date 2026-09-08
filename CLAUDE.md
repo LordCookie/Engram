@@ -208,6 +208,15 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   wählt eigenes Deck vs. Gegner (eigene legale Decks + Starter), zeigt Balken/Log und
   ist ehrlich als **grobes Modell** beschriftet (Gear/Reaktionen/Würfel abstrahiert,
   Legends nur Eddie-Basis). **160→164 App-Tests** (`domain/sim/deckTest.test.ts`).
+- **Native App (Phase 5, Scaffold steht):** Capacitor **6** (auf `^6` gepinnt — die
+  neueste CLI v8 verlangt Node ≥22, wir haben Node 20.9). `app/capacitor.config.ts`
+  (appId `com.lordcookie.engram`, `webDir: dist`), Android-Projekt in `app/android/`
+  (build/.gradle/local.properties/kopierte Web-Assets sind gitignored). Bauen:
+  `npm run cap:sync` (Web-Build + Copy in die Shell) → Android Studio oder
+  `gradlew assembleDebug`; `npm run cap:open` öffnet das Projekt. **Lokaler Blocker:**
+  installiert ist nur die Android-Studio-**JBR Java 25.0.2**; AGP/Gradle unterstützen
+  **JDK 17–21** → der APK-Build braucht ein JDK 17 (oder Build via Android Studio mit
+  dort heruntergeladenem JDK 17). Kein Code-Problem, reine Toolchain-Version.
 - 164 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 17 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

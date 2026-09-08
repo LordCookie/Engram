@@ -9,9 +9,14 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "cap:sync": "npm run build && cap sync android",
+    "cap:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.2",
+    "@capacitor/cli": "^6.2.2",
+    "@capacitor/core": "^6.2.2",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",
     "react": "^18.3.1",
