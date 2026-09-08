@@ -38,4 +38,10 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Scanner: Live-Kamera via getUserMedia im WebView (OCR). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Kamera ist optional (App läuft auch ohne, z. B. Tablet ohne Kamera). -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 </manifest>

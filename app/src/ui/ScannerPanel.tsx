@@ -18,6 +18,11 @@ import type { Card, Color } from '../domain/types';
 
 const CARD_ASPECT = 733 / 1024;
 
+/** Läuft die App nativ (Capacitor)? Dann anderer Kamera-Hinweis (kein „HTTPS öffnen"). */
+const isNativeApp =
+  typeof window !== 'undefined' &&
+  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+
 const colorDot: Record<Color, string> = {
   RED: 'bg-card-red',
   GREEN: 'bg-card-green',
@@ -434,8 +439,10 @@ export function ScannerPanel() {
 
         {camError && (
           <p className="mt-2 text-sm text-card-red">
-            Kamera nicht verfügbar: {camError}. Auf dem Handy: HTTPS-Adresse öffnen und
-            Kamerazugriff erlauben.
+            Kamera nicht verfügbar: {camError}.{' '}
+            {isNativeApp
+              ? 'Beim Start fragt die App nach Kamerazugriff — bitte erlauben. Falls zuvor abgelehnt: Android-Einstellungen → Apps → engram → Berechtigungen → Kamera aktivieren, dann erneut „Kamera starten".'
+              : 'Auf dem Handy: HTTPS-Adresse öffnen und Kamerazugriff erlauben.'}
           </p>
         )}
 
