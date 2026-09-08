@@ -64,6 +64,8 @@ export function ScannerPanel() {
   const [boxScale, setBoxScale] = useState(0.8);
   const [zoomCaps, setZoomCaps] = useState<ZoomCaps | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [torchAvailable, setTorchAvailable] = useState(false); // Rückkamera-Licht steuerbar?
+  const [torchOn, setTorchOn] = useState(false);
   const [live, setLive] = useState(false);
 
   const [scanning, setScanning] = useState(false);
@@ -257,6 +259,7 @@ export function ScannerPanel() {
       const track = stream.getVideoTracks()[0];
       const caps = track.getCapabilities?.() as unknown as {
         zoom?: { min: number; max: number; step?: number };
+        torch?: boolean;
       };
       if (caps?.zoom) {
         setZoomCaps({ min: caps.zoom.min, max: caps.zoom.max, step: caps.zoom.step ?? 0.1 });
@@ -265,6 +268,8 @@ export function ScannerPanel() {
       } else {
         setZoomCaps(null);
       }
+      setTorchAvailable(!!caps?.torch); // z. B. Rückkamera mit Blitz-LED
+      setTorchOn(false);
       setCamOn(true);
     } catch (e) {
       setCamError(e instanceof Error ? e.message : 'Kamera nicht verfügbar.');
@@ -276,12 +281,27 @@ export function ScannerPanel() {
     streamRef.current = null;
     setCamOn(false);
     setVdim(null);
+    setTorchAvailable(false);
+    setTorchOn(false);
   }
 
   function applyZoom(value: number) {
     setZoom(value);
     const track = streamRef.current?.getVideoTracks()[0];
     void track?.applyConstraints({ advanced: [{ zoom: value }] } as unknown as MediaTrackConstraints);
+  }
+
+  /** Kamera-Licht (Torch) der Rückkamera an/aus. */
+  async function toggleTorch() {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    const next = !torchOn;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next }] } as unknown as MediaTrackConstraints);
+      setTorchOn(next);
+    } catch {
+      setTorchAvailable(false); // Gerät meldet Torch, kann ihn aber nicht setzen → Taste ausblenden
+    }
   }
 
   function addToBasket(cardId: string) {
@@ -414,6 +434,17 @@ export function ScannerPanel() {
               >
                 {scanning ? 'Lese…' : 'Scannen'}
               </button>
+              {torchAvailable && (
+                <button
+                  onClick={() => void toggleTorch()}
+                  aria-pressed={torchOn}
+                  className={`rounded border px-3 py-1.5 font-mono text-sm ${
+                    torchOn ? 'border-accent bg-accent text-bg' : 'border-white/10 text-muted hover:border-accent'
+                  }`}
+                >
+                  {torchOn ? '🔦 Licht an' : '🔦 Licht aus'}
+                </button>
+              )}
               <button
                 onClick={stopCamera}
                 className="rounded border border-white/10 px-3 py-1.5 font-mono text-sm text-muted hover:border-card-red hover:text-card-red"
