@@ -313,37 +313,32 @@ export function ScannerPanel() {
     }
     setBlurHint(false);
 
-    // Ganzkarte global (Otsu): Sammlernummer + globaler Namens-Read (Sicherheitsnetz).
-    const whole = regionCanvas([0, 0, 1, 1], 800, 'otsu');
-    if (!whole) return;
-    // Zwei Namensbänder ADAPTIV (glanz-/foil-robust): Mitte + oben (Alt-Art) — plus ein
-    // eigenes Nummern-Band unten (starker, foil-robuster Entscheider).
-    const bandMid = regionCanvas([0.04, 0.44, 0.92, 0.24], 900, 'adaptive');
-    const bandTop = regionCanvas([0.03, 0.05, 0.94, 0.16], 900, 'adaptive');
-    const numBand = regionCanvas([0.0, 0.86, 1.0, 0.14], 800, 'otsu');
-
+    if (!cropRegion()) return;
     busyRef.current = true;
     setScanning(true);
     try {
       const rec = async (c: HTMLCanvasElement | null) => (c ? ((await worker.recognize(c)).data.text ?? '') : '');
-      // Namens-/Nummern-Bänder als Einzelzeile (SINGLE_LINE), Ganzkarte als Sparse-Text.
+      // Der Name sitzt bei diesen Karten OBEN. Mehrere schmale Bänder testen und JEDES
+      // EINZELN matchen (kein Vermischen → kein Regeltext-/Artwork-Rauschen); das Band
+      // mit dem besten Treffer gewinnt. So ist die Position robust ohne Müll-Verdünnung.
       await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
-      let text = `${await rec(bandMid)} ${await rec(bandTop)} ${await rec(numBand)}`;
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-      text += ` ${await rec(whole)}`;
-
-      let top = matchCardName(text, nameCards, 5);
-      // Band-Suche: nichts Sicheres? Ein paar zusätzliche vertikale Positionen probieren
-      // (ungewöhnliche Alt-Art-Layouts). Nur bei geringer Konfidenz → günstig im Normalfall.
-      if ((top[0]?.score ?? 0) < 0.6) {
-        await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
-        for (const y of [0.2, 0.32, 0.56, 0.68]) {
-          text += ` ${await rec(regionCanvas([0.03, y, 0.94, 0.16], 900, 'adaptive'))}`;
-        }
-        top = matchCardName(text, nameCards, 5);
+      const bands: [number, number, number, number][] = [
+        [0.05, 0.04, 0.9, 0.12], // Name ganz oben
+        [0.05, 0.11, 0.9, 0.12], // etwas tiefer (unter der Cost-Zeile)
+        [0.05, 0.42, 0.9, 0.16], // Mitte — Fallback für abweichende Layouts
+      ];
+      let bandText = '';
+      let bandBest = -1;
+      for (const b of bands) {
+        const t = await rec(regionCanvas(b, 900, 'adaptive'));
+        const s = matchCardName(t, nameCards, 1)[0]?.score ?? 0;
+        if (s > bandBest) { bandBest = s; bandText = t; }
       }
-
+      // Schmales Nummern-Band unten (Entscheider) — separat, verdünnt den Namen nicht.
+      const numText = await rec(regionCanvas([0.0, 0.86, 1.0, 0.14], 800, 'otsu'));
+      const text = `${bandText} ${numText}`;
       setOcrText(text.replace(/\s+/g, ' ').trim());
+      const top = matchCardName(text, nameCards, 5);
       const mapped = top
         .map((m) => ({ card: cardIndex.get(m.cardId), score: m.score, numberHit: m.numberHit }))
         .filter((x): x is { card: Card; score: number; numberHit: boolean } => x.card !== undefined);
