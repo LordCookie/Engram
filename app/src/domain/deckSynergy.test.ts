@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildCardIndex, type Card } from './types';
 import type { Ruleset } from '../rules/ruleset';
 import { type CardFeatures, type FeatureDB } from './synergy';
+import { buildCorpus } from './coplay';
 import { suggestAdditions, deckSynergyRating, deckSynergyStats } from './deckSynergy';
 
 function card(over: Partial<Card> & Pick<Card, 'id' | 'type' | 'color'>): Card {
@@ -55,6 +56,19 @@ describe('suggestAdditions', () => {
     const owned = new Map([['A', 0]]); // A nicht besessen
     const s = suggestAdditions(['L'], [], index, db, ruleset, { ownedOnly: true, owned });
     expect(s.map((x) => x.card.id)).not.toContain('A');
+  });
+
+  it('boostet & markiert empirisch zusammengespielte Karten (Korpus)', () => {
+    // B hat KEINE vorhergesagte Synergie, läuft aber im Korpus stets mit L.
+    const corpus = buildCorpus([
+      { cards: ['L', 'B'] },
+      { cards: ['L', 'B'] },
+      { cards: ['L', 'B'] },
+    ]);
+    const s = suggestAdditions(['L'], [], index, db, ruleset, { corpus });
+    const b = s.find((x) => x.card.id === 'B');
+    expect(b).toBeTruthy(); // trotz 0 Vorhersage vorgeschlagen (empirisch)
+    expect(b?.empirical).toBe(3); // in 3 Korpus-Decks mit L zusammen
   });
 });
 

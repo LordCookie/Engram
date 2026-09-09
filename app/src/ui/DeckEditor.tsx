@@ -32,6 +32,7 @@ import { SynergyInfo } from './SynergyInfo';
 import { useCardImages } from '../data/cardImages';
 import { featureDB, hasFeatures } from '../data/features';
 import { suggestAdditions, deckSynergyStats } from '../domain/deckSynergy';
+import { useCorpus } from '../data/deckCorpus';
 import type { ParsedDeck } from '../domain/deckText';
 import type { Card, CardType, Color } from '../domain/types';
 
@@ -144,6 +145,7 @@ export function DeckEditor() {
     );
 
   const deckCardIds = draft.cards.map((e) => e.cardId);
+  const { corpus, ingested } = useCorpus(); // Co-Play (Meta + eigene Decks) für Vorschläge
   const synStats = useMemo(
     () =>
       hasFeatures
@@ -159,11 +161,42 @@ export function DeckEditor() {
             limit: 6,
             ownedOnly: collectionMode,
             owned,
+            corpus,
           })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [draft, collectionMode, owned],
+    [draft, collectionMode, owned, corpus],
   );
+
+  /** Deck mit den besten Vorschlägen auf die Mindestgröße auffüllen (≤3 Kopien,
+   *  RAM-legal via suggestAdditions; im Sammlungsmodus nur aus dem Bestand). */
+  function fillToMin() {
+    const need = ruleset.deckMin - stats.deckSize;
+    if (need <= 0 || draft.legendIds.length === 0) return;
+    const sug = suggestAdditions(draft.legendIds, deckCardIds, cardIndex, featureDB, ruleset, {
+      limit: 80,
+      ownedOnly: collectionMode,
+      owned,
+      corpus,
+    });
+    update((d) => {
+      let nd = d;
+      let added = 0;
+      const copies = new Map(d.cards.map((e) => [e.cardId, e.count] as const));
+      for (const s of sug) {
+        if (added >= need) break;
+        let c = copies.get(s.card.id) ?? 0;
+        while (c < ruleset.maxCopiesPerCard && added < need) {
+          if (collectionMode && (owned.get(s.card.id) ?? 0) <= c) break; // Bestand achten
+          nd = incCard(nd, s.card.id, 1);
+          c++;
+          added++;
+        }
+        copies.set(s.card.id, c);
+      }
+      return nd;
+    });
+  }
 
   // Fehlende Karten fürs Vervollständigen: brauchst mehr, als du besitzt.
   const missingCards = deckCards
@@ -416,7 +449,8 @@ export function DeckEditor() {
         ) : (
           <>
             <p className="mb-2 text-xs text-muted">
-              Passt zu deinen Legends{collectionMode ? ' (nur Bestand)' : ''} — zum Einbauen tippen:
+              Passt zu deinen Legends{collectionMode ? ' (nur Bestand)' : ''} — zum Einbauen tippen
+              {ingested > 0 ? '; ✓ Meta = laut echten Meta-Decks zusammen gespielt' : ''}:
             </p>
             <ul className="space-y-1">
               {suggestions.map((s) => {
@@ -443,11 +477,28 @@ export function DeckEditor() {
                         </span>
                       ))}
                     </span>
+                    {s.empirical ? (
+                      <span
+                        className="rounded bg-card-green/15 px-1 py-0.5 text-[10px] text-card-green"
+                        title={`Laut ${s.empirical} Deck(s) im Korpus mit deinen Legends zusammen gespielt`}
+                      >
+                        ✓ Meta {s.empirical}
+                      </span>
+                    ) : null}
                     <span className="ml-auto text-xs text-accent">{s.score.toFixed(1)}</span>
                   </li>
                 );
               })}
             </ul>
+            {stats.deckSize < ruleset.deckMin && (
+              <button
+                onClick={fillToMin}
+                title="Deck mit den besten Vorschlägen auf die Mindestgröße auffüllen"
+                className="mt-3 rounded-md border border-accent/40 px-3 py-1.5 font-mono text-xs text-accent hover:bg-accent/10"
+              >
+                Auf {ruleset.deckMin} auffüllen ({stats.deckSize}/{ruleset.deckMin})
+              </button>
+            )}
           </>
         )}
       </div>

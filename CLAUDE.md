@@ -124,6 +124,12 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)
   + **Filter** (Farbe/Typ/nur-legal/nur-Bestand); Erklärung `ui/SynergyInfo.tsx`
   auch in der Synergie-Ansicht. Löschen-„✕" in Sammlung & Deckeditor.
+  **Vorschläge nutzen jetzt das Co-Play-Korpus** (`useCorpus` → Meta + eigene Decks):
+  optionales `corpus` in `suggestAdditions` boostet & markiert Karten, die laut echten
+  Decks mit den Legends zusammen laufen (Tag „✓ Meta N", `empirical`), auch solche,
+  die die Textvorhersage übersieht — getrennt ausgewiesen (Ehrlichkeit). Ohne Korpus
+  unverändert. Neu: **„Auf 40 auffüllen"** (`fillToMin`) — füllt das Deck mit den besten
+  Vorschlägen (≤3 Kopien, RAM-legal, im Sammlungsmodus nur Bestand).
 - **Kartenbilder offline** (§ 8-konform, nur lokaler Cache): Workbox-Runtime-Cache
   in `vite.config.ts` für die CDN-Bilder (`CacheFirst`, `ignoreSearch` gegen die
   wechselnde Signatur, opaque `statuses:[0,200]`, `devOptions` an). `cardImages.ts`
@@ -245,7 +251,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   installiert ist nur die Android-Studio-**JBR Java 25.0.2**; AGP/Gradle unterstützen
   **JDK 17–21** → der APK-Build braucht ein JDK 17 (oder Build via Android Studio mit
   dort heruntergeladenem JDK 17). Kein Code-Problem, reine Toolchain-Version.
-- 166 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 167 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

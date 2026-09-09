@@ -2,6 +2,7 @@ import type { Card, CardIndex } from './types';
 import type { Ruleset } from '../rules/ruleset';
 import { computeRamCaps } from '../rules/validate';
 import { featureWeights, synergyBetween, type FeatureDB, type SynergyReason } from './synergy';
+import { coPlayLift, type Corpus } from './coplay';
 
 /**
  * Synergie-Hilfen fürs Deckbauen (PLAN.md § 5 / § 12). Reine Funktionen.
@@ -42,6 +43,9 @@ export interface Suggestion {
   card: Card;
   score: number;
   reasons: SynergyReason[];
+  /** Stützzahl: in wie vielen Korpus-Decks die Karte mit den Legends zusammen läuft
+   *  (nur gesetzt, wenn > 0 — für das „✓ Meta"-Signal). */
+  empirical?: number;
 }
 
 export interface SuggestOptions {
@@ -49,12 +53,19 @@ export interface SuggestOptions {
   /** Nur Karten aus dem eigenen Bestand vorschlagen. */
   ownedOnly?: boolean;
   owned?: ReadonlyMap<string, number>;
+  /** Optionales Co-Play-Korpus (Meta + eigene Decks) — boostet & markiert Vorschläge. */
+  corpus?: Corpus;
+  /** Gewicht des empirischen Lift-Boosts (Default 0.5). */
+  empiricalWeight?: number;
 }
 
 /**
  * Beste Karten zum Einbauen: nicht bereits im Deck, RAM-legal unter den Legends,
  * nach Affinität zu den Legends sortiert (mit Begründung). Optional auf Bestand
- * beschränkt.
+ * beschränkt. Mit `corpus` fließt zusätzlich echte Co-Play-Statistik ein: Karten,
+ * die laut Meta/eigenen Decks mit den Legends zusammen laufen, werden geboostet und
+ * markiert — auch solche, die die Textvorhersage übersieht (Ehrlichkeit: getrennt
+ * ausgewiesen über `empirical`).
  */
 export function suggestAdditions(
   legendIds: readonly string[],
@@ -70,18 +81,31 @@ export function suggestAdditions(
     .filter((c): c is Card => c !== undefined);
   const caps = computeRamCaps(legends, ruleset);
   const inDeck = new Set<string>([...currentCardIds, ...legendIds]);
+  const corpus = opts.corpus;
+  const empW = opts.empiricalWeight ?? 0.5;
 
-  const out: Suggestion[] = [];
+  const scored: { s: Suggestion; rank: number }[] = [];
   for (const card of cardIndex.values()) {
     if (card.type === 'LEGEND' || inDeck.has(card.id)) continue;
     if ((card.ram ?? 0) > (caps[card.color] ?? 0)) continue; // RAM-legal unter diesen Legends
     if (opts.ownedOnly && (opts.owned?.get(card.id) ?? 0) <= 0) continue;
     const { score, reasons } = cardDeckAffinity(card.id, legendIds, db, weights);
-    if (score <= 0) continue;
-    out.push({ card, score, reasons });
+    let empLift = 0;
+    let empCount = 0;
+    if (corpus) {
+      for (const lid of legendIds) {
+        empLift += coPlayLift(card.id, lid, corpus);
+        empCount += corpus.co.get(card.id)?.get(lid) ?? 0;
+      }
+    }
+    if (score <= 0 && empLift <= 0) continue; // weder vorhergesagt noch beobachtet → raus
+    scored.push({
+      s: { card, score, reasons, empirical: empCount > 0 ? empCount : undefined },
+      rank: score + empW * empLift,
+    });
   }
-  out.sort((a, b) => b.score - a.score || a.card.name.localeCompare(b.card.name));
-  return out.slice(0, opts.limit ?? 8);
+  scored.sort((a, b) => b.rank - a.rank || a.s.card.name.localeCompare(b.s.card.name));
+  return scored.slice(0, opts.limit ?? 8).map((x) => x.s);
 }
 
 /**
