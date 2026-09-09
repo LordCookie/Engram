@@ -132,19 +132,23 @@ export function view2For(g: Game2, cfg: Sim2Params, who: PlayerId): View2 {
 }
 
 // --- Aktionen -----------------------------------------------------------
-function defeatUnit(g: Game2, side: PlayerId, uid: string) {
+function defeatUnit(g: Game2, cfg: Sim2Params, side: PlayerId, uid: string) {
   const s = g[side];
   const i = s.board.findIndex((u) => u.uid === uid);
-  if (i >= 0) s.board.splice(i, 1); // in den Trash (nicht weiter modelliert)
+  if (i < 0) return;
+  const dm = model(s.board[i].cardId).onDefeated; // {Defeated}-Trigger des BESITZERS
+  s.board.splice(i, 1); // in den Trash (nicht weiter modelliert)
+  if (dm.draw || dm.gig || dm.buff || dm.defeat || dm.spendRival) applyEffect(g, cfg, dm, side);
 }
 
 function checkGigWin(g: Game2, cfg: Sim2Params, p: PlayerId) {
   if (!g.winner && g[p].gigs >= cfg.gigWin) { g.winner = p; g.reason = `${g[p].name} erreicht ${g[p].gigs} Gigs`; }
 }
 
-/** Imperativen Karteneffekt anwenden (Removal, Spend-Rival, Gig-Swing, Buff, Draw). */
-function applyEffect(g: Game2, cfg: Sim2Params, e: Effect) {
-  const p = g.active, me = g[p], op = g[other(p)];
+/** Imperativen Karteneffekt anwenden (Removal, Spend-Rival, Gig-Swing, Buff, Draw).
+ *  `actor` = wessen Effekt (Standard: aktiver Spieler; bei {Defeated} der Besitzer). */
+function applyEffect(g: Game2, cfg: Sim2Params, e: Effect, actor: PlayerId = g.active) {
+  const p = actor, me = g[p], op = g[other(p)];
   // Spend zuerst (Text „Spend all … Then defeat a spent Unit" braucht diese Reihenfolge).
   if (e.spendRival) {
     const targets = op.board
@@ -161,7 +165,7 @@ function applyEffect(g: Game2, cfg: Sim2Params, e: Effect) {
     } else {
       let targets = op.board.filter((u) => e.defeat!.maxCost == null || model(u.cardId).cost <= e.defeat!.maxCost);
       if (e.defeat.spent) { const sp = targets.filter((u) => u.spent); if (sp.length) targets = sp; }
-      if (targets.length) { targets.sort((x, y) => y.power - x.power); defeatUnit(g, other(p), targets[0].uid); }
+      if (targets.length) { targets.sort((x, y) => y.power - x.power); defeatUnit(g, cfg, other(p), targets[0].uid); }
     }
   }
   if (e.gig) {
@@ -221,8 +225,8 @@ export function attackPhase(g: Game2, cfg: Sim2Params, attackerUids: string[], d
     if (B && eligible) {
       usedBlock.add(B.uid);
       B.spent = true;
-      if (A.power > B.power) defeatUnit(g, other(p), B.uid); // Blocker besiegt, Angriff gestoppt
-      else if (B.power > A.power) defeatUnit(g, p, A.uid); // Angreifer besiegt
+      if (A.power > B.power) defeatUnit(g, cfg, other(p), B.uid); // Blocker besiegt, Angriff gestoppt
+      else if (B.power > A.power) defeatUnit(g, cfg, p, A.uid); // Angreifer besiegt
       // Gleichstand: beide überleben; in jedem Fall KEIN Gig-Klau (geblockt)
       g.log.push(`  ${me.name}: Angriff (P${A.power}) geblockt von P${B.power}`);
     } else {

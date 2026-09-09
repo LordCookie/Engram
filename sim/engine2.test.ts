@@ -183,6 +183,21 @@ test('{Play} Buff erhöht die Power einer eigenen Einheit', () => {
   assert.equal(g.a.board[0].power, 4 + amt);
 });
 
+test('{Defeated}: Einheit zieht beim Besiegtwerden (Draw-on-Death)', () => {
+  const dd = catalog.find((c) => model(c.id).onDefeated.draw);
+  if (!dd) { console.log('    (kein {Defeated}-Draw in den Daten — übersprungen)'); return; }
+  const n = model(dd.id).onDefeated.draw!;
+  const g = mkGame();
+  g.a.board = [unit(3, { cardId: dd.id })]; // schwacher Angreifer mit {Defeated}
+  g.b.board = [unit(9)];
+  g.b.gigs = 5;
+  const handBefore = g.a.hand.length;
+  attackPhase(g, cfg, [g.a.board[0].uid], block(g.b.board[0].uid));
+  // Angreifer (P3) < Blocker (P9) → Angreifer besiegt → Besitzer (a) zieht n
+  assert.equal(g.a.board.length, 0);
+  assert.equal(g.a.hand.length, handBefore + n);
+});
+
 test('Auskarten beendet das Spiel für den Ziehenden', () => {
   const tiny = { name: 'Tiny', cardIds: H.cardIds.slice(0, 7) };
   const r = playGame2(createGame2(tiny, H, { ...cfg, gigWin: 999 }, 1), { ...cfg, gigWin: 999 }, heuristic2, heuristic2);

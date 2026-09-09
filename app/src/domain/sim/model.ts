@@ -50,6 +50,8 @@ export interface CardModel {
   onPlay: Effect;
   /** Effekt beim Angriff der Einheit (nur Gig-Swing modelliert). */
   onAttack: { gig?: number };
+  /** Effekt beim Besiegtwerden der Einheit ({Defeated}) — v. a. Draw. */
+  onDefeated: Effect;
 }
 
 const stripReminders = (t: string) => t.replace(/\([^)]*\)/g, ' ');
@@ -109,6 +111,7 @@ function build(c: Card): CardModel {
   // Spells). GEAR bleibt bewusst unmodelliert (anhängend/laufend getriggert → abstrahiert).
   const playText = isUnit ? clause(clean, 'Play') : c.type === 'PROGRAM' ? imperativeSentences(clean) : '';
   const attackText = isUnit ? clause(clean, 'Attack') : '';
+  const defeatedText = isUnit ? clause(clean, 'Defeated') : ''; // Draw-on-Death u. Ä.
   const feat = featureDB.get(c.id);
   const onAttack: { gig?: number } = {};
   const ae = parseEffect(attackText);
@@ -123,6 +126,7 @@ function build(c: Card): CardModel {
     eddieSource: !!feat && (feat.provides?.includes('EDDIE') ?? false),
     onPlay: parseEffect(playText),
     onAttack,
+    onDefeated: parseEffect(defeatedText),
   };
 }
 
@@ -133,7 +137,7 @@ export function model(id: string): CardModel {
     MODELS.get(id) ?? {
       id, name: id, type: 'UNIT', color: 'RED', cost: 3, power: 2, ram: 1,
       isUnit: true, blocker: false, adrenaline: false, goSolo: false, quick: false,
-      eddieSource: false, onPlay: {}, onAttack: {},
+      eddieSource: false, onPlay: {}, onAttack: {}, onDefeated: {},
     }
   );
 }

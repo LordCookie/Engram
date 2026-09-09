@@ -192,12 +192,15 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   **Removal** (inkl. „spent"/„all"/„cost N or less"), **Spend-Rival** (gegnerische Einheit
   erschöpfen = Blocker-/Tempo-Denial), **Gig-Swing** (`{Play}` und `{Attack}` „decrease/
   gain a Gig"), **Power-Buff** und **Draw**. Programme werden als imperative Ein-Karten-
-  Spells geparst; **Gear bleibt bewusst abstrahiert** (anhängend/laufend getriggert), ebenso
-  `{Defeated}`/`{Quick}`/Reaktionen/Würfel (Ehrlichkeit). Eddies aus Legends + Ramp +
+  Spells geparst. **`{Defeated}`-Trigger** (Draw-on-Death, z. B. Dexter/Jackie) sind
+  modelliert: beim Besiegtwerden zieht der Besitzer (`onDefeated`, via `applyEffect` mit
+  Akteur-Parameter). **Gear bleibt abstrahiert** — in diesem Set gibt **kein** Gear flache
+  Power (reine getriggerte Utility → nichts sinnvoll Modellierbares); ebenso `{Quick}`/
+  Reaktionen/Würfel (Ehrlichkeit). Eddies aus Legends + Ramp +
   Eddie-Quellen. Synergie entsteht aus echter Interaktion, kein flacher Bonus.
-  `battle`/`game`/`build-decks` nehmen `--model v2`. **17 Kampf-Tests** (`engine2.test.ts`:
-  Combat, Blocken, Removal, Spend-all, Gig-Swing `{Play}`/`{Attack}`, Buff, Lag/Adrenaline,
-  Determinismus, Spiegel≈50 %, Dominanz). **Effekt aufs Deck-Testen:** die
+  `battle`/`game`/`build-decks` nehmen `--model v2`. **18 Kampf-Tests** (`engine2.test.ts`:
+  Combat, Blocken, Removal, Spend-all, Gig-Swing `{Play}`/`{Attack}`, Buff, {Defeated}-Draw,
+  Lag/Adrenaline, Determinismus, Spiegel≈50 %, Dominanz). **Effekt aufs Deck-Testen:** die
   3-Farben-Power-Piles verlieren ihren Riesenvorsprung, fokussierte (mono/2-farbige)
   Decks steigen; der offizielle Heist-Starter ist im Kampf-Modell das stärkste Feld-Deck
   (~68 %). Bleibt ein Modell (Einzeltexte/Reaktionen/Würfel abstrahiert), aber Interaktion
@@ -242,7 +245,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   installiert ist nur die Android-Studio-**JBR Java 25.0.2**; AGP/Gradle unterstützen
   **JDK 17–21** → der APK-Build braucht ein JDK 17 (oder Build via Android Studio mit
   dort heruntergeladenem JDK 17). Kein Code-Problem, reine Toolchain-Version.
-- 164 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 17 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 166 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
