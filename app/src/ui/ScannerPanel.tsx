@@ -143,6 +143,9 @@ export function ScannerPanel() {
   const flashTimer = useRef<number>();
   const [autoAdd, setAutoAdd] = useState(false); // sicheren Treffer automatisch in den Korb
   const lastAutoRef = useRef<string | null>(null);
+  const votesRef = useRef<string[]>([]); // letzte Top-Treffer (Frame-Konsens)
+  const focusMaxRef = useRef(0); // gleitendes Fokus-Maximum (relatives Schärfe-Gate)
+  const [blurHint, setBlurHint] = useState(false);
   const [manualQuery, setManualQuery] = useState('');
   const manualResults = useMemo(
     () => (manualQuery.trim() ? searchCards(catalog, manualQuery, { limit: 6 }) : []),
@@ -265,37 +268,95 @@ export function ScannerPanel() {
     return canvas;
   }
 
-  async function scan() {
+  /**
+   * Fokus-Maß (mittlere Gradient-Energie) auf einer kleinen Graustufen-Version des
+   * Rahmens — hoch = scharf. Basis fürs relative Schärfe-Gate.
+   */
+  function focusScore(): number {
+    const video = videoRef.current;
+    const region = cropRegion();
+    if (!video || !region) return 0;
+    const W = 160;
+    const H = Math.max(1, Math.round((W * region.sh) / region.sw));
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return 0;
+    ctx.drawImage(video, region.sx, region.sy, region.sw, region.sh, 0, 0, W, H);
+    const d = ctx.getImageData(0, 0, W, H).data;
+    const gray = new Float64Array(W * H);
+    for (let p = 0, i = 0; p < W * H; p++, i += 4) gray[p] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    let energy = 0, count = 0;
+    for (let y = 1; y < H - 1; y++)
+      for (let x = 1; x < W - 1; x++) {
+        const p = y * W + x;
+        const gx = gray[p + 1] - gray[p - 1];
+        const gy = gray[p + W] - gray[p - W];
+        energy += gx * gx + gy * gy;
+        count++;
+      }
+    return count ? energy / count : 0;
+  }
+
+  async function scan(force = false) {
     const worker = workerRef.current;
     if (!worker || busyRef.current) return;
-    // Ganzkarte global (Otsu): liefert die Sammlernummer + einen robusten Global-Read
-    // des Namens (Sicherheitsnetz, falls die adaptiven Bänder mal danebenliegen).
+
+    // Schärfe-Gate (nur Live): sehr unscharfe Frames überspringen — relatives Maß, das
+    // sich selbst an Gerät/Licht kalibriert (kein magischer Absolutwert). Manuelles
+    // „Scannen" (force) läuft immer.
+    const focus = focusScore();
+    focusMaxRef.current = Math.max(focus, focusMaxRef.current * 0.92);
+    if (!force && focusMaxRef.current > 4 && focus < 0.4 * focusMaxRef.current) {
+      setBlurHint(true);
+      return;
+    }
+    setBlurHint(false);
+
+    // Ganzkarte global (Otsu): Sammlernummer + globaler Namens-Read (Sicherheitsnetz).
     const whole = regionCanvas([0, 0, 1, 1], 800, 'otsu');
     if (!whole) return;
-    // Zwei Namensbänder, ADAPTIV binarisiert (glanz-/foil-robust): Mitte (Grundlayout
-    // dieser Karten) + oben (Alt-Art setzt den Namen oft nach oben). Höhere Zielbreite
-    // = größere Glyphen für Tesseract (~30 px Höhe ist ideal).
+    // Zwei Namensbänder ADAPTIV (glanz-/foil-robust): Mitte + oben (Alt-Art) — plus ein
+    // eigenes Nummern-Band unten (starker, foil-robuster Entscheider).
     const bandMid = regionCanvas([0.04, 0.44, 0.92, 0.24], 900, 'adaptive');
     const bandTop = regionCanvas([0.03, 0.05, 0.94, 0.16], 900, 'adaptive');
+    const numBand = regionCanvas([0.0, 0.86, 1.0, 0.14], 800, 'otsu');
+
     busyRef.current = true;
     setScanning(true);
     try {
       const rec = async (c: HTMLCanvasElement | null) => (c ? ((await worker.recognize(c)).data.text ?? '') : '');
-      const midText = await rec(bandMid);
-      const topText = await rec(bandTop);
-      const wholeText = await rec(whole);
-      const text = `${midText} ${topText} ${wholeText}`;
+      // Namens-/Nummern-Bänder als Einzelzeile (SINGLE_LINE), Ganzkarte als Sparse-Text.
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
+      let text = `${await rec(bandMid)} ${await rec(bandTop)} ${await rec(numBand)}`;
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
+      text += ` ${await rec(whole)}`;
+
+      let top = matchCardName(text, nameCards, 5);
+      // Band-Suche: nichts Sicheres? Ein paar zusätzliche vertikale Positionen probieren
+      // (ungewöhnliche Alt-Art-Layouts). Nur bei geringer Konfidenz → günstig im Normalfall.
+      if ((top[0]?.score ?? 0) < 0.6) {
+        await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
+        for (const y of [0.2, 0.32, 0.56, 0.68]) {
+          text += ` ${await rec(regionCanvas([0.03, y, 0.94, 0.16], 900, 'adaptive'))}`;
+        }
+        top = matchCardName(text, nameCards, 5);
+      }
+
       setOcrText(text.replace(/\s+/g, ' ').trim());
-      const top = matchCardName(text, nameCards, 5);
       const mapped = top
         .map((m) => ({ card: cardIndex.get(m.cardId), score: m.score, numberHit: m.numberHit }))
         .filter((x): x is { card: Card; score: number; numberHit: boolean } => x.card !== undefined);
       setMatches(mapped);
 
-      // Auto-Übernahme: sicherer Treffer, und nur wenn sich die Karte geändert hat
-      // (verhindert Mehrfach-Einträge, während dieselbe Karte im Bild bleibt).
+      // Frame-Konsens: die letzten 3 Top-Treffer sammeln; „sicher" ist nur, was über
+      // mehrere Frames konsistent oben steht (glättet Foil-/Wackel-Ausreißer).
       const best = mapped[0];
-      if (autoAdd && best && (best.numberHit || best.score >= 0.85)) {
+      const votes = votesRef.current;
+      votes.push(best ? best.card.id : '');
+      while (votes.length > 3) votes.shift();
+      const agree = best ? votes.filter((v) => v === best.card.id).length : 0;
+      if (autoAdd && best && (best.numberHit || best.score >= 0.85) && agree >= 2) {
         if (lastAutoRef.current !== best.card.id) {
           lastAutoRef.current = best.card.id;
           addToBasket(best.card.id);
@@ -358,6 +419,10 @@ export function ScannerPanel() {
     setVdim(null);
     setTorchAvailable(false);
     setTorchOn(false);
+    votesRef.current = [];
+    focusMaxRef.current = 0;
+    lastAutoRef.current = null;
+    setBlurHint(false);
   }
 
   function applyZoom(value: number) {
@@ -503,7 +568,7 @@ export function ScannerPanel() {
           ) : (
             <>
               <button
-                onClick={() => void scan()}
+                onClick={() => void scan(true)}
                 disabled={!workerReady || scanning}
                 className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-bg disabled:opacity-40"
               >
@@ -530,6 +595,11 @@ export function ScannerPanel() {
           )}
         </div>
 
+        {camOn && live && blurHint && (
+          <p className="mt-2 text-xs text-accent">
+            Unscharf — ruhig halten oder etwas näher ran, dann liest der Scanner wieder.
+          </p>
+        )}
         {ocrText && (
           <p className="mt-2 break-words font-mono text-[10px] text-muted">
             Gelesen: „{ocrText.slice(0, 120)}"

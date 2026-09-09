@@ -109,12 +109,14 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
   **OCR-Tuning:** Vorverarbeitung binarisiert (nach Kontrast-Streckung/Invert) —
   **Otsu** (global) für Ganzkarte/Nummer, **adaptiv (Bradley/Integralbild)** für die
-  Namensbänder → **glanz-/foil-robust** bei ungleichem Licht. Gegen **Alt-Art** werden
-  **zwei Namensbänder** gelesen (Mitte + oben) und mit der Ganzkarte kombiniert; Live-
-  Intervall 2200 ms (3 OCR-Durchgänge). `nameMatch` faltet häufige **OCR-Verwechsler**
-  (0/O, 1/I, 5/S, 8/B) beidseitig für den Namensvergleich (`foldOcr`), die Sammlernummer
-  bleibt auf dem Roh-Text. (Band-Position/PSM + Frame-Aggregation bleiben Gerät-abhängig
-  offen — mit echten „Gelesen:"-Ausgaben weiter tunen.)
+  Namens-/Nummern-Bänder → **glanz-/foil-robust**. Durchgänge je Scan: Namensband
+  **Mitte + oben** (Alt-Art) als **SINGLE_LINE**, eigenes **Nummern-Band** unten
+  (Entscheider), Ganzkarte als SPARSE; bei geringer Konfidenz **Band-Sweep** über
+  weitere y-Positionen. **Schärfe-Gate** (relatives Fokus-Maß, `focusScore`) überspringt
+  unscharfe Live-Frames (manuelles „Scannen" erzwingt), **Frame-Konsens** (2 von 3)
+  sichert die Auto-Übernahme. `nameMatch` faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B)
+  beidseitig (`foldOcr`), die Sammlernummer bleibt auf dem Roh-Text. (Feinschliff der
+  Band-Positionen/Schwellen bleibt Gerät-abhängig — mit echten „Gelesen:"-Ausgaben tunen.)
 - **Deckbau-Synergie & Filter** (§ 5/§ 12): `domain/deckSynergy.ts` (rein/getestet)
   — `suggestAdditions` (RAM-legale, synergistische Vorschläge zu den Legends) +
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)
