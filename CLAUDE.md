@@ -108,15 +108,17 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   secure) oder in der **nativen App** (CAMERA-Permission + Torch), nicht im Vorschau-
   fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
   **OCR-Tuning:** Vorverarbeitung binarisiert (nach Kontrast-Streckung/Invert) —
-  **Otsu** (global) für Ganzkarte/Nummer, **adaptiv (Bradley/Integralbild)** für die
-  Namens-/Nummern-Bänder → **glanz-/foil-robust**. Durchgänge je Scan: Namensband
-  **Mitte + oben** (Alt-Art) als **SINGLE_LINE**, eigenes **Nummern-Band** unten
-  (Entscheider), Ganzkarte als SPARSE; bei geringer Konfidenz **Band-Sweep** über
-  weitere y-Positionen. **Schärfe-Gate** (relatives Fokus-Maß, `focusScore`) überspringt
-  unscharfe Live-Frames (manuelles „Scannen" erzwingt), **Frame-Konsens** (2 von 3)
-  sichert die Auto-Übernahme. `nameMatch` faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B)
-  beidseitig (`foldOcr`), die Sammlernummer bleibt auf dem Roh-Text. (Feinschliff der
-  Band-Positionen/Schwellen bleibt Gerät-abhängig — mit echten „Gelesen:"-Ausgaben tunen.)
+  **Otsu** (global) für die Ganzkarte, **adaptiv (Bradley/Integralbild)** für zwei
+  Namensbänder (**Mitte** = Grundlayout, **oben** = Name-oben-Karten). Die drei Reads
+  werden kombiniert und gegen die 151 Namen gematcht; Live-Intervall 2200 ms. `nameMatch`
+  faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B) beidseitig (`foldOcr`), die Sammlernummer
+  bleibt auf dem Roh-Text. **Kamera fordert kontinuierlichen Autofokus an** (`focusMode:
+  continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Gelernt:** mit
+  einer Webcam (flach/nah/scharf) trifft die Erkennung ~100 %; die Handy-Schwäche lag an
+  der **Aufnahme** (Fokus/Glanz/Framing), nicht am Algorithmus — Autofokus + „eine Karte
+  formatfüllend, ruhig halten, gegen Glanz kippen" schließt die Lücke. (Ein früherer
+  Versuch mit Nummern-Band/Sweep/Schärfe-Gate/Frame-Konsens verschlechterte es durch
+  Text-Rauschen und wurde verworfen.)
 - **Deckbau-Synergie & Filter** (§ 5/§ 12): `domain/deckSynergy.ts` (rein/getestet)
   — `suggestAdditions` (RAM-legale, synergistische Vorschläge zu den Legends) +
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)
