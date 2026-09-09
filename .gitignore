@@ -26,6 +26,8 @@ pipeline/decklists/*.json
 app/src/data/coplay.json
 # Keyword-Glossar-Transkription (CDPR-IP) → lokale Dev-Referenz, nicht verteilen.
 pipeline/glossary.md
+# Lokales Kartenbild-Archiv (fetch_images.py) — CDPR-Artwork, § 8: NICHT verteilen.
+pipeline/card-images/
 
 # sim (Konsolen-Test-Engine): Abhängigkeiten, Szenario-Decks (Deckdaten), Läufe.
 sim/node_modules/

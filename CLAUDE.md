@@ -73,6 +73,13 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   von der NetDeck-API (source-URLs sind signatur-pflichtig/laufen ab), Anzeige via
   `<img>` vom offiziellen CDN — nur verlinkt, nichts gehostet. `ui/CardImage.tsx`
   (Platzhalter-Fallback). In Synergie/Deckeditor/Sammlung eingebaut.
+  **Robust gegen die oft abstürzende NetDeck-API:** cache-first — zeigt sofort die
+  zuletzt nach Dexie gespiegelten URLs (SW-Cache matcht am Pfad), aktualisiert dann
+  im Hintergrund mit **8 s-Timeout** (eine hängende/tote API blockiert nicht mehr).
+  Dauerhaft offline via Knopf „Alle Bilder offline laden". **`pipeline/fetch_images.py`**
+  (stdlib) lädt alle Bilder in `pipeline/card-images/` (**gitignored**) — die „trotzdem
+  pullen"-Möglichkeit fürs lokale Offline-Archiv; § 8: **nie ins Repo committen**
+  (CDPR-Artwork).
 - **Empirische Synergie** (§ 12 C, Phase 4a): `domain/coplay.ts` (rein, getestet)
   misst Ko-Vorkommen (Lift) über ein Deck-Korpus. Quelle **First-Party**: 2 Starter
   + eigene Dexie-Decks (`data/deckCorpus.ts`, reaktiv), **kein Netzwerk/Scraping**.
@@ -100,11 +107,14 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   den erkannten Text (zum Tunen). Kamera nur im eigenen Browser (localhost/HTTPS =
   secure) oder in der **nativen App** (CAMERA-Permission + Torch), nicht im Vorschau-
   fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
-  **OCR-Tuning:** Vorverarbeitung binarisiert jetzt per **Otsu** (nach Kontrast-
-  Streckung/Invert) — sauberes Schwarz-Weiß liest Tesseract besser; Namensband höher
-  aufgelöst (900 px). `nameMatch` faltet häufige **OCR-Verwechsler** (0/O, 1/I, 5/S,
-  8/B) beidseitig für den Namensvergleich (`foldOcr`), die Sammlernummer bleibt auf
-  dem Roh-Text. (Namensband-Position/PSM-Feintuning bleibt Gerät-abhängig offen.)
+  **OCR-Tuning:** Vorverarbeitung binarisiert (nach Kontrast-Streckung/Invert) —
+  **Otsu** (global) für Ganzkarte/Nummer, **adaptiv (Bradley/Integralbild)** für die
+  Namensbänder → **glanz-/foil-robust** bei ungleichem Licht. Gegen **Alt-Art** werden
+  **zwei Namensbänder** gelesen (Mitte + oben) und mit der Ganzkarte kombiniert; Live-
+  Intervall 2200 ms (3 OCR-Durchgänge). `nameMatch` faltet häufige **OCR-Verwechsler**
+  (0/O, 1/I, 5/S, 8/B) beidseitig für den Namensvergleich (`foldOcr`), die Sammlernummer
+  bleibt auf dem Roh-Text. (Band-Position/PSM + Frame-Aggregation bleiben Gerät-abhängig
+  offen — mit echten „Gelesen:"-Ausgaben weiter tunen.)
 - **Deckbau-Synergie & Filter** (§ 5/§ 12): `domain/deckSynergy.ts` (rein/getestet)
   — `suggestAdditions` (RAM-legale, synergistische Vorschläge zu den Legends) +
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)

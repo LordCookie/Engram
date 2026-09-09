@@ -62,6 +62,52 @@ function otsuThreshold(hist: number[], total: number): number {
   return thr;
 }
 
+/** Globale Otsu-Binarisierung in-place (Graustufe liegt in d[i]). */
+function binarizeOtsu(d: Uint8ClampedArray, total: number): void {
+  const hist = new Array<number>(256).fill(0);
+  for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
+  const thr = otsuThreshold(hist, total);
+  for (let i = 0; i < d.length; i += 4) {
+    const bw = d[i] >= thr ? 255 : 0;
+    d[i] = d[i + 1] = d[i + 2] = bw;
+  }
+}
+
+/**
+ * Adaptive (lokale) Binarisierung nach Bradley (Integralbild). Schwellt jeden Pixel
+ * gegen seinen lokalen Mittelwert — robust gegen **Glanz/Reflexe (Foils)** und
+ * ungleiches Licht, wo ein globaler Schwellwert Teile der Schrift „wegfrisst".
+ */
+function binarizeAdaptive(d: Uint8ClampedArray, w: number, h: number): void {
+  const n = w * h;
+  const gray = new Float64Array(n);
+  for (let p = 0, i = 0; p < n; p++, i += 4) gray[p] = d[i];
+  const W = w + 1;
+  const integ = new Float64Array(W * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let rowSum = 0;
+    for (let x = 0; x < w; x++) {
+      rowSum += gray[y * w + x];
+      integ[(y + 1) * W + (x + 1)] = integ[y * W + (x + 1)] + rowSum;
+    }
+  }
+  const S = Math.max(8, Math.floor(Math.min(w, h) / 3)); // Fenstergröße
+  const half = S >> 1;
+  const T = 0.15; // Pixel gilt als „dunkel", wenn < lokaler Mittel × (1−T)
+  for (let y = 0; y < h; y++) {
+    const y1 = Math.max(0, y - half), y2 = Math.min(h - 1, y + half);
+    for (let x = 0; x < w; x++) {
+      const x1 = Math.max(0, x - half), x2 = Math.min(w - 1, x + half);
+      const count = (x2 - x1 + 1) * (y2 - y1 + 1);
+      const sum =
+        integ[(y2 + 1) * W + (x2 + 1)] - integ[y1 * W + (x2 + 1)] - integ[(y2 + 1) * W + x1] + integ[y1 * W + x1];
+      const p = y * w + x, i = p * 4;
+      const bw = gray[p] * count <= sum * (1 - T) ? 0 : 255;
+      d[i] = d[i + 1] = d[i + 2] = bw;
+    }
+  }
+}
+
 interface ZoomCaps {
   min: number;
   max: number;
@@ -152,6 +198,7 @@ export function ScannerPanel() {
   function regionCanvas(
     sub: [number, number, number, number],
     targetW: number,
+    binarize: 'otsu' | 'adaptive' = 'otsu',
   ): HTMLCanvasElement | null {
     const video = videoRef.current;
     const region = cropRegion();
@@ -204,22 +251,16 @@ export function ScannerPanel() {
     }
     const range = Math.max(1, hi - lo);
     const invert = sum / n < 128; // dunkler Grund → invertieren (dunkle Schrift auf hell)
-    const bhist = new Array<number>(256).fill(0);
     for (let i = 0; i < d.length; i += 4) {
       let v = ((d[i] - lo) / range) * 255;
       v = v < 0 ? 0 : v > 255 ? 255 : v;
       if (invert) v = 255 - v;
-      const iv = v | 0;
-      d[i] = iv; // gestreckte Graustufe (nur R; G/B werden bei der Binarisierung gesetzt)
-      bhist[iv]++;
+      d[i] = v | 0; // gestreckte Graustufe (nur R; G/B werden bei der Binarisierung gesetzt)
     }
-    // Otsu-Binarisierung: reines Schwarz/Weiß liest Tesseract am besten — die
-    // stilisierte, fette Schrift wird knackig statt „matschig".
-    const thr = otsuThreshold(bhist, n);
-    for (let i = 0; i < d.length; i += 4) {
-      const bw = d[i] >= thr ? 255 : 0;
-      d[i] = d[i + 1] = d[i + 2] = bw;
-    }
+    // Reines Schwarz/Weiß liest Tesseract am besten. „adaptive" = glanz-/lichtrobust
+    // (Foils), „otsu" = global (Standardkarten + Sammlernummer).
+    if (binarize === 'adaptive') binarizeAdaptive(d, targetW, targetH);
+    else binarizeOtsu(d, n);
     ctx.putImageData(img, 0, 0);
     return canvas;
   }
@@ -227,19 +268,23 @@ export function ScannerPanel() {
   async function scan() {
     const worker = workerRef.current;
     if (!worker || busyRef.current) return;
-    const whole = regionCanvas([0, 0, 1, 1], 800);
+    // Ganzkarte global (Otsu): liefert die Sammlernummer + einen robusten Global-Read
+    // des Namens (Sicherheitsnetz, falls die adaptiven Bänder mal danebenliegen).
+    const whole = regionCanvas([0, 0, 1, 1], 800, 'otsu');
     if (!whole) return;
-    // Namensband: bei diesen Karten sitzt der Name grob im mittleren Drittel.
-    // Ein separater, stärker gezoomter Durchgang liest ihn sauberer als die Ganzkarte;
-    // die Ganzkarte liefert weiterhin die Sammlernummer (unten). Höhere Zielbreite =
-    // größere Glyphen für Tesseract (~30 px Höhe ist ideal).
-    const band = regionCanvas([0.04, 0.44, 0.92, 0.24], 900);
+    // Zwei Namensbänder, ADAPTIV binarisiert (glanz-/foil-robust): Mitte (Grundlayout
+    // dieser Karten) + oben (Alt-Art setzt den Namen oft nach oben). Höhere Zielbreite
+    // = größere Glyphen für Tesseract (~30 px Höhe ist ideal).
+    const bandMid = regionCanvas([0.04, 0.44, 0.92, 0.24], 900, 'adaptive');
+    const bandTop = regionCanvas([0.03, 0.05, 0.94, 0.16], 900, 'adaptive');
     busyRef.current = true;
     setScanning(true);
     try {
-      const bandText = band ? ((await worker.recognize(band)).data.text ?? '') : '';
-      const wholeText = (await worker.recognize(whole)).data.text ?? '';
-      const text = `${bandText} ${wholeText}`;
+      const rec = async (c: HTMLCanvasElement | null) => (c ? ((await worker.recognize(c)).data.text ?? '') : '');
+      const midText = await rec(bandMid);
+      const topText = await rec(bandTop);
+      const wholeText = await rec(whole);
+      const text = `${midText} ${topText} ${wholeText}`;
       setOcrText(text.replace(/\s+/g, ' ').trim());
       const top = matchCardName(text, nameCards, 5);
       const mapped = top
@@ -269,7 +314,7 @@ export function ScannerPanel() {
   // Optionale Live-Erkennung (langsam, weil OCR rechenintensiv ist).
   useEffect(() => {
     if (!camOn || !live || !workerReady) return;
-    const id = window.setInterval(() => void scan(), 1800);
+    const id = window.setInterval(() => void scan(), 2200);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [camOn, live, workerReady, boxScale, vdim, autoAdd]);
