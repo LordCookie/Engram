@@ -28,24 +28,31 @@ DATA_DIR = ROOT / "app" / "src" / "data"
 CARDS = DATA_DIR / "cards.json"
 RULESET = ROOT / "app" / "src" / "rules" / "ruleset.v1.json"
 DECKS_DIR = Path(__file__).resolve().parent / "decklists"
+# Von `sim/pull_meta.ts` gezogene Online-Meta-Decks (gleiches slug-Format: legends/cards).
+META_DIR = ROOT / "sim" / "meta-decks"
 OUT = DATA_DIR / "coplay.json"
 
 
 def load_deck_files() -> list[dict]:
-    if not DECKS_DIR.exists():
-        return []
-    decks = []
-    for p in sorted(DECKS_DIR.glob("*.json")):
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except Exception as e:  # noqa: BLE001
-            print(f"  übersprungen (kein JSON): {p.name} — {e}")
+    """Decks aus `pipeline/decklists/` UND den gezogenen Meta-Decks in
+    `sim/meta-decks/` (beide gitignored/optional; gleiches slug-Format)."""
+    decks: list[dict] = []
+    for d in (DECKS_DIR, META_DIR):
+        if not d.exists():
             continue
-        # Eine Datei kann ein Deck oder eine Liste von Decks enthalten.
-        if isinstance(data, list):
-            decks.extend(d for d in data if isinstance(d, dict))
-        elif isinstance(data, dict):
-            decks.append(data)
+        for p in sorted(d.glob("*.json")):
+            if p.name == "index.json":
+                continue  # pull_meta-Index, kein Deck
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+            except Exception as e:  # noqa: BLE001
+                print(f"  übersprungen (kein JSON): {p.name} — {e}")
+                continue
+            # Eine Datei kann ein Deck oder eine Liste von Decks enthalten.
+            if isinstance(data, list):
+                decks.extend(x for x in data if isinstance(x, dict))
+            elif isinstance(data, dict):
+                decks.append(data)
     return decks
 
 

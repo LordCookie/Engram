@@ -145,8 +145,14 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   führt es via `mergeCorpora` (`domain/coplay.ts`) mit dem Live-Korpus (Starter +
   eigene Decks) zusammen — fehlt die Datei (frischer Clone/CI), baut die App
   unverändert. `SynergyPanel` weist die Ingest-Zahl gesondert aus. Decklisten +
-  `coplay.json` sind gitignored (eigene/fremde Deckdaten). **Offen:** Volumen-Quelle
-  (First-Party bleibt Default; Community-Simulator = Kandidat, ToS/robots.txt prüfen).
+  `coplay.json` sind gitignored (eigene/fremde Deckdaten).
+  **Volumen-Quelle angebunden:** `ingest_decks.py` liest jetzt ZUSÄTZLICH die von
+  `sim/pull_meta.ts` gezogenen Online-Meta-Decks aus `sim/meta-decks/*.json` (gleiches
+  slug-Format; `index.json` übersprungen). Damit fließt echte Meta-Co-Play in die App:
+  aktuell **10 Meta-Decks → `coplay.json` (n=10)**, häufigste Paare = Meta-Staples
+  (River Ward, Zetatech Faceplate, Safety Override …). Refresh:
+  `cd sim && npm run pull-meta` → `python pipeline/ingest_decks.py`. Beide Ordner
+  bleiben gitignored (fremde Deckdaten, § 8 = nur Slugs/Zahlen).
 - **Simulationsmodus / Playtest** (Roadmap „Proberunden") — **manuelles** Playtest
   wie ManaBox: echte Zonen (Deck/Hand/Feld/Trash + verdeckte Legends), du bewegst
   Karten selbst, **keine erzwungene Regel-Engine** (Ehrlichkeit). Reine Maschine
@@ -256,8 +262,8 @@ python pipeline/test_fetch_cards.py
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
 ```
 
-Nächste sinnvolle Schritte: **Volumen-Quelle fürs Ingest-Korpus** klären (First-Party
-= eigene Listen, oder Community-Simulator/exburst mit ToS-Prüfung) und Decklisten nach
-`pipeline/decklists/` legen; OCR-Scanner am Handy weiter tunen (Namensband gezielt
-zuschneiden, Vorverarbeitung/Threshold für stilisierte Schrift), iOS-Kamera (Spike
+Nächste sinnvolle Schritte: **mehr Meta-Decks ins Ingest-Korpus** (nur 10 → schwaches
+Signal; weitere Deck-IDs für `pull_meta` finden, dann `ingest_decks.py`); Deck-UX &
+Synergie-Vorschläge im Editor; Gear/`{Defeated}` im v2-Kampfmodell; OCR ggf. Tipp-zum-
+Fokussieren; iOS-Kamera (Spike
 0.1), native App via Capacitor (Phase 5).
