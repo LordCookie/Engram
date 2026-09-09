@@ -143,6 +143,9 @@ export function ScannerPanel() {
   const flashTimer = useRef<number>();
   const [autoAdd, setAutoAdd] = useState(false); // sicheren Treffer automatisch in den Korb
   const lastAutoRef = useRef<string | null>(null);
+  const votesRef = useRef<string[]>([]); // letzte Top-Treffer (leichter Konsens fürs Auto-Add)
+  const [autoToast, setAutoToast] = useState<string | null>(null); // „✓ … in den Korb"
+  const autoToastTimer = useRef<number>();
   const [manualQuery, setManualQuery] = useState('');
   const manualResults = useMemo(
     () => (manualQuery.trim() ? searchCards(catalog, manualQuery, { limit: 6 }) : []),
@@ -292,13 +295,23 @@ export function ScannerPanel() {
         .filter((x): x is { card: Card; score: number; numberHit: boolean } => x.card !== undefined);
       setMatches(mapped);
 
-      // Auto-Übernahme: sicherer Treffer, und nur wenn sich die Karte geändert hat
-      // (verhindert Mehrfach-Einträge, während dieselbe Karte im Bild bleibt).
+      // Auto-Übernahme: sicherer Treffer, nur wenn sich die Karte geändert hat
+      // (kein Mehrfach-Eintrag, solange dieselbe Karte im Bild bleibt). Im LIVE-Modus
+      // zusätzlich Frame-Konsens (2 von 3) gegen Wackel-/Foil-Ausreißer beim Blättern;
+      // manuelles „Scannen" übernimmt sofort.
       const best = mapped[0];
-      if (autoAdd && best && (best.numberHit || best.score >= 0.85)) {
+      const votes = votesRef.current;
+      votes.push(best ? best.card.id : '');
+      while (votes.length > 3) votes.shift();
+      const agree = best ? votes.filter((v) => v === best.card.id).length : 0;
+      const confident = !!best && (best.numberHit || best.score >= 0.85) && (!live || agree >= 2);
+      if (autoAdd && best && confident) {
         if (lastAutoRef.current !== best.card.id) {
           lastAutoRef.current = best.card.id;
           addToBasket(best.card.id);
+          setAutoToast(best.card.name);
+          window.clearTimeout(autoToastTimer.current);
+          autoToastTimer.current = window.setTimeout(() => setAutoToast(null), 1500);
         }
       } else if (!best) {
         lastAutoRef.current = null;
@@ -364,6 +377,9 @@ export function ScannerPanel() {
     setVdim(null);
     setTorchAvailable(false);
     setTorchOn(false);
+    votesRef.current = [];
+    lastAutoRef.current = null;
+    setAutoToast(null);
   }
 
   function applyZoom(value: number) {
@@ -536,6 +552,11 @@ export function ScannerPanel() {
           )}
         </div>
 
+        {autoToast && (
+          <p className="mt-2 rounded-md bg-card-green/15 px-2 py-1 font-mono text-sm text-card-green">
+            ✓ {autoToast} in den Korb
+          </p>
+        )}
         {ocrText && (
           <p className="mt-2 break-words font-mono text-[10px] text-muted">
             Gelesen: „{ocrText.slice(0, 120)}"

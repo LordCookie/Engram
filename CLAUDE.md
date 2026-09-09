@@ -103,7 +103,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Fuzzy-Namensabgleich) + `ui/ScannerPanel.tsx` (Tab „Scanner"): `tesseract.js`
   liest den Kartennamen aus dem Kamerabild → Abgleich gegen die 151 Namen, Top-5.
   **Sammlernummer als Entscheider** (nur pro Farbe eindeutig → an Namens-Treffer
-  gekoppelt), **Scan-Korb → „In Sammlung übernehmen"**. Rahmen-/Zoom-Regler, zeigt
+  gekoppelt), **Scan-Korb → „In Sammlung übernehmen"**. **Bulk (Live-Modus):** „sicheren
+  Treffer automatisch in den Korb" mit **Frame-Konsens 2/3** (nur live; gegen Wackel-/
+  Foil-Ausreißer beim Durchblättern — manuelles „Scannen" übernimmt sofort) + klare
+  „✓ … in den Korb"-Rückmeldung. Rahmen-/Zoom-Regler, zeigt
   den erkannten Text (zum Tunen). Kamera nur im eigenen Browser (localhost/HTTPS =
   secure) oder in der **nativen App** (CAMERA-Permission + Torch), nicht im Vorschau-
   fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
