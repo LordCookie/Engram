@@ -108,6 +108,11 @@ export function parseDeckText(
     if (cm) {
       count = parseInt(cm[1], 10);
       nameStr = cm[2].trim();
+      // „0 Karte" ist kaputt, nicht 0 Kopien — lieber melden als still schlucken.
+      if (!Number.isFinite(count) || count < 1) {
+        unresolved.push(line);
+        continue;
+      }
     }
     const id = nameMap.get(normalize(nameStr));
     if (!id) {

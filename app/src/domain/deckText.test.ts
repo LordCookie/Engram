@@ -48,6 +48,12 @@ describe('deckText', () => {
     expect(parsed.unresolved).toEqual(['2 Gibt Es Nicht']);
   });
 
+  it('„0 Karte" ist kaputt und landet in unresolved (kein Null-Eintrag)', () => {
+    const parsed = parseDeckText('3 Sprout\n0 Mend', catalog, index);
+    expect(counts(parsed)).toEqual({ 'grn-sprout': 3 });
+    expect(parsed.unresolved).toEqual(['0 Mend']);
+  });
+
   it('ignoriert Kommentare, nimmt aber den Decknamen', () => {
     const parsed = parseDeckText('// engram deck: Mein Deck\n# irgendwas\n3 Sprout', catalog, index);
     expect(parsed.name).toBe('Mein Deck');
