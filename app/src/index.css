@@ -71,6 +71,17 @@ body {
 .animate-rise {
   animation: rise 0.9s ease-out forwards;
 }
+/* Fokus-Ring beim Tipp-zum-Fokussieren (Scanner). */
+@keyframes focusPulse {
+  from {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
 
 /* Effekte respektieren die Systemeinstellung (PLAN.md § 6). */
 @media (prefers-reduced-motion: reduce) {

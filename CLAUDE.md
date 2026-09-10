@@ -116,7 +116,12 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   werden kombiniert und gegen die 151 Namen gematcht; Live-Intervall 2200 ms. `nameMatch`
   faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B) beidseitig (`foldOcr`), die Sammlernummer
   bleibt auf dem Roh-Text. **Kamera fordert kontinuierlichen Autofokus an** (`focusMode:
-  continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Gelernt:** mit
+  continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Tipp-zum-
+  Fokussieren:** ein Tipp aufs Videobild richtet den Autofokus gezielt auf die Stelle
+  (`pointsOfInterest` + kontinuierlich, sonst `single-shot` → danach zurück auf
+  kontinuierlich) — gegen Glanz/Foils, mit Fokus-Ring als Feedback. **Rein additiv:**
+  `try/catch`, und kann das Gerät es nicht, bleibt der kontinuierliche Autofokus
+  unangetastet (der Knopf/Hinweis erscheint nur bei fähiger Kamera). **Gelernt:** mit
   einer Webcam (flach/nah/scharf) trifft die Erkennung ~100 %; die Handy-Schwäche lag an
   der **Aufnahme** (Fokus/Glanz/Framing), nicht am Algorithmus — Autofokus + „eine Karte
   formatfüllend, ruhig halten, gegen Glanz kippen" schließt die Lücke. (Ein früherer
@@ -254,7 +259,12 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   installiert ist nur die Android-Studio-**JBR Java 25.0.2**; AGP/Gradle unterstützen
   **JDK 17–21** → der APK-Build braucht ein JDK 17 (oder Build via Android Studio mit
   dort heruntergeladenem JDK 17). Kein Code-Problem, reine Toolchain-Version.
-- 167 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **Set-Fortschritt** (Sammlungs-Vollständigkeit): `domain/setProgress.ts`
+  (rein/getestet) zählt **eindeutige** besessene Karten (nicht Stückzahlen) gegen das
+  151er-Set, aufgeschlüsselt nach Farbe und Rarität. `ui/SetProgressPanel.tsx` oben im
+  Tab „Sammlung" (reaktiv): Gesamtbalken + Balken je Farbe (in Legendenfarbe) und je
+  Rarität. Der Kernnutzen eines Sammlungstrackers: „wie viel des Sets habe ich?".
+- 173 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -276,6 +286,5 @@ python pipeline/test_fetch_cards.py
 
 Nächste sinnvolle Schritte: **mehr Meta-Decks ins Ingest-Korpus** (nur 10 → schwaches
 Signal; weitere Deck-IDs für `pull_meta` finden, dann `ingest_decks.py`); Deck-UX &
-Synergie-Vorschläge im Editor; Gear/`{Defeated}` im v2-Kampfmodell; OCR ggf. Tipp-zum-
-Fokussieren; iOS-Kamera (Spike
-0.1), native App via Capacitor (Phase 5).
+Synergie-Vorschläge im Editor; **iOS-Kamera** (Spike 0.1). (Tipp-zum-Fokussieren im
+Scanner: erledigt.)

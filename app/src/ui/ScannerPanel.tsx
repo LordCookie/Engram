@@ -131,6 +131,8 @@ export function ScannerPanel() {
   const [zoom, setZoom] = useState(1);
   const [torchAvailable, setTorchAvailable] = useState(false); // Rückkamera-Licht steuerbar?
   const [torchOn, setTorchOn] = useState(false);
+  const [focusAvailable, setFocusAvailable] = useState(false); // Tipp-zum-Fokussieren möglich?
+  const [focusRing, setFocusRing] = useState<{ x: number; y: number; key: number } | null>(null);
   const [live, setLive] = useState(false);
 
   const [scanning, setScanning] = useState(false);
@@ -362,6 +364,11 @@ export function ScannerPanel() {
       if (caps?.focusMode?.includes('continuous')) {
         void track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] } as unknown as MediaTrackConstraints);
       }
+      // Tipp-zum-Fokussieren nur anbieten, wenn das Gerät gezielt fokussieren kann.
+      setFocusAvailable(
+        !!caps?.focusMode?.some((m) => m === 'continuous' || m === 'single-shot') ||
+          'pointsOfInterest' in (caps ?? {}),
+      );
       setTorchAvailable(!!caps?.torch); // z. B. Rückkamera mit Blitz-LED
       setTorchOn(false);
       setCamOn(true);
@@ -377,6 +384,8 @@ export function ScannerPanel() {
     setVdim(null);
     setTorchAvailable(false);
     setTorchOn(false);
+    setFocusAvailable(false);
+    setFocusRing(null);
     votesRef.current = [];
     lastAutoRef.current = null;
     setAutoToast(null);
@@ -386,6 +395,46 @@ export function ScannerPanel() {
     setZoom(value);
     const track = streamRef.current?.getVideoTracks()[0];
     void track?.applyConstraints({ advanced: [{ zoom: value }] } as unknown as MediaTrackConstraints);
+  }
+
+  /**
+   * Tipp-zum-Fokussieren: richtet den Autofokus auf die getippte Stelle (gegen
+   * Glanz/Foils). Rein additiv — schlägt es fehl oder kann das Gerät es nicht,
+   * bleibt der kontinuierliche Autofokus unangetastet (kein Regressionsrisiko).
+   */
+  async function focusAt(clientX: number, clientY: number) {
+    const video = videoRef.current;
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!video || !track) return;
+    const rect = video.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const nx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const ny = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+    // Sofortiges visuelles Feedback (Ring an der Tipp-Stelle, verschwindet von selbst).
+    setFocusRing({ x: clientX - rect.left, y: clientY - rect.top, key: Date.now() });
+    const caps = track.getCapabilities?.() as unknown as {
+      focusMode?: string[];
+      pointsOfInterest?: unknown;
+    };
+    const modes = caps?.focusMode ?? [];
+    const advanced: Record<string, unknown> = {};
+    if ('pointsOfInterest' in (caps ?? {})) advanced.pointsOfInterest = [{ x: nx, y: ny }];
+    if (modes.includes('continuous')) advanced.focusMode = 'continuous';
+    else if (modes.includes('single-shot')) advanced.focusMode = 'single-shot';
+    if (Object.keys(advanced).length === 0) return;
+    try {
+      await track.applyConstraints({ advanced: [advanced] } as unknown as MediaTrackConstraints);
+      // Nach single-shot zurück auf kontinuierlich, damit's beim Weiterblättern scharf bleibt.
+      if (advanced.focusMode === 'single-shot' && modes.includes('continuous')) {
+        window.setTimeout(() => {
+          void track.applyConstraints({
+            advanced: [{ focusMode: 'continuous' }],
+          } as unknown as MediaTrackConstraints);
+        }, 1500);
+      }
+    } catch {
+      /* Gezielter Fokus nicht unterstützt — Autofokus bleibt aktiv, kein Problem. */
+    }
   }
 
   /** Kamera-Licht (Torch) der Rückkamera an/aus. */
@@ -446,7 +495,14 @@ export function ScannerPanel() {
           {workerReady ? 'Texterkennung bereit.' : 'Texterkennung wird geladen… (einmalig)'}
         </p>
 
-        <div className="relative overflow-hidden rounded-md bg-black">
+        <div
+          className={`relative overflow-hidden rounded-md bg-black ${
+            camOn && focusAvailable ? 'cursor-crosshair' : ''
+          }`}
+          onClick={
+            camOn && focusAvailable ? (e) => void focusAt(e.clientX, e.clientY) : undefined
+          }
+        >
           <video
             ref={videoRef}
             playsInline
@@ -462,10 +518,28 @@ export function ScannerPanel() {
               style={{ height: `${boxScale * 100}%`, width: `${boxWidthPct}%` }}
             />
           )}
+          {focusRing && (
+            <div
+              key={focusRing.key}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: focusRing.x, top: focusRing.y }}
+            >
+              <div
+                onAnimationEnd={() => setFocusRing(null)}
+                className="h-14 w-14 rounded-full border-2 border-accent"
+                style={{ animation: 'focusPulse 0.7s ease-out forwards' }}
+              />
+            </div>
+          )}
           {!camOn && (
             <div className="flex h-40 items-center justify-center text-sm text-muted">Kamera aus</div>
           )}
         </div>
+        {camOn && focusAvailable && (
+          <p className="mt-2 font-mono text-[11px] text-muted">
+            Tipp aufs Bild = dort scharfstellen (gegen Glanz/Foils).
+          </p>
+        )}
 
         {camOn && (
           <div className="mt-3 space-y-2 font-mono text-xs text-muted">

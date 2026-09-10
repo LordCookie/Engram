@@ -4,6 +4,7 @@ import { QuickAdd } from './ui/QuickAdd';
 import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
 import { CollectionView } from './ui/CollectionView';
+import { SetProgressPanel } from './ui/SetProgressPanel';
 import { CollectionIoPanel } from './ui/CollectionIoPanel';
 import { OfflineImagesPanel } from './ui/OfflineImagesPanel';
 import { HowToPlay } from './ui/HowToPlay';
@@ -72,6 +73,7 @@ export default function App() {
       )}
       {tab === 'sammlung' && (
         <>
+          <SetProgressPanel />
           <CollectionView />
           <SolverPanel />
         </>
