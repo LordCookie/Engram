@@ -264,7 +264,11 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   151er-Set, aufgeschlüsselt nach Farbe und Rarität. `ui/SetProgressPanel.tsx` oben im
   Tab „Sammlung" (reaktiv): Gesamtbalken + Balken je Farbe (in Legendenfarbe) und je
   Rarität. Der Kernnutzen eines Sammlungstrackers: „wie viel des Sets habe ich?".
-- 173 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **Fehlende Deckkarten** („Einkaufsliste"): `domain/deckMissing.ts` (rein/getestet)
+  listet, welche Karten dir zum Bauen fehlen (Sollmenge im Deck vs. Bestand) —
+  **inkl. Legends** (je 1 nötig, stehen oben mit „LEGEND"-Tag; vorher blind für
+  Legends). Sektion „Fehlende Karten" im Deckeditor (`have/need · −fehlt`).
+- 177 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

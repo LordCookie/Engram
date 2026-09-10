@@ -7,6 +7,7 @@ import { computeDeckStats } from '../domain/deckStats';
 import { swapAnalysis } from '../domain/swap';
 import { validate, computeRamCaps } from '../rules/validate';
 import { collectionToOwnedCounts } from '../domain/collection';
+import { deckMissing } from '../domain/deckMissing';
 import {
   db,
   saveDeck,
@@ -198,12 +199,8 @@ export function DeckEditor() {
     });
   }
 
-  // Fehlende Karten fürs Vervollständigen: brauchst mehr, als du besitzt.
-  const missingCards = deckCards
-    .map(({ card, count }) => ({ card, count, have: owned.get(card.id) ?? 0 }))
-    .filter((x) => x.count > x.have)
-    .sort((a, b) => b.count - b.have - (a.count - a.have) || a.card.name.localeCompare(b.card.name));
-  const missingTotal = missingCards.reduce((s, m) => s + (m.count - m.have), 0);
+  // Fehlende Karten fürs Vervollständigen (Einkaufsliste) — inkl. Legends.
+  const missing = useMemo(() => deckMissing(draft, owned, cardIndex), [draft, owned]);
 
   // Kompositions-Empfehlungen (über die reine Legalität hinaus).
   const advice: string[] = [];
@@ -698,18 +695,19 @@ export function DeckEditor() {
         )}
       </div>
 
-      {/* Fehlende Karten (Einkaufsliste zum Vervollständigen) */}
-      {missingCards.length > 0 && (
+      {/* Fehlende Karten (Einkaufsliste zum Vervollständigen) — inkl. Legends */}
+      {missing.cards.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
           <div className="mb-2 flex items-baseline justify-between">
             <h3 className="font-mono text-sm">Fehlende Karten</h3>
-            <span className="font-mono text-xs text-card-red">{missingTotal} fehlen</span>
+            <span className="font-mono text-xs text-card-red">{missing.totalMissing} fehlen</span>
           </div>
           <p className="mb-2 text-xs text-muted">
             Diese Karten brauchst du für das Deck noch — Anzahl im Deck vs. Bestand.
+            Legends stehen oben.
           </p>
           <ul className="space-y-1">
-            {missingCards.map(({ card, count, have }) => (
+            {missing.cards.map(({ card, need, have, isLegend }) => (
               <li key={card.id} className="flex items-center gap-2 font-mono text-sm">
                 <CardImage card={card} src={images.get(card.id)} className="h-9 w-6" />
                 <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
@@ -719,8 +717,13 @@ export function DeckEditor() {
                 >
                   {card.name}
                 </button>
+                {isLegend && (
+                  <span className="shrink-0 rounded bg-accent/15 px-1 text-[10px] uppercase tracking-wide text-accent">
+                    Legend
+                  </span>
+                )}
                 <span className="ml-auto shrink-0 text-xs text-muted">
-                  {have}/{count} · <span className="text-card-red">−{count - have}</span>
+                  {have}/{need} · <span className="text-card-red">−{need - have}</span>
                 </span>
               </li>
             ))}
