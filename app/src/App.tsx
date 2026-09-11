@@ -77,12 +77,12 @@ export default function App() {
       {tab === 'sammlung' && (
         <>
           <SetProgressPanel />
-          <WantListPanel />
-          <TradeListPanel />
           <CollectionView
             collapsed={collectionCollapsed}
             onToggleCollapsed={() => setCollectionCollapsed((v) => !v)}
           />
+          <WantListPanel />
+          <TradeListPanel />
           <SolverPanel />
         </>
       )}
