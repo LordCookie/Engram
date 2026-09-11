@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createWorker, createScheduler, PSM, type Scheduler } from 'tesseract.js';
+import type { Scheduler } from 'tesseract.js';
 import { catalog, cardIndex } from '../data/catalog';
 import { useCardImages } from '../data/cardImages';
 import { addToCollection } from '../db/db';
@@ -143,6 +143,9 @@ export function ScannerPanel() {
   const [matches, setMatches] = useState<{ card: Card; score: number; numberHit: boolean }[]>([]);
   // Scan-Korb: gesammelte Karten dieser Sitzung, am Ende gebündelt in die Sammlung.
   const [basket, setBasket] = useState<{ cardId: string; count: number }[]>([]);
+  // Korb-Korrektur: welche Korb-Karte gerade auf die richtige umgestellt wird.
+  const [correctingId, setCorrectingId] = useState<string | null>(null);
+  const [correctQuery, setCorrectQuery] = useState('');
   const [added, setAdded] = useState(0);
   const [flashId, setFlashId] = useState<string | null>(null); // kurz „✓ +1" nach dem Legen
   const flashTimer = useRef<number>();
@@ -157,15 +160,19 @@ export function ScannerPanel() {
     [manualQuery],
   );
 
-  // OCR-Worker-POOL einmalig laden: mehrere Worker an einem Scheduler, damit die
-  // Namens-Pässe PARALLEL über mehrere CPU-Kerne laufen (statt seriell auf einem).
+  // OCR-Worker-POOL laden, sobald der Scanner geöffnet wird — tesseract wird per
+  // **dynamischem Import** geladen (eigener Chunk, NICHT im Haupt-Bundle), damit der
+  // App-Start (Sammlung/Deck/Solver) schnell bleibt. Mehrere Worker an einem
+  // Scheduler = Namens-Pässe PARALLEL über mehrere CPU-Kerne.
   useEffect(() => {
     let alive = true;
-    const scheduler = createScheduler();
-    schedulerRef.current = scheduler;
-    // 2–3 Worker: nutzt die Handy-Kerne, ohne den Speicher zu sprengen.
-    const poolSize = Math.min(3, Math.max(1, navigator.hardwareConcurrency || 2));
     void (async () => {
+      const { createWorker, createScheduler, PSM } = await import('tesseract.js');
+      if (!alive) return;
+      const scheduler = createScheduler();
+      schedulerRef.current = scheduler;
+      // 2–3 Worker: nutzt die Handy-Kerne, ohne den Speicher zu sprengen.
+      const poolSize = Math.min(3, Math.max(1, navigator.hardwareConcurrency || 2));
       for (let i = 0; i < poolSize; i++) {
         try {
           const worker = await createWorker('eng');
@@ -488,6 +495,21 @@ export function ScannerPanel() {
       b.map((x) => (x.cardId === cardId ? { ...x, count: x.count + delta } : x)).filter((x) => x.count > 0),
     );
   }
+  /** Ersetzt eine falsch erkannte Korb-Karte durch die richtige (Menge bleibt, ggf. zusammengeführt). */
+  function basketReplace(oldId: string, newId: string) {
+    setBasket((b) => {
+      const item = b.find((x) => x.cardId === oldId);
+      if (!item) return b;
+      const rest = b.filter((x) => x.cardId !== oldId);
+      const existing = rest.find((x) => x.cardId === newId);
+      if (existing) {
+        return rest.map((x) => (x.cardId === newId ? { ...x, count: x.count + item.count } : x));
+      }
+      return [...rest, { cardId: newId, count: item.count }];
+    });
+    setCorrectingId(null);
+    setCorrectQuery('');
+  }
   async function commitBasket() {
     const items = basket;
     for (const it of items) await addToCollection(it.cardId, it.count, 'scan');
@@ -800,30 +822,74 @@ export function ScannerPanel() {
                 {basket.map((it) => {
                   const card = cardIndex.get(it.cardId);
                   if (!card) return null;
+                  const correcting = correctingId === it.cardId;
                   return (
-                    <li key={it.cardId} className="flex items-center gap-2 font-mono text-sm">
-                      <CardImage card={card} src={images.get(card.id)} className="h-8 w-6" />
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
-                      <button
-                        onClick={() => basketAdjust(it.cardId, -1)}
-                        className="text-muted hover:text-text"
-                      >
-                        −
-                      </button>
-                      <span className="w-8 text-center text-accent">{it.count}×</span>
-                      <button
-                        onClick={() => basketAdjust(it.cardId, 1)}
-                        className="text-muted hover:text-text"
-                      >
-                        +
-                      </button>
-                      <span className="truncate">{card.name}</span>
-                      <button
-                        onClick={() => basketAdjust(it.cardId, -it.count)}
-                        className="ml-auto text-muted hover:text-card-red"
-                      >
-                        ✕
-                      </button>
+                    <li key={it.cardId} className="font-mono text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <CardImage card={card} src={images.get(card.id)} className="h-8 w-6" />
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
+                        <button
+                          onClick={() => basketAdjust(it.cardId, -1)}
+                          aria-label="Eins weniger"
+                          className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center text-accent">{it.count}×</span>
+                        <button
+                          onClick={() => basketAdjust(it.cardId, 1)}
+                          aria-label="Eins mehr"
+                          className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCorrectingId(correcting ? null : it.cardId);
+                            setCorrectQuery('');
+                          }}
+                          title="Falsch erkannt? Antippen, um die Karte zu korrigieren"
+                          className={`truncate text-left ${correcting ? 'text-accent' : 'hover:text-accent'}`}
+                        >
+                          {card.name}
+                        </button>
+                        <button
+                          onClick={() => basketAdjust(it.cardId, -it.count)}
+                          aria-label={`${card.name} aus dem Korb entfernen`}
+                          className="ml-auto rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {correcting && (
+                        <div className="mb-1 ml-8 mt-1 rounded-md border border-accent/40 bg-bg/60 p-2">
+                          <input
+                            autoFocus
+                            value={correctQuery}
+                            onChange={(e) => setCorrectQuery(e.target.value)}
+                            placeholder="Richtige Karte suchen…"
+                            className="w-full rounded border border-white/10 bg-bg px-2 py-1.5 text-sm outline-none focus:border-accent"
+                          />
+                          {correctQuery.trim() && (
+                            <ul className="mt-1 max-h-40 overflow-y-auto">
+                              {searchCards(catalog, correctQuery, { limit: 5 }).map((c) => (
+                                <li key={c.id}>
+                                  <button
+                                    onClick={() => basketReplace(it.cardId, c.id)}
+                                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10"
+                                  >
+                                    <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[c.color]}`} />
+                                    <span className="truncate">{c.name}</span>
+                                    {c.subtitle && (
+                                      <span className="truncate text-xs text-muted">{c.subtitle}</span>
+                                    )}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

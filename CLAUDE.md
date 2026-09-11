@@ -116,7 +116,11 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   werden kombiniert und gegen die 151 Namen gematcht. **Geschwindigkeit (Handy):**
   Die Reads laufen **parallel über einen Worker-Pool** (`createScheduler` + bis zu 3
   Worker = mehrere CPU-Kerne; `tesseract.js` hat **kein** GPU-Backend, WASM/CPU) statt
-  seriell. Der **Live-/Bulk-Modus** liest nur **Mitte + Ganzkarte** (die Ganzkarte
+  seriell. **`tesseract.js` wird per dynamischem `import()` geladen** (eigener Chunk,
+  ~16 KB, erst beim Scanner-Öffnen — hält den App-Start schlank). **Scan-Korb
+  bearbeiten:** je Karte −/+ und ✕ (größere Touch-Ziele) plus **Korrektur** (Name
+  antippen → richtige Karte suchen → ersetzt die falsch erkannte, Menge bleibt) —
+  `basketReplace`. Der **Live-/Bulk-Modus** liest nur **Mitte + Ganzkarte** (die Ganzkarte
   behält die Sammlernummer als Entscheider; das obere Alt-Art-Band entfällt live) →
   mehr Frames/s, Konsens schneller; **manuelles „Scannen" bleibt voll 3-Pass**. Das
   Live-Intervall ist von fixen 2200 ms auf eine **einstellbare „Scan-Pause"**
@@ -167,10 +171,13 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `pipeline/ingest_decks.py` (stdlib-only) liest slug-basierte Decklisten aus
   `pipeline/decklists/*.json`, verwirft illegale (Python-Port der vier § 1-Regeln,
   `is_legal`), aggregiert `df`/`co`/`n` → `app/src/data/coplay.json` (gitignored).
-  Die App lädt es **optional** (`data/coplayCorpus.ts`, `import.meta.glob` eager) und
-  führt es via `mergeCorpora` (`domain/coplay.ts`) mit dem Live-Korpus (Starter +
-  eigene Decks) zusammen — fehlt die Datei (frischer Clone/CI), baut die App
-  unverändert. `SynergyPanel` weist die Ingest-Zahl gesondert aus. Decklisten +
+  Die App lädt es **optional + lazy** (`data/coplayCorpus.ts`, `loadIngestedCorpus`
+  via non-eager `import.meta.glob`): `coplay.json` (~155 KB, mit Abstand die größte
+  Datendatei) liegt in einem **eigenen Chunk**, den `useCorpus` erst async lädt —
+  hält den App-Start schlank (Haupt-Bundle ~628→512 KB). Anfangs leer (Vorschläge
+  laufen sofort aus Startern + eigenen Decks), nach dem Laden via `mergeCorpora`
+  (`domain/coplay.ts`) mit der Meta-Empirie gemischt. Fehlt die Datei (frischer
+  Clone/CI), baut die App unverändert. `SynergyPanel` weist die Ingest-Zahl gesondert aus. Decklisten +
   `coplay.json` sind gitignored (eigene/fremde Deckdaten).
   **Volumen-Quelle angebunden:** `ingest_decks.py` liest jetzt ZUSÄTZLICH die von
   `sim/pull_meta.ts` gezogenen Online-Meta-Decks aus `sim/meta-decks/*.json` (gleiches

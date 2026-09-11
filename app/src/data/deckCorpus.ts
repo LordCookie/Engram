@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { listDecks } from '../db/db';
 import { cardIndex } from './catalog';
@@ -11,7 +11,7 @@ import {
   mergeCorpora,
   type Corpus,
 } from '../domain/coplay';
-import { ingestedCorpus, ingestedDeckCount } from './coplayCorpus';
+import { loadIngestedCorpus, type IngestedCorpus } from './coplayCorpus';
 import type { ValidatableDeck } from '../rules/validate';
 import type { DeckDraft } from '../domain/deckDraft';
 
@@ -46,19 +46,32 @@ const starterDecks: ValidatableDeck[] = starters.map((s) => ({
 
 export function useCorpus(): CorpusInfo {
   const own = useLiveQuery(() => listDecks(), [], [] as DeckDraft[]);
+  // Das Ingest-Korpus (`coplay.json`, ~155 KB) wird lazy in einem eigenen Chunk
+  // geladen — anfangs leer (Vorschläge laufen sofort aus Startern + eigenen Decks),
+  // nach dem Laden fließt die Meta-Empirie dazu.
+  const [ingested, setIngested] = useState<IngestedCorpus>({ corpus: null, count: 0 });
+  useEffect(() => {
+    let alive = true;
+    void loadIngestedCorpus().then((r) => {
+      if (alive) setIngested(r);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return useMemo(() => {
     const starterLegal = legalCorpusDecks(starterDecks, rulesetV1Loaded, cardIndex);
     const ownLegalDecks = legalCorpusDecks(own, rulesetV1Loaded, cardIndex);
     const liveDecks = dedupeDecks([...starterLegal, ...ownLegalDecks]);
     const live = buildCorpus(liveDecks);
-    const corpus = ingestedCorpus ? mergeCorpora(ingestedCorpus, live) : live;
+    const corpus = ingested.corpus ? mergeCorpora(ingested.corpus, live) : live;
     return {
       corpus,
       n: corpus.n,
-      ingested: ingestedDeckCount,
+      ingested: ingested.count,
       ownTotal: own.length,
       ownLegal: ownLegalDecks.length,
     };
-  }, [own]);
+  }, [own, ingested]);
 }
