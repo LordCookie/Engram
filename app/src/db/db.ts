@@ -14,10 +14,18 @@ export interface MetaEntry {
   value: unknown;
 }
 
+/** Wunschliste („Want-Liste"): Karten, die man noch besorgen will. Pro Karte. */
+export interface WantEntry {
+  cardId: string;
+  count: number;
+  addedAt: number;
+}
+
 export class EngramDB extends Dexie {
   collection!: Table<CollectionEntry, string>; // Primärschlüssel: printingId
   decks!: Table<DeckDraft, string>; // Primärschlüssel: id
   meta!: Table<MetaEntry, string>; // Primärschlüssel: key
+  wants!: Table<WantEntry, string>; // Primärschlüssel: cardId
 
   constructor(name = 'engram') {
     super(name);
@@ -30,6 +38,8 @@ export class EngramDB extends Dexie {
     this.version(2).stores({ hashes: '&cardId' });
     // v3: Scanner läuft jetzt über OCR (kein Referenz-Hash mehr) → Tabelle löschen.
     this.version(3).stores({ hashes: null });
+    // v4: Want-Liste (Wunschliste).
+    this.version(4).stores({ wants: '&cardId, addedAt' });
   }
 }
 
@@ -131,6 +141,42 @@ export async function ensureCurrentDeck(rulesetVersion: string): Promise<string>
     return decks[0].id;
   }
   return (await createDeck(rulesetVersion)).id;
+}
+
+// --- Want-Liste (Wunschliste) ----------------------------------------------
+
+/** Ändert die Wunschmenge einer Karte um `delta`; fällt sie auf 0, wird sie entfernt. */
+export async function addWant(cardId: string, delta = 1): Promise<number> {
+  return db.transaction('rw', db.wants, async () => {
+    const existing = await db.wants.get(cardId);
+    const count = (existing?.count ?? 0) + delta;
+    if (count <= 0) {
+      await db.wants.delete(cardId);
+      return 0;
+    }
+    await db.wants.put({ cardId, count, addedAt: existing?.addedAt ?? Date.now() });
+    return count;
+  });
+}
+
+/** Entfernt eine Karte ganz aus der Want-Liste. */
+export async function removeWant(cardId: string): Promise<void> {
+  await db.wants.delete(cardId);
+}
+
+/**
+ * Hebt die Wunschmenge je Karte auf mind. `count` an (senkt nie) — für
+ * „fehlende Deckkarten → Want-Liste". Transaktional.
+ */
+export async function wantAtLeast(items: { cardId: string; count: number }[]): Promise<void> {
+  await db.transaction('rw', db.wants, async () => {
+    for (const { cardId, count } of items) {
+      if (count <= 0) continue;
+      const existing = await db.wants.get(cardId);
+      const next = Math.max(existing?.count ?? 0, count);
+      await db.wants.put({ cardId, count: next, addedAt: existing?.addedAt ?? Date.now() });
+    }
+  });
 }
 
 /** Trägt mehrere Karten mit Stückzahlen ein (für den Starter-Quickadd, Aufgabe 7). */

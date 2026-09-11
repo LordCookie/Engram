@@ -17,6 +17,7 @@ import {
   ensureCurrentDeck,
   createDeck,
   deleteDeck,
+  wantAtLeast,
 } from '../db/db';
 import {
   emptyDraft,
@@ -73,6 +74,7 @@ export function DeckEditor() {
 
   const [nameEdit, setNameEdit] = useState<string | null>(null);
   const [detail, setDetail] = useState<Card | null>(null);
+  const [wantMsg, setWantMsg] = useState<string | null>(null);
 
   const decks = useLiveQuery(() => listDecks(), [], undefined);
   const currentId = useLiveQuery(() => getCurrentDeckId(), [], undefined);
@@ -201,6 +203,13 @@ export function DeckEditor() {
 
   // Fehlende Karten fürs Vervollständigen (Einkaufsliste) — inkl. Legends.
   const missing = useMemo(() => deckMissing(draft, owned, cardIndex), [draft, owned]);
+
+  async function missingToWants() {
+    if (missing.cards.length === 0) return;
+    await wantAtLeast(missing.cards.map((m) => ({ cardId: m.card.id, count: m.need - m.have })));
+    setWantMsg(`${missing.cards.length} Karten auf die Want-Liste`);
+    window.setTimeout(() => setWantMsg(null), 2500);
+  }
 
   // Kompositions-Empfehlungen (über die reine Legalität hinaus).
   const advice: string[] = [];
@@ -698,14 +707,24 @@ export function DeckEditor() {
       {/* Fehlende Karten (Einkaufsliste zum Vervollständigen) — inkl. Legends */}
       {missing.cards.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
-          <div className="mb-2 flex items-baseline justify-between">
+          <div className="mb-2 flex items-baseline justify-between gap-2">
             <h3 className="font-mono text-sm">Fehlende Karten</h3>
-            <span className="font-mono text-xs text-card-red">{missing.totalMissing} fehlen</span>
+            <div className="flex items-baseline gap-3">
+              <button
+                onClick={() => void missingToWants()}
+                title="Alle fehlenden Karten auf die Want-Liste setzen"
+                className="rounded border border-white/10 px-2 py-0.5 font-mono text-xs text-accent hover:border-accent"
+              >
+                ☆ → Want-Liste
+              </button>
+              <span className="font-mono text-xs text-card-red">{missing.totalMissing} fehlen</span>
+            </div>
           </div>
           <p className="mb-2 text-xs text-muted">
             Diese Karten brauchst du für das Deck noch — Anzahl im Deck vs. Bestand.
             Legends stehen oben.
           </p>
+          {wantMsg && <p className="mb-2 text-xs text-card-green">✓ {wantMsg}</p>}
           <ul className="space-y-1">
             {missing.cards.map(({ card, need, have, isLegend }) => (
               <li key={card.id} className="flex items-center gap-2 font-mono text-sm">

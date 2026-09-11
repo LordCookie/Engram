@@ -5,6 +5,8 @@ import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
 import { CollectionView } from './ui/CollectionView';
 import { SetProgressPanel } from './ui/SetProgressPanel';
+import { WantListPanel } from './ui/WantListPanel';
+import { TradeListPanel } from './ui/TradeListPanel';
 import { CollectionIoPanel } from './ui/CollectionIoPanel';
 import { OfflineImagesPanel } from './ui/OfflineImagesPanel';
 import { HowToPlay } from './ui/HowToPlay';
@@ -75,6 +77,8 @@ export default function App() {
       {tab === 'sammlung' && (
         <>
           <SetProgressPanel />
+          <WantListPanel />
+          <TradeListPanel />
           <CollectionView
             collapsed={collectionCollapsed}
             onToggleCollapsed={() => setCollectionCollapsed((v) => !v)}

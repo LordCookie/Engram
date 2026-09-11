@@ -279,8 +279,19 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Fehlende Deckkarten** („Einkaufsliste"): `domain/deckMissing.ts` (rein/getestet)
   listet, welche Karten dir zum Bauen fehlen (Sollmenge im Deck vs. Bestand) —
   **inkl. Legends** (je 1 nötig, stehen oben mit „LEGEND"-Tag; vorher blind für
-  Legends). Sektion „Fehlende Karten" im Deckeditor (`have/need · −fehlt`).
-- 177 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+  Legends). Sektion „Fehlende Karten" im Deckeditor (`have/need · −fehlt`), mit Knopf
+  **„☆ → Want-Liste"** (setzt alle Fehlmengen auf die Wunschliste).
+- **Want-Liste & Tausch-Liste** (Sammler-Werkzeuge, beide **einklappbar** in der
+  Sammlung via `ui/Collapsible.tsx`, Default eingeklappt):
+  - **Want-Liste** (Wunschliste, persistiert): neue Dexie-Tabelle `wants` (DB **v4**),
+    Helfer `addWant`/`removeWant`/`wantAtLeast`. Reine Sicht `domain/wants.ts`
+    (rein/getestet) verrechnet Wunsch vs. Bestand (`have/want · −still`). Befüllbar
+    **hier per Suche**, **beim Erfassen** (☆ je Trefferzeile in `QuickAdd`) und **aus
+    dem Deck** (fehlende Karten → Want-Liste). `ui/WantListPanel.tsx`.
+  - **Tausch-Liste** (Dubletten): `domain/tradeList.ts` (rein/getestet) leitet den
+    **Überschuss** ab (owned − Playset; Legends 1, sonst `maxCopiesPerCard` aus dem
+    Ruleset). Keine eigene Persistenz. `ui/TradeListPanel.tsx`.
+- 183 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { catalog, cardIndex } from '../data/catalog';
 import { searchCards } from '../domain/search';
-import { db, addToCollection } from '../db/db';
+import { db, addToCollection, addWant } from '../db/db';
 import type { Color } from '../domain/types';
 
 /**
@@ -23,6 +23,7 @@ export function QuickAdd() {
   const [selected, setSelected] = useState(0);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [wantNote, setWantNote] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = useMemo(() => searchCards(catalog, query, { limit: 8 }), [query]);
@@ -50,6 +51,15 @@ export function QuickAdd() {
     setQuery('');
     setSelected(0);
     inputRef.current?.focus();
+  }
+
+  function addToWants(cardId: string, name: string) {
+    void addWant(cardId, 1);
+    setWantNote(name);
+    setQuery('');
+    setSelected(0);
+    inputRef.current?.focus();
+    window.setTimeout(() => setWantNote((n) => (n === name ? null : n)), 2000);
   }
 
   async function undo() {
@@ -115,6 +125,7 @@ export function QuickAdd() {
           </span>
         </p>
       )}
+      {wantNote && <p className="mt-2 text-sm text-accent">☆ {wantNote} — auf der Want-Liste</p>}
 
       {results.length > 0 && (
         <ul className="mt-3 divide-y divide-white/5 overflow-hidden rounded-md border border-white/5">
@@ -134,6 +145,17 @@ export function QuickAdd() {
                 {card.type}
                 {typeof card.ram === 'number' ? ` · RAM ${card.ram}` : ''}
               </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToWants(card.id, card.name);
+                }}
+                title="Auf die Want-Liste (statt in die Sammlung)"
+                aria-label={`${card.name} auf die Want-Liste`}
+                className="shrink-0 rounded px-1 text-accent hover:bg-white/10"
+              >
+                ☆
+              </button>
             </li>
           ))}
         </ul>
