@@ -134,6 +134,9 @@ export function ScannerPanel() {
   const [focusAvailable, setFocusAvailable] = useState(false); // Tipp-zum-Fokussieren möglich?
   const [focusRing, setFocusRing] = useState<{ x: number; y: number; key: number } | null>(null);
   const [live, setLive] = useState(false);
+  // Pause zwischen Live-Scans (ms). Bremst die Auto-Übernahme, damit sie beim
+  // schnellen Blättern nicht durchrattert. Untergrenze = OCR-Zeit (busy-Schutz).
+  const [scanDelay, setScanDelay] = useState(800);
 
   const [scanning, setScanning] = useState(false);
   const [ocrText, setOcrText] = useState('');
@@ -341,14 +344,15 @@ export function ScannerPanel() {
     }
   }
 
-  // Optionale Live-Erkennung. Kurzes Intervall + `busy`-Schutz = OCR-gebundenes
-  // Back-to-Back (kein fester Leerlauf), zwei Reads parallel über den Pool.
+  // Optionale Live-Erkennung. Einstellbare Pause + `busy`-Schutz: bei kleiner Pause
+  // OCR-gebundenes Back-to-Back, größere Pause bremst gezielt die Auto-Übernahme.
+  // Zwei Reads parallel über den Pool.
   useEffect(() => {
     if (!camOn || !live || !workerReady) return;
-    const id = window.setInterval(() => void scan('live'), 350);
+    const id = window.setInterval(() => void scan('live'), Math.max(150, scanDelay));
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camOn, live, workerReady, boxScale, vdim, autoAdd]);
+  }, [camOn, live, workerReady, boxScale, vdim, autoAdd, scanDelay]);
 
   async function startCamera() {
     setCamError(null);
@@ -591,8 +595,24 @@ export function ScannerPanel() {
             )}
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
-              <span>Live-Erkennung (langsam)</span>
+              <span>Live-Erkennung</span>
             </label>
+            {live && (
+              <label className="flex items-center gap-2">
+                <span className="w-16 shrink-0">Scan-Pause</span>
+                <input
+                  type="range"
+                  min={200}
+                  max={2500}
+                  step={100}
+                  value={scanDelay}
+                  onChange={(e) => setScanDelay(Number(e.target.value))}
+                  className="flex-1 accent-accent"
+                  aria-label="Pause zwischen Live-Scans"
+                />
+                <span className="w-12 text-right">{(scanDelay / 1000).toFixed(1)}s</span>
+              </label>
+            )}
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"

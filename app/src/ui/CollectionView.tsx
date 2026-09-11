@@ -28,7 +28,18 @@ interface Owned {
   qty: number;
 }
 
-export function CollectionView() {
+/**
+ * `collapsed`/`onToggleCollapsed` (optional, von App gehalten → bleibt beim
+ * Tab-Wechsel): eingeklappt zeigt nur den Kopf mit den Zahlen, damit man schnell
+ * zum Legend-Solver darunter kommt. Ohne die Props bleibt alles ausgeklappt.
+ */
+export function CollectionView({
+  collapsed = false,
+  onToggleCollapsed,
+}: {
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+} = {}) {
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
   const images = useCardImages();
 
@@ -77,13 +88,29 @@ export function CollectionView() {
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-mono text-lg">Sammlung</h2>
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="font-mono text-lg">Sammlung</h2>
+          {onToggleCollapsed && (
+            <button
+              onClick={onToggleCollapsed}
+              aria-expanded={!collapsed}
+              className="rounded px-1.5 font-mono text-xs text-muted hover:text-accent"
+              title={collapsed ? 'Sammlung ausklappen' : 'Sammlung einklappen (schneller zum Solver)'}
+            >
+              {collapsed ? '▸ ausklappen' : '▾ einklappen'}
+            </button>
+          )}
+        </div>
         <span className="font-mono text-sm text-muted">
           {total} Karten · {owned.length} verschiedene
         </span>
       </div>
 
+      {collapsed ? (
+        <p className="text-xs text-muted">Eingeklappt — Solver ist direkt darunter.</p>
+      ) : (
+        <>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {progress.map((p) => (
           <div key={p.color}>
@@ -193,6 +220,8 @@ export function CollectionView() {
               ))}
             </ul>
           )}
+        </>
+      )}
         </>
       )}
 

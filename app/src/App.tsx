@@ -33,6 +33,7 @@ const tabs: { id: Tab; label: string }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('sammlung');
+  const [collectionCollapsed, setCollectionCollapsed] = useState(false);
 
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24 sm:p-6">
@@ -74,7 +75,10 @@ export default function App() {
       {tab === 'sammlung' && (
         <>
           <SetProgressPanel />
-          <CollectionView />
+          <CollectionView
+            collapsed={collectionCollapsed}
+            onToggleCollapsed={() => setCollectionCollapsed((v) => !v)}
+          />
           <SolverPanel />
         </>
       )}

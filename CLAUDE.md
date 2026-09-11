@@ -119,8 +119,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   seriell. Der **Live-/Bulk-Modus** liest nur **Mitte + Ganzkarte** (die Ganzkarte
   behält die Sammlernummer als Entscheider; das obere Alt-Art-Band entfällt live) →
   mehr Frames/s, Konsens schneller; **manuelles „Scannen" bleibt voll 3-Pass**. Das
-  Live-Intervall ist von 2200 ms auf **350 ms + `busy`-Schutz** (OCR-gebundenes
-  Back-to-Back, kein fester Leerlauf) entkoppelt. `nameMatch`
+  Live-Intervall ist von fixen 2200 ms auf eine **einstellbare „Scan-Pause"**
+  (Regler, Default 800 ms; Untergrenze = OCR-Zeit via `busy`-Schutz) entkoppelt —
+  kleine Pause = OCR-gebundenes Back-to-Back, größere Pause **bremst gezielt die
+  Auto-Übernahme**, damit sie beim schnellen Blättern nicht durchrattert. `nameMatch`
   faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B) beidseitig (`foldOcr`), die Sammlernummer
   bleibt auf dem Roh-Text. **Kamera fordert kontinuierlichen Autofokus an** (`focusMode:
   continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Tipp-zum-
@@ -153,8 +155,11 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Cache; `CardImage` fällt bei Ladefehler sauber auf den Platzhalter.
 - **UX-Struktur** (`App.tsx`): 6 Bereiche **Scannen · Erfassen · Sammlung · Deck ·
   Synergie · ⚙ Mehr**; auf Mobil unten fixierte Nav. Sammlung mit Suche/Filter/
-  Sortierung; wiederverwendbares **Kartendetail** (`ui/CardDetail.tsx`, Bild + Regeln
-  + Werte + Synergie-Partner). Backup/Offline unter „Mehr". Korb-Animation im Scanner.
+  Sortierung; **einklappbar** (Knopf im Kopf, Zustand in `App` gehalten → bleibt beim
+  Tab-Wechsel, kein LocalStorage) — eingeklappt zeigt sie nur die Zahlen, damit man
+  schnell zum **Legend-Solver** darunter kommt. Wiederverwendbares **Kartendetail**
+  (`ui/CardDetail.tsx`, Bild + Regeln + Werte + Synergie-Partner). Backup/Offline unter
+  „Mehr". Korb-Animation im Scanner.
 - **Combos** (§ 12): `domain/synergy.ts` `topCombos` (automatisch, stärkste Paare) +
   **kuratierte benannte Combos** (`data/combos.json`, committed, eigene Erklärungen §8)
   in der Synergie-Ansicht („Benannte Combos" + „Weitere Combos (automatisch)").
