@@ -8,6 +8,7 @@ import { swapAnalysis } from '../domain/swap';
 import { validate, computeRamCaps } from '../rules/validate';
 import { collectionToOwnedCounts } from '../domain/collection';
 import { deckMissing } from '../domain/deckMissing';
+import { deckRarityBudget, isCostlyRarity } from '../domain/deckRarity';
 import {
   db,
   saveDeck,
@@ -203,6 +204,8 @@ export function DeckEditor() {
 
   // Fehlende Karten fürs Vervollständigen (Einkaufsliste) — inkl. Legends.
   const missing = useMemo(() => deckMissing(draft, owned, cardIndex), [draft, owned]);
+  // Rarität-Budget: wie „teuer" ist das Deck (Kopien je Seltenheit)?
+  const rarityBudget = useMemo(() => deckRarityBudget(draft, cardIndex), [draft]);
 
   async function missingToWants() {
     if (missing.cards.length === 0) return;
@@ -611,6 +614,20 @@ export function DeckEditor() {
               </span>
             ))}
         </div>
+
+        {/* Rarität-Budget: teure Raritäten (Rare+) im Akzent = schwerer zu beschaffen. */}
+        {rarityBudget.length > 0 && (
+          <div className="mt-3 border-t border-white/5 pt-3">
+            <div className="mb-1 font-mono text-xs text-muted">Rarität-Budget (Kopien)</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
+              {rarityBudget.map((r) => (
+                <span key={r.rarity} className={isCostlyRarity(r.rarity) ? 'text-accent' : 'text-muted'}>
+                  {r.rarity}: <span className="text-text">{r.count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Validierung */}

@@ -235,6 +235,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   zieht öffentliche Online-Meta-Decklisten (Default cyberpunkmeta.org, robots `Allow: /`;
   exburst.dev nennt `anthropic-ai` in robots → bewusst gemieden) in den **gitignoreten**
   Ordner `sim/meta-decks/` (HTML-Cache + slug-JSON + `index.json`; höflich: UA + Delay).
+  **Discovery zuerst über die `sitemap.xml`** (kanonisch, robots nennt sie), dann die
+  Listing-Seiten als Fallback. **Die Quelle veröffentlicht aktuell nur ~8 Decks** (das
+  ist die Obergrenze der Sitemap) — mehr „echte Meta-Decks" gibt es dort schlicht nicht;
+  ins Ingest-Korpus fließen zusätzlich `pipeline/decklists/` (aktuell zusammen n≈13).
   § 8: nur Slugs + Stückzahlen, keine Kartentexte/-bilder. `eval_meta` fährt eine Matrix
   (v2, mit 95%-CI), nimmt die Starter als **Kontrolle**, rankt die Meta-Decks intern und
   misst „Engine-Lesbarkeit" (Körper/Effekt vs. blinde Effekt-/Gear-/Control-Karten) →
@@ -291,7 +295,16 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   - **Tausch-Liste** (Dubletten): `domain/tradeList.ts` (rein/getestet) leitet den
     **Überschuss** ab (owned − Playset; Legends 1, sonst `maxCopiesPerCard` aus dem
     Ruleset). Keine eigene Persistenz. `ui/TradeListPanel.tsx`.
-- 183 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+  - Beide sitzen **unter** der Sammlungsliste (Flow: Set-Fortschritt → Sammlung →
+    Want → Tausch → Solver). `WantEntry` liegt in `domain/types.ts` (db re-exportiert).
+- **Want-Liste im Backup** (§ 5, Datensicherheit): Das JSON-Backup ist **Format v2** —
+  `collectionIo.ts` sichert jetzt **Sammlung + Want-Liste** (`replaceWants` beim Import).
+  v1-Backups (ohne `wants`) bleiben importierbar; kaputte Want-Einträge werden still
+  übersprungen. Schließt die Lücke, die die Want-Liste aufgemacht hatte.
+- **Rarität-Budget im Deck**: `domain/deckRarity.ts` (rein/getestet) zählt Kopien je
+  Seltenheit (inkl. Legends). Zeile in der Deck-Statistik; **Rare+** im Akzent
+  (`isCostlyRarity`) = teurer zu beschaffen.
+- 189 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

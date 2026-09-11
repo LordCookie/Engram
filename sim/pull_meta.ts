@@ -64,6 +64,16 @@ async function getCached(url: string, cacheKey: string, refresh: boolean): Promi
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 async function discover(a: Args): Promise<string[]> {
   const ids = new Set<string>(a.ids);
+  // Kanonische Quelle: die Sitemap listet alle veröffentlichten Deck-URLs (robots
+  // nennt sie ausdrücklich). Zuverlässiger als das Listing-HTML — und wächst mit,
+  // wenn die Seite Decks ergänzt.
+  try {
+    const xml = await getCached(`${a.source}/sitemap.xml`, 'sitemap.xml', a.refresh);
+    for (const m of xml.matchAll(new RegExp(`/deck/(${UUID.source})`, 'g'))) ids.add(m[1]);
+  } catch (e) {
+    console.error(`  Sitemap fehlgeschlagen: ${(e as Error).message}`);
+  }
+  // Zusätzlich die Listing-Seiten (falls die Sitemap mal hinterherhinkt).
   for (const path of a.listings) {
     try {
       const html = await getCached(`${a.source}/${path}`, `listing-${path}.html`, a.refresh);

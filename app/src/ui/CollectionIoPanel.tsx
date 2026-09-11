@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, replaceCollection } from '../db/db';
+import { db, replaceCollection, replaceWants } from '../db/db';
 import {
   serializeCollection,
   parseCollection,
   CollectionImportError,
 } from '../domain/collectionIo';
-import type { CollectionEntry } from '../domain/types';
+import type { CollectionEntry, WantEntry } from '../domain/types';
 
 /**
  * Export/Import als JSON (PLAN.md § 5, Aufgabe 7). Backup gegen Datenverlust in
@@ -14,11 +14,12 @@ import type { CollectionEntry } from '../domain/types';
  */
 export function CollectionIoPanel() {
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
+  const wants = useLiveQuery(() => db.wants.toArray(), [], [] as WantEntry[]);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function exportJson() {
-    const json = serializeCollection(entries);
+    const json = serializeCollection(entries, wants);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -28,7 +29,7 @@ export function CollectionIoPanel() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setMsg(`${entries.length} Einträge exportiert.`);
+    setMsg(`${entries.length} Einträge + ${wants.length} Wünsche exportiert.`);
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -37,7 +38,10 @@ export function CollectionIoPanel() {
     try {
       const parsed = parseCollection(await file.text());
       await replaceCollection(parsed.entries);
-      setMsg(`${parsed.entries.length} Einträge importiert (Sammlung ersetzt).`);
+      await replaceWants(parsed.wants);
+      setMsg(
+        `${parsed.entries.length} Einträge + ${parsed.wants.length} Wünsche importiert (ersetzt).`,
+      );
     } catch (err) {
       setMsg(
         err instanceof CollectionImportError

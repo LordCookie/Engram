@@ -55,6 +55,13 @@ export interface CollectionEntry {
   source?: string;
 }
 
+/** Eintrag der Want-Liste (Wunschliste). Persistiert in Dexie (`wants`-Tabelle). */
+export interface WantEntry {
+  cardId: string;
+  count: number;
+  addedAt: number;
+}
+
 export interface Deck {
   id: string;
   name: string;

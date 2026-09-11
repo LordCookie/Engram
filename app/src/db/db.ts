@@ -1,6 +1,8 @@
 import Dexie, { type Table } from 'dexie';
-import type { CollectionEntry } from '../domain/types';
+import type { CollectionEntry, WantEntry } from '../domain/types';
 import { emptyDraft, type DeckDraft } from '../domain/deckDraft';
+
+export type { WantEntry };
 
 /**
  * Persistenz via IndexedDB/Dexie (PLAN.md § 3, § 4). Kein LocalStorage.
@@ -12,13 +14,6 @@ import { emptyDraft, type DeckDraft } from '../domain/deckDraft';
 export interface MetaEntry {
   key: string;
   value: unknown;
-}
-
-/** Wunschliste („Want-Liste"): Karten, die man noch besorgen will. Pro Karte. */
-export interface WantEntry {
-  cardId: string;
-  count: number;
-  addedAt: number;
 }
 
 export class EngramDB extends Dexie {
@@ -162,6 +157,14 @@ export async function addWant(cardId: string, delta = 1): Promise<number> {
 /** Entfernt eine Karte ganz aus der Want-Liste. */
 export async function removeWant(cardId: string): Promise<void> {
   await db.wants.delete(cardId);
+}
+
+/** Ersetzt die komplette Want-Liste (für Import/Restore aus dem Backup). */
+export async function replaceWants(wants: WantEntry[]): Promise<void> {
+  await db.transaction('rw', db.wants, async () => {
+    await db.wants.clear();
+    if (wants.length > 0) await db.wants.bulkPut(wants);
+  });
 }
 
 /**

@@ -107,9 +107,7 @@ export function CollectionView({
         </span>
       </div>
 
-      {collapsed ? (
-        <p className="text-xs text-muted">Eingeklappt — Solver ist direkt darunter.</p>
-      ) : (
+      {collapsed ? null : (
         <>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {progress.map((p) => (
