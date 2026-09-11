@@ -36,6 +36,8 @@ sim/.state.json
 sim/out/
 # Gezogene Online-Meta-Decks (fremde Deckdaten + HTML-Cache) → nur lokal, § 8.
 sim/meta-decks/
+# Eingespeiste eigene Deck-Textlisten (Korpus-Futter, Dev-Tool import_decklists.ts).
+sim/deck-import/
 
 # Python
 __pycache__/

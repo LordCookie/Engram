@@ -10,6 +10,7 @@
     "build-decks": "tsx build.ts",
     "pull-meta": "tsx pull_meta.ts",
     "eval-meta": "tsx eval_meta.ts",
+    "import-decklists": "tsx import_decklists.ts",
     "decks": "tsx run.ts decks",
     "battle": "tsx run.ts battle",
     "game": "tsx run.ts game",

@@ -179,6 +179,15 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   (River Ward, Zetatech Faceplate, Safety Override …). Refresh:
   `cd sim && npm run pull-meta` → `python pipeline/ingest_decks.py`. Beide Ordner
   bleiben gitignored (fremde Deckdaten, § 8 = nur Slugs/Zahlen).
+  **Eigene Decks als Korpus-Futter (Dev-Tool, kein App-Feature):**
+  `sim/import_decklists.ts` (`npm run import-decklists`) liest MTG-artige `.txt`-
+  Decklisten (das Format, das die App exportiert) aus `sim/deck-import/` (oder als
+  Datei-Argumente), parst sie mit `parseDeckText`, prüft die Legalität (`validate`,
+  nur legale fließen ein), meldet unauflösbare Zeilen und schreibt slug-basierte
+  JSONs nach `pipeline/decklists/`. Dann `ingest_decks.py` (oder `--ingest`). So
+  speist man eigene Decks stapelweise ins empirische Korpus. `sim/deck-import/`
+  gitignored. **Quelle cyberpunkmeta.org ist bei ~8 Decks gedeckelt** (Sitemap) —
+  eigene Decks sind der realistische Hebel für mehr empirisches Signal.
 - **Simulationsmodus / Playtest** (Roadmap „Proberunden") — **manuelles** Playtest
   wie ManaBox: echte Zonen (Deck/Hand/Feld/Trash + verdeckte Legends), du bewegst
   Karten selbst, **keine erzwungene Regel-Engine** (Ehrlichkeit). Reine Maschine
