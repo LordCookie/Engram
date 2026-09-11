@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createWorker, PSM, type Worker } from 'tesseract.js';
+import { createWorker, createScheduler, PSM, type Scheduler } from 'tesseract.js';
 import { catalog, cardIndex } from '../data/catalog';
 import { useCardImages } from '../data/cardImages';
 import { addToCollection } from '../db/db';
@@ -118,7 +118,7 @@ export function ScannerPanel() {
   const images = useCardImages();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const schedulerRef = useRef<Scheduler | null>(null);
   const busyRef = useRef(false);
 
   const [workerReady, setWorkerReady] = useState(false);
@@ -154,31 +154,39 @@ export function ScannerPanel() {
     [manualQuery],
   );
 
-  // OCR-Worker einmalig laden.
+  // OCR-Worker-POOL einmalig laden: mehrere Worker an einem Scheduler, damit die
+  // Namens-Pässe PARALLEL über mehrere CPU-Kerne laufen (statt seriell auf einem).
   useEffect(() => {
     let alive = true;
+    const scheduler = createScheduler();
+    schedulerRef.current = scheduler;
+    // 2–3 Worker: nutzt die Handy-Kerne, ohne den Speicher zu sprengen.
+    const poolSize = Math.min(3, Math.max(1, navigator.hardwareConcurrency || 2));
     void (async () => {
-      try {
-        const worker = await createWorker('eng');
-        await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
-          // Sparse-Text: irgendwo im Bild Text finden (der Name muss nicht in einer Zeile stehen).
-          tessedit_pageseg_mode: PSM.SPARSE_TEXT,
-        });
-        if (!alive) {
-          await worker.terminate();
-          return;
+      for (let i = 0; i < poolSize; i++) {
+        try {
+          const worker = await createWorker('eng');
+          await worker.setParameters({
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ',
+            // Sparse-Text: irgendwo im Bild Text finden (Name muss nicht in einer Zeile stehen).
+            tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+          });
+          if (!alive) {
+            await worker.terminate();
+            return;
+          }
+          scheduler.addWorker(worker);
+          if (i === 0) setWorkerReady(true); // ab dem ersten Worker einsatzbereit
+        } catch {
+          // Modell nicht ladbar (offline beim ersten Mal) — Hinweis erscheint unten.
+          if (i === 0) break;
         }
-        workerRef.current = worker;
-        setWorkerReady(true);
-      } catch {
-        /* Modell nicht ladbar (offline beim ersten Mal) — Hinweis erscheint unten. */
       }
     })();
     return () => {
       alive = false;
-      void workerRef.current?.terminate();
-      workerRef.current = null;
+      void schedulerRef.current?.terminate(); // beendet alle Worker im Pool
+      schedulerRef.current = null;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -270,25 +278,32 @@ export function ScannerPanel() {
     return canvas;
   }
 
-  async function scan() {
-    const worker = workerRef.current;
-    if (!worker || busyRef.current) return;
+  /**
+   * `full` (manuelles „Scannen"): drei Reads für maximale Genauigkeit.
+   * `live` (Dauer-/Bulk-Modus): nur Mitte + Ganzkarte — die Ganzkarte behält die
+   * Sammlernummer als Entscheider (namensgleiche Karten), das obere Alt-Art-Band
+   * entfällt (die Ganzkarten-Lesung fängt es ab). Ein Read weniger = mehr Frames/s
+   * → Konsens schneller erreicht, ohne die Nummer aufzugeben.
+   */
+  async function scan(mode: 'live' | 'full' = 'full') {
+    const scheduler = schedulerRef.current;
+    if (!scheduler || busyRef.current) return;
     // Ganzkarte global (Otsu): liefert die Sammlernummer + einen robusten Global-Read
     // des Namens (Sicherheitsnetz, falls die adaptiven Bänder mal danebenliegen).
     const whole = regionCanvas([0, 0, 1, 1], 800, 'otsu');
     if (!whole) return;
-    // Zwei Namensbänder, ADAPTIV binarisiert (glanz-/foil-robust): Mitte (Grundlayout
-    // dieser Karten) + oben (Alt-Art setzt den Namen oft nach oben). Höhere Zielbreite
-    // = größere Glyphen für Tesseract (~30 px Höhe ist ideal).
+    // Namensband Mitte (Grundlayout dieser Karten), ADAPTIV binarisiert (glanz-/foil-
+    // robust). Höhere Zielbreite = größere Glyphen für Tesseract (~30 px Höhe ist ideal).
     const bandMid = regionCanvas([0.04, 0.44, 0.92, 0.24], 900, 'adaptive');
-    const bandTop = regionCanvas([0.03, 0.05, 0.94, 0.16], 900, 'adaptive');
+    // Oberes Band (Alt-Art setzt den Namen oft nach oben) nur im vollen Scan.
+    const bandTop = mode === 'full' ? regionCanvas([0.03, 0.05, 0.94, 0.16], 900, 'adaptive') : null;
     busyRef.current = true;
     setScanning(true);
     try {
-      const rec = async (c: HTMLCanvasElement | null) => (c ? ((await worker.recognize(c)).data.text ?? '') : '');
-      const midText = await rec(bandMid);
-      const topText = await rec(bandTop);
-      const wholeText = await rec(whole);
+      // Pässe laufen PARALLEL über den Worker-Pool (mehrere CPU-Kerne) statt seriell.
+      const rec = (c: HTMLCanvasElement | null) =>
+        c ? scheduler.addJob('recognize', c).then((r) => r.data.text ?? '') : Promise.resolve('');
+      const [midText, topText, wholeText] = await Promise.all([rec(bandMid), rec(bandTop), rec(whole)]);
       const text = `${midText} ${topText} ${wholeText}`;
       setOcrText(text.replace(/\s+/g, ' ').trim());
       const top = matchCardName(text, nameCards, 5);
@@ -326,10 +341,11 @@ export function ScannerPanel() {
     }
   }
 
-  // Optionale Live-Erkennung (langsam, weil OCR rechenintensiv ist).
+  // Optionale Live-Erkennung. Kurzes Intervall + `busy`-Schutz = OCR-gebundenes
+  // Back-to-Back (kein fester Leerlauf), zwei Reads parallel über den Pool.
   useEffect(() => {
     if (!camOn || !live || !workerReady) return;
-    const id = window.setInterval(() => void scan(), 2200);
+    const id = window.setInterval(() => void scan('live'), 350);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [camOn, live, workerReady, boxScale, vdim, autoAdd]);
@@ -599,7 +615,7 @@ export function ScannerPanel() {
           ) : (
             <>
               <button
-                onClick={() => void scan()}
+                onClick={() => void scan('full')}
                 disabled={!workerReady || scanning}
                 className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-bg disabled:opacity-40"
               >

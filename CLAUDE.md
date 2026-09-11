@@ -113,7 +113,14 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   **OCR-Tuning:** Vorverarbeitung binarisiert (nach Kontrast-Streckung/Invert) —
   **Otsu** (global) für die Ganzkarte, **adaptiv (Bradley/Integralbild)** für zwei
   Namensbänder (**Mitte** = Grundlayout, **oben** = Name-oben-Karten). Die drei Reads
-  werden kombiniert und gegen die 151 Namen gematcht; Live-Intervall 2200 ms. `nameMatch`
+  werden kombiniert und gegen die 151 Namen gematcht. **Geschwindigkeit (Handy):**
+  Die Reads laufen **parallel über einen Worker-Pool** (`createScheduler` + bis zu 3
+  Worker = mehrere CPU-Kerne; `tesseract.js` hat **kein** GPU-Backend, WASM/CPU) statt
+  seriell. Der **Live-/Bulk-Modus** liest nur **Mitte + Ganzkarte** (die Ganzkarte
+  behält die Sammlernummer als Entscheider; das obere Alt-Art-Band entfällt live) →
+  mehr Frames/s, Konsens schneller; **manuelles „Scannen" bleibt voll 3-Pass**. Das
+  Live-Intervall ist von 2200 ms auf **350 ms + `busy`-Schutz** (OCR-gebundenes
+  Back-to-Back, kein fester Leerlauf) entkoppelt. `nameMatch`
   faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B) beidseitig (`foldOcr`), die Sammlernummer
   bleibt auf dem Roh-Text. **Kamera fordert kontinuierlichen Autofokus an** (`focusMode:
   continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Tipp-zum-
