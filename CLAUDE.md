@@ -96,17 +96,28 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   mit Renormalisierung bei fehlender Quelle. Im `SolverPanel` **Dreifach-Umschalter
   Vorhersage · Empirisch · Kombiniert** + **Blend-Regler** (Vorhersage↔Empirisch)
   im Kombi-Modus. **§ 12 C ist damit vollständig.**
-- **Löschen-Knöpfe:** Sammlung („−"/„✕" je Karte, `addToCollection(-1/-qty)`),
-  Deckeditor (Karten haben „✕" via `setCard(…,0)`, nicht nur Legends).
+- **Bestand-Knöpfe:** Sammlung je Karte **„−"/„+"/„✕"** (`addToCollection(-1/+1/-qty)`,
+  größere Touch-Ziele — Verzähler korrigieren), Deckeditor „✕" via `setCard(…,0)`.
+- **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): Export bevorzugt den **nativen
+  Share** (`navigator.share` mit Datei → Android/iOS-Share-Sheet nach Files/Drive), fällt
+  auf Blob-Download zurück; zusätzlich **Kopieren/Einfügen** über die Zwischenablage (der
+  Blob-Download alleine ist im nativen WebView unzuverlässig). Wiederherstellen (ersetzt)
+  **fragt vorher nach**.
 - **Scanner** (§ 6, Phase 3) — **OCR-Ansatz wie ManaBox** (der frühere Bild-Hash
   war für echte Fotos zu schwach, entfernt): `domain/nameMatch.ts` (rein/getestet,
   Fuzzy-Namensabgleich) + `ui/ScannerPanel.tsx` (Tab „Scanner"): `tesseract.js`
   liest den Kartennamen aus dem Kamerabild → Abgleich gegen die 151 Namen, Top-5.
   **Sammlernummer als Entscheider** (nur pro Farbe eindeutig → an Namens-Treffer
-  gekoppelt), **Scan-Korb → „In Sammlung übernehmen"**. **Bulk (Live-Modus):** „sicheren
-  Treffer automatisch in den Korb" mit **Frame-Konsens 2/3** (nur live; gegen Wackel-/
-  Foil-Ausreißer beim Durchblättern — manuelles „Scannen" übernimmt sofort) + klare
-  „✓ … in den Korb"-Rückmeldung. Rahmen-/Zoom-Regler, zeigt
+  gekoppelt), **Scan-Korb → „In Sammlung übernehmen"** (je Karte −/+/✕, **Korrektur**
+  falsch erkannter Karten via `basketReplace`). **Bulk (Live-Modus):** „sicheren Treffer
+  automatisch in den Korb" — **Auto-Add bei BILDWECHSEL statt festem Delay**: der Live-Scan
+  vergleicht ein winziges Graustufen-Thumbnail des Ausschnitts (`frameThumb`/`thumbDiff`,
+  Schwelle `FRAME_SAME`) und liest **nur, wenn sich das Bild geändert hat** (neue Karte) —
+  unveränderte Frames kosten keine OCR, neue werden bei kurzem Poll-Intervall sofort
+  aufgegriffen. Damit lesen wir ohnehin frische Einzelbilder, sodass der frühere
+  **Frame-Konsens 2/3 entfällt** (ein sicherer Read = Nummer ODER Score ≥ 0.85 genügt;
+  Doppel-Adds verhindert `lastAutoRef`, Fehler korrigiert man im Korb). Manuelles „Scannen"
+  übernimmt sofort (voll 3-Pass). Klare „✓ … in den Korb"-Rückmeldung. Rahmen-/Zoom-Regler, zeigt
   den erkannten Text (zum Tunen). Kamera nur im eigenen Browser (localhost/HTTPS =
   secure) oder in der **nativen App** (CAMERA-Permission + Torch), nicht im Vorschau-
   fenster. LAN fürs Handy: `LAN=1 npm run dev` (HTTPS 5174, `@vitejs/plugin-basic-ssl`).
@@ -122,11 +133,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   antippen → richtige Karte suchen → ersetzt die falsch erkannte, Menge bleibt) —
   `basketReplace`. Der **Live-/Bulk-Modus** liest nur **Mitte + Ganzkarte** (die Ganzkarte
   behält die Sammlernummer als Entscheider; das obere Alt-Art-Band entfällt live) →
-  mehr Frames/s, Konsens schneller; **manuelles „Scannen" bleibt voll 3-Pass**. Das
-  Live-Intervall ist von fixen 2200 ms auf eine **einstellbare „Scan-Pause"**
-  (Regler, Default 800 ms; Untergrenze = OCR-Zeit via `busy`-Schutz) entkoppelt —
-  kleine Pause = OCR-gebundenes Back-to-Back, größere Pause **bremst gezielt die
-  Auto-Übernahme**, damit sie beim schnellen Blättern nicht durchrattert. `nameMatch`
+  mehr Frames/s; **manuelles „Scannen" bleibt voll 3-Pass**. Das Live-Intervall ist ein
+  kurzes **Poll-Intervall** (Regler „Reaktion", Default 300 ms; Untergrenze = OCR-Zeit via
+  `busy`-Schutz) — zusammen mit der Bildwechsel-Erkennung greift es Kartenwechsel zügig auf,
+  ohne festes Delay. `nameMatch`
   faltet **OCR-Verwechsler** (0/O, 1/I, 5/S, 8/B) beidseitig (`foldOcr`), die Sammlernummer
   bleibt auf dem Roh-Text. **Kamera fordert kontinuierlichen Autofokus an** (`focusMode:
   continuous`, falls verfügbar) — das war der entscheidende Handy-Fix. **Tipp-zum-

@@ -202,15 +202,25 @@ export function CollectionView({
                   </button>
                   <button
                     onClick={() => void addToCollection(printingId, -1)}
+                    aria-label={`Ein Exemplar ${card.name} entfernen`}
                     title="Ein Exemplar entfernen"
-                    className="text-muted hover:text-text"
+                    className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
                   >
                     −
                   </button>
                   <button
+                    onClick={() => void addToCollection(printingId, 1)}
+                    aria-label={`Ein Exemplar ${card.name} hinzufügen`}
+                    title="Ein Exemplar hinzufügen"
+                    className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-accent"
+                  >
+                    +
+                  </button>
+                  <button
                     onClick={() => void addToCollection(printingId, -qty)}
+                    aria-label={`${card.name} ganz entfernen`}
                     title="Ganz entfernen"
-                    className="text-muted hover:text-card-red"
+                    className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                   >
                     ✕
                   </button>

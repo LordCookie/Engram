@@ -9,8 +9,12 @@ import {
 import type { CollectionEntry, WantEntry } from '../domain/types';
 
 /**
- * Export/Import als JSON (PLAN.md § 5, Aufgabe 7). Backup gegen Datenverlust in
- * IndexedDB. Import ersetzt die Sammlung (Restore-Semantik).
+ * Backup: Export/Import als JSON (Sammlung + Want-Liste) gegen Datenverlust in
+ * IndexedDB (PLAN.md § 5, Aufgabe 7). **Mobil-robust:** Export bevorzugt den
+ * nativen Share (Android/iOS öffnen das Share-Sheet → nach Files/Drive sichern),
+ * fällt auf Blob-Download zurück und bietet zusätzlich „Kopieren"/„Einfügen" über
+ * die Zwischenablage — der Blob-Download alleine ist im nativen WebView unzuverlässig.
+ * Import ersetzt (Restore) und fragt vorher nach.
  */
 export function CollectionIoPanel() {
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
@@ -18,30 +22,65 @@ export function CollectionIoPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function exportJson() {
+  const empty = entries.length === 0 && wants.length === 0;
+  const fileName = () => `engram-sammlung-${new Date().toISOString().slice(0, 10)}.json`;
+  const summary = (e: number, w: number) => `${e} Einträge + ${w} Wünsche`;
+
+  async function doExport() {
     const json = serializeCollection(entries, wants);
+    const name = fileName();
+    // 1) Nativer Share (Android/iOS): Datei ins Share-Sheet → nach Files/Drive sichern.
+    try {
+      const file = new File([json], name, { type: 'application/json' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'engram Backup' });
+        setMsg(`${summary(entries.length, wants.length)} gesichert (geteilt).`);
+        return;
+      }
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return; // Nutzer hat das Share-Sheet abgebrochen
+      // sonst: unten weiter mit Download
+    }
+    // 2) Fallback: Blob-Download (Desktop / normaler Browser).
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `engram-sammlung-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setMsg(`${entries.length} Einträge + ${wants.length} Wünsche exportiert.`);
+    setMsg(`${summary(entries.length, wants.length)} exportiert (${name}).`);
+  }
+
+  async function copyJson() {
+    try {
+      await navigator.clipboard.writeText(serializeCollection(entries, wants));
+      setMsg(`Backup kopiert (${summary(entries.length, wants.length)}).`);
+    } catch {
+      setMsg('Kopieren nicht möglich — nutze „Sichern / Teilen".');
+    }
+  }
+
+  async function restore(json: string, how: string) {
+    if (
+      !empty &&
+      !window.confirm('Wiederherstellen ersetzt deine aktuelle Sammlung + Want-Liste. Fortfahren?')
+    ) {
+      return;
+    }
+    const parsed = parseCollection(json);
+    await replaceCollection(parsed.entries);
+    await replaceWants(parsed.wants);
+    setMsg(`${summary(parsed.entries.length, parsed.wants.length)} ${how} (ersetzt).`);
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const parsed = parseCollection(await file.text());
-      await replaceCollection(parsed.entries);
-      await replaceWants(parsed.wants);
-      setMsg(
-        `${parsed.entries.length} Einträge + ${parsed.wants.length} Wünsche importiert (ersetzt).`,
-      );
+      await restore(await file.text(), 'aus Datei wiederhergestellt');
     } catch (err) {
       setMsg(
         err instanceof CollectionImportError
@@ -53,32 +92,65 @@ export function CollectionIoPanel() {
     }
   }
 
+  async function pasteRestore() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setMsg('Zwischenablage ist leer.');
+        return;
+      }
+      await restore(text, 'aus Zwischenablage eingefügt');
+    } catch (err) {
+      setMsg(
+        err instanceof CollectionImportError
+          ? `Import fehlgeschlagen: ${err.message}`
+          : 'Einfügen fehlgeschlagen (Zwischenablage/Format).',
+      );
+    }
+  }
+
+  const btn = 'rounded-md border border-white/10 px-3 py-2 font-mono text-sm hover:border-accent disabled:opacity-40';
+
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h2 className="mb-3 font-mono text-lg">Backup</h2>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={exportJson}
-          disabled={entries.length === 0}
-          className="rounded-md border border-white/10 px-3 py-1.5 font-mono text-sm hover:border-accent disabled:opacity-40"
-        >
-          Export JSON
-        </button>
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="rounded-md border border-white/10 px-3 py-1.5 font-mono text-sm hover:border-accent"
-        >
-          Import JSON
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          onChange={onFile}
-          className="hidden"
-        />
-        {msg && <span className="text-sm text-muted">{msg}</span>}
+      <div className="mb-1 flex items-baseline justify-between gap-2">
+        <h2 className="font-mono text-lg">Backup</h2>
+        <span className="font-mono text-xs text-muted">{summary(entries.length, wants.length)}</span>
       </div>
+      <p className="mb-3 text-xs text-muted">
+        Sichert Sammlung + Want-Liste als JSON. Am Handy: „Sichern / Teilen" legt die Datei über
+        das Share-Menü ab (Files/Drive). „Kopieren"/„Einfügen" gehen über die Zwischenablage.
+      </p>
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-24 shrink-0 font-mono text-xs text-muted">Sichern</span>
+          <button onClick={() => void doExport()} disabled={empty} className={btn}>
+            Sichern / Teilen
+          </button>
+          <button onClick={() => void copyJson()} disabled={empty} className={btn}>
+            Kopieren
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-24 shrink-0 font-mono text-xs text-muted">Wiederherstellen</span>
+          <button onClick={() => fileRef.current?.click()} className={btn}>
+            Aus Datei
+          </button>
+          <button onClick={() => void pasteRestore()} className={btn}>
+            Aus Zwischenablage
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={onFile}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {msg && <p className="mt-3 text-sm text-muted">{msg}</p>}
     </section>
   );
 }

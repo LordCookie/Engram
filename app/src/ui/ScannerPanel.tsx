@@ -18,6 +18,13 @@ import type { Card, Color } from '../domain/types';
 
 const CARD_ASPECT = 733 / 1024;
 
+// Bildwechsel-Erkennung: winziges Graustufen-Thumbnail des Karten-Ausschnitts.
+const THUMB_W = 24;
+const THUMB_H = 34;
+// Mittlere abs. Grauwert-Differenz (0..255): darunter gilt der Frame als „unverändert"
+// (dieselbe Karte liegt noch da) → im Live-Modus kein erneuter Scan. Auf dem Gerät tunbar.
+const FRAME_SAME = 6;
+
 /** Läuft die App nativ (Capacitor)? Dann anderer Kamera-Hinweis (kein „HTTPS öffnen"). */
 const isNativeApp =
   typeof window !== 'undefined' &&
@@ -134,9 +141,10 @@ export function ScannerPanel() {
   const [focusAvailable, setFocusAvailable] = useState(false); // Tipp-zum-Fokussieren möglich?
   const [focusRing, setFocusRing] = useState<{ x: number; y: number; key: number } | null>(null);
   const [live, setLive] = useState(false);
-  // Pause zwischen Live-Scans (ms). Bremst die Auto-Übernahme, damit sie beim
-  // schnellen Blättern nicht durchrattert. Untergrenze = OCR-Zeit (busy-Schutz).
-  const [scanDelay, setScanDelay] = useState(800);
+  // Poll-Intervall des Live-Scans (ms). Da wir nur bei BILDWECHSEL lesen, ist das
+  // im Wesentlichen, wie schnell ein Kartenwechsel aufgegriffen wird (kein festes
+  // Delay pro Karte mehr). Untergrenze = OCR-Zeit (busy-Schutz).
+  const [scanDelay, setScanDelay] = useState(300);
 
   const [scanning, setScanning] = useState(false);
   const [ocrText, setOcrText] = useState('');
@@ -151,7 +159,10 @@ export function ScannerPanel() {
   const flashTimer = useRef<number>();
   const [autoAdd, setAutoAdd] = useState(false); // sicheren Treffer automatisch in den Korb
   const lastAutoRef = useRef<string | null>(null);
-  const votesRef = useRef<string[]>([]); // letzte Top-Treffer (leichter Konsens fürs Auto-Add)
+  // Bildwechsel-Erkennung: Thumbnail des zuletzt GELESENEN Frames — unveränderte
+  // Frames werden im Live-Modus übersprungen (kein festes Delay nötig).
+  const lastThumbRef = useRef<Uint8Array | null>(null);
+  const thumbCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [autoToast, setAutoToast] = useState<string | null>(null); // „✓ … in den Korb"
   const autoToastTimer = useRef<number>();
   const [manualQuery, setManualQuery] = useState('');
@@ -295,9 +306,51 @@ export function ScannerPanel() {
    * entfällt (die Ganzkarten-Lesung fängt es ab). Ein Read weniger = mehr Frames/s
    * → Konsens schneller erreicht, ohne die Nummer aufzugeben.
    */
+  /** Winziges Graustufen-Thumbnail des Karten-Ausschnitts (für Bildwechsel-Erkennung). */
+  function frameThumb(): Uint8Array | null {
+    const video = videoRef.current;
+    const region = cropRegion();
+    if (!video || !region) return null;
+    let cv = thumbCanvasRef.current;
+    if (!cv) {
+      cv = document.createElement('canvas');
+      cv.width = THUMB_W;
+      cv.height = THUMB_H;
+      thumbCanvasRef.current = cv;
+    }
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(video, region.sx, region.sy, region.sw, region.sh, 0, 0, THUMB_W, THUMB_H);
+    const d = ctx.getImageData(0, 0, THUMB_W, THUMB_H).data;
+    const out = new Uint8Array(THUMB_W * THUMB_H);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      out[j] = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
+    }
+    return out;
+  }
+  /** Mittlere absolute Grauwert-Differenz zweier gleich großer Thumbnails (0..255). */
+  function thumbDiff(a: Uint8Array, b: Uint8Array): number {
+    let s = 0;
+    for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
+    return s / a.length;
+  }
+
   async function scan(mode: 'live' | 'full' = 'full') {
     const scheduler = schedulerRef.current;
     if (!scheduler || busyRef.current) return;
+    // BILDWECHSEL-ERKENNUNG (nur live/auto): liegt noch dieselbe Karte im Bild
+    // (Thumbnail ~unverändert), NICHT erneut lesen. So greift ein kurzes Poll-Intervall
+    // neue Karten sofort auf, ohne festes Delay — und statische Frames kosten keine OCR.
+    if (mode === 'live') {
+      const thumb = frameThumb();
+      if (thumb) {
+        const last = lastThumbRef.current;
+        if (last && last.length === thumb.length && thumbDiff(thumb, last) < FRAME_SAME) {
+          return; // unverändert → kein neuer Scan
+        }
+        lastThumbRef.current = thumb;
+      }
+    }
     // Ganzkarte global (Otsu): liefert die Sammlernummer + einen robusten Global-Read
     // des Namens (Sicherheitsnetz, falls die adaptiven Bänder mal danebenliegen).
     const whole = regionCanvas([0, 0, 1, 1], 800, 'otsu');
@@ -323,15 +376,13 @@ export function ScannerPanel() {
       setMatches(mapped);
 
       // Auto-Übernahme: sicherer Treffer, nur wenn sich die Karte geändert hat
-      // (kein Mehrfach-Eintrag, solange dieselbe Karte im Bild bleibt). Im LIVE-Modus
-      // zusätzlich Frame-Konsens (2 von 3) gegen Wackel-/Foil-Ausreißer beim Blättern;
-      // manuelles „Scannen" übernimmt sofort.
+      // (kein Mehrfach-Eintrag, solange dieselbe Karte im Bild bleibt). Da der
+      // Live-Scan nur bei BILDWECHSEL läuft, lesen wir ohnehin frische Einzelbilder —
+      // ein sicherer Read (Nummer ODER hohe Score) genügt (der frühere Frame-Konsens
+      // über mehrere gleiche Frames entfällt damit). Falsches lässt sich im Korb
+      // korrigieren.
       const best = mapped[0];
-      const votes = votesRef.current;
-      votes.push(best ? best.card.id : '');
-      while (votes.length > 3) votes.shift();
-      const agree = best ? votes.filter((v) => v === best.card.id).length : 0;
-      const confident = !!best && (best.numberHit || best.score >= 0.85) && (!live || agree >= 2);
+      const confident = !!best && (best.numberHit || best.score >= 0.85);
       if (autoAdd && best && confident) {
         if (lastAutoRef.current !== best.card.id) {
           lastAutoRef.current = best.card.id;
@@ -413,7 +464,7 @@ export function ScannerPanel() {
     setTorchOn(false);
     setFocusAvailable(false);
     setFocusRing(null);
-    votesRef.current = [];
+    lastThumbRef.current = null;
     lastAutoRef.current = null;
     setAutoToast(null);
   }
@@ -621,16 +672,16 @@ export function ScannerPanel() {
             </label>
             {live && (
               <label className="flex items-center gap-2">
-                <span className="w-16 shrink-0">Scan-Pause</span>
+                <span className="w-16 shrink-0">Reaktion</span>
                 <input
                   type="range"
                   min={200}
-                  max={2500}
+                  max={1500}
                   step={100}
                   value={scanDelay}
                   onChange={(e) => setScanDelay(Number(e.target.value))}
                   className="flex-1 accent-accent"
-                  aria-label="Pause zwischen Live-Scans"
+                  aria-label="Wie schnell auf einen Kartenwechsel reagiert wird"
                 />
                 <span className="w-12 text-right">{(scanDelay / 1000).toFixed(1)}s</span>
               </label>
