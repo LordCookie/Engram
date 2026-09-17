@@ -4,7 +4,7 @@
  * Präferenz wird über Dexie (`meta`) persistiert (kein LocalStorage, § 6).
  * Farben vom UI-Designer geprüft.
  */
-export type ThemeName = 'default' | 'violet' | 'synth';
+export type ThemeName = 'default' | 'violet' | 'synth' | 'lime';
 
 export interface ThemeInfo {
   id: ThemeName;
@@ -17,10 +17,11 @@ export const THEMES: readonly ThemeInfo[] = [
   { id: 'default', label: 'Standard', swatch: ['#F7D51D', '#0B0F14'] },
   { id: 'violet', label: 'Violett', swatch: ['#6A00F4', '#FFD6A5'] },
   { id: 'synth', label: 'Synthwave', swatch: ['#FF4696', '#1E1033'] },
+  { id: 'lime', label: 'Lime', swatch: ['#B6FF2E', '#23262F'] },
 ];
 
 export function isThemeName(v: unknown): v is ThemeName {
-  return v === 'default' || v === 'violet' || v === 'synth';
+  return v === 'default' || v === 'violet' || v === 'synth' || v === 'lime';
 }
 
 /** Setzt/entfernt `data-theme` an <html> — die CSS-Variablen greifen dann. */

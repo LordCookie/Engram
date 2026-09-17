@@ -49,6 +49,14 @@
   --c-accent: 255 70 150; /* #FF4696 */
   --c-on-accent: 30 16 51; /* dunkler Text auf dem hellen Pink */
 }
+:root[data-theme='lime'] {
+  --c-bg: 35 38 47; /* #23262F */
+  --c-surface: 46 50 61;
+  --c-text: 232 235 240;
+  --c-muted: 143 148 163;
+  --c-accent: 182 255 46; /* #B6FF2E */
+  --c-on-accent: 35 38 47; /* dunkler Text auf dem hellen Lime */
+}
 
 html,
 body,
