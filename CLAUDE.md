@@ -98,6 +98,16 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   im Kombi-Modus. **§ 12 C ist damit vollständig.**
 - **Bestand-Knöpfe:** Sammlung je Karte **„−"/„+"/„✕"** (`addToCollection(-1/+1/-qty)`,
   größere Touch-Ziele — Verzähler korrigieren), Deckeditor „✕" via `setCard(…,0)`.
+- **Alt-Arts** (alternative Illustrationen, getrennt zählbar): `pipeline/fetch_altarts.py`
+  ermittelt über den Detail-Endpoint, welche Karten eine echte Alt-Art haben
+  (**> 1 Künstler**, nicht bloß >1 Printing = auch Reprints/Foils) → `data/altArts.json`
+  (gitignored, 43/151). `catalog.ts` legt für diese Karten eine **aggregierte ALT_ART-
+  Printing** `<cardId>#alt` an (`hasAltArt`/`altPrintingId`/`isAltPrintingId`); der
+  Bestand liegt im **selben** Collection-Speicher, `printingIndex` löst Alt→Karte auf
+  (zählt korrekt zu Set-Fortschritt etc.). Im **Karten-Detail** (nur Sammlungs-Kontext,
+  via `onAltChange`-Prop) ein **Alt-Art-Zähler − N +**, nur bei Karten mit Alt-Art;
+  `CollectionView` gruppiert je Karte Standard/Alt und zeigt „3× · 2 Alt" (Liste) bzw.
+  ein „Alt"-Badge (Raster). **Scanner/Erfassen bewusst außen vor** (noch offen).
 - **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): In der **nativen App** teilt
   „Sichern / Teilen" über das **echte Android/iOS-Share-Sheet** — `@capacitor/filesystem`
   schreibt die JSON in den Cache, `@capacitor/share` teilt die Datei-URI (Drive/Files/
@@ -368,6 +378,7 @@ Community-Decks sind oft illegal. Details in DECISIONS.md.)
 ## Pipelines neu laufen lassen
 ```
 python pipeline/fetch_cards.py        # 151 Karten von api.netdeck.gg -> cards.json + printings.json
+python pipeline/fetch_altarts.py      # Karten mit Alt-Art (>1 Künstler, Detail-Endpoint) -> altArts.json
 python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> features.json, aus features_curated.json
 python pipeline/ingest_decks.py       # Decklisten aus pipeline/decklists/*.json -> coplay.json (Co-Play-Korpus)
 python pipeline/test_fetch_cards.py

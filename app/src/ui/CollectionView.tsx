@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { catalog, cardIndex, printingIndex } from '../data/catalog';
+import {
+  catalog,
+  cardIndex,
+  printingIndex,
+  altPrintingId,
+  isAltPrintingId,
+} from '../data/catalog';
 import { rulesetV1Loaded } from '../rules/ruleset';
 import { collectionProgress, totalCards } from '../domain/collection';
 import { useCardImages } from '../data/cardImages';
@@ -23,9 +29,11 @@ const typeOrder: CardType[] = ['LEGEND', 'UNIT', 'GEAR', 'PROGRAM', 'BRAINDANCE'
 type Sort = 'farbe' | 'name' | 'anzahl';
 
 interface Owned {
-  printingId: string;
   card: Card;
-  qty: number;
+  /** Standard-Exemplare. */
+  std: number;
+  /** Alt-Art-Exemplare (separates Printing, siehe catalog). */
+  alt: number;
 }
 
 /**
@@ -53,25 +61,31 @@ export function CollectionView({
   const progress = collectionProgress(entries, printingIndex, catalog, cardIndex, rulesetV1Loaded.colors);
   const total = totalCards(entries);
 
-  const owned: Owned[] = useMemo(
-    () =>
-      entries
-        .map((e) => ({
-          printingId: e.printingId,
-          card: cardIndex.get(printingIndex.get(e.printingId)?.cardId ?? e.printingId),
-          qty: e.quantity,
-        }))
-        .filter((x): x is Owned => x.card !== undefined),
-    [entries],
-  );
+  // Je Karte gruppiert: Standard- und Alt-Art-Exemplare getrennt (Alt-Art ist ein
+  // eigenes Printing `<cardId>#alt`, zählt aber zur selben Karte).
+  const owned: Owned[] = useMemo(() => {
+    const byCard = new Map<string, Owned>();
+    for (const e of entries) {
+      if (e.quantity <= 0) continue;
+      const cardId = printingIndex.get(e.printingId)?.cardId ?? e.printingId;
+      const card = cardIndex.get(cardId);
+      if (!card) continue;
+      const g = byCard.get(cardId) ?? { card, std: 0, alt: 0 };
+      if (isAltPrintingId(e.printingId)) g.alt += e.quantity;
+      else g.std += e.quantity;
+      byCard.set(cardId, g);
+    }
+    return [...byCard.values()];
+  }, [entries]);
 
+  const qtyOf = (o: Owned) => o.std + o.alt;
   const q = query.trim().toLowerCase();
   const shown = useMemo(() => {
     const cmp: Record<Sort, (a: Owned, b: Owned) => number> = {
       farbe: (a, b) =>
         a.card.color.localeCompare(b.card.color) || a.card.name.localeCompare(b.card.name),
       name: (a, b) => a.card.name.localeCompare(b.card.name),
-      anzahl: (a, b) => b.qty - a.qty || a.card.name.localeCompare(b.card.name),
+      anzahl: (a, b) => qtyOf(b) - qtyOf(a) || a.card.name.localeCompare(b.card.name),
     };
     return owned
       .filter(
@@ -85,7 +99,8 @@ export function CollectionView({
       .sort(cmp[sort]);
   }, [owned, q, filterColor, filterType, sort]);
 
-  const shownTotal = shown.reduce((s, o) => s + o.qty, 0);
+  const shownTotal = shown.reduce((s, o) => s + qtyOf(o), 0);
+  const detailGroup = detail ? owned.find((o) => o.card.id === detail.id) : undefined;
 
   return (
     <section className="rounded-lg bg-surface p-4">
@@ -206,7 +221,7 @@ export function CollectionView({
             <p className="text-sm text-muted">Kein Treffer für die Filter.</p>
           ) : view === 'grid' ? (
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {shown.map(({ card, qty }) => (
+              {shown.map(({ card, std, alt }) => (
                 <li key={card.id}>
                   <button onClick={() => setDetail(card)} className="block w-full text-left">
                     <div className="relative overflow-hidden rounded-md border border-white/10 hover:border-accent">
@@ -216,8 +231,13 @@ export function CollectionView({
                         className="aspect-[733/1024] w-full"
                       />
                       <span className="absolute right-1 top-1 rounded bg-bg/85 px-1.5 py-0.5 font-mono text-xs text-accent">
-                        {qty}×
+                        {std + alt}×
                       </span>
+                      {alt > 0 && (
+                        <span className="absolute left-1 top-1 rounded bg-accent/85 px-1 py-0.5 font-mono text-[10px] text-on-accent">
+                          {alt} Alt
+                        </span>
+                      )}
                     </div>
                     <span className="mt-0.5 block truncate font-mono text-[11px] text-muted">
                       {card.name}
@@ -228,7 +248,7 @@ export function CollectionView({
             </ul>
           ) : (
             <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
-              {shown.map(({ printingId, card, qty }) => (
+              {shown.map(({ card, std, alt }) => (
                 <li key={card.id} className="flex items-center gap-2 font-mono text-sm">
                   <button
                     onClick={() => setDetail(card)}
@@ -236,29 +256,38 @@ export function CollectionView({
                   >
                     <CardImage card={card} src={images.get(card.id)} className="h-9 w-6" />
                     <span className={`h-2 w-2 shrink-0 rounded-full ${colorBar[card.color]}`} />
-                    <span className="text-accent">{qty}×</span>
+                    <span className="text-accent">{std}×</span>
                     <span className="truncate">{card.name}</span>
+                    {alt > 0 && (
+                      <span className="shrink-0 rounded bg-accent/15 px-1 text-[10px] text-accent">
+                        · {alt} Alt
+                      </span>
+                    )}
                   </button>
                   <button
-                    onClick={() => void addToCollection(printingId, -1)}
+                    onClick={() => void addToCollection(card.id, -1)}
+                    disabled={std <= 0}
                     aria-label={`Ein Exemplar ${card.name} entfernen`}
-                    title="Ein Exemplar entfernen"
-                    className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
+                    title="Ein Standard-Exemplar entfernen"
+                    className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text disabled:opacity-30"
                   >
                     −
                   </button>
                   <button
-                    onClick={() => void addToCollection(printingId, 1)}
+                    onClick={() => void addToCollection(card.id, 1)}
                     aria-label={`Ein Exemplar ${card.name} hinzufügen`}
-                    title="Ein Exemplar hinzufügen"
+                    title="Ein Standard-Exemplar hinzufügen"
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-accent"
                   >
                     +
                   </button>
                   <button
-                    onClick={() => void addToCollection(printingId, -qty)}
+                    onClick={() => {
+                      if (std > 0) void addToCollection(card.id, -std);
+                      if (alt > 0) void addToCollection(altPrintingId(card.id), -alt);
+                    }}
                     aria-label={`${card.name} ganz entfernen`}
-                    title="Ganz entfernen"
+                    title="Ganz entfernen (inkl. Alt-Art)"
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                   >
                     ✕
@@ -274,7 +303,11 @@ export function CollectionView({
 
       <CardDetail
         card={detail}
-        owned={detail ? (owned.find((o) => o.card.id === detail.id)?.qty ?? 0) : undefined}
+        owned={detail ? (detailGroup ? detailGroup.std + detailGroup.alt : 0) : undefined}
+        altOwned={detailGroup?.alt ?? 0}
+        onAltChange={
+          detail ? (delta) => void addToCollection(altPrintingId(detail.id), delta) : undefined
+        }
         onClose={() => setDetail(null)}
         onPick={(c) => setDetail(c)}
       />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { cardIndex } from '../data/catalog';
+import { cardIndex, hasAltArt } from '../data/catalog';
 import { featureDB, hasFeatures } from '../data/features';
 import { pageUrlById } from '../data/printingLinks';
 import { useCardImages } from '../data/cardImages';
@@ -22,11 +22,17 @@ const colorDot: Record<Color, string> = {
 export function CardDetail({
   card,
   owned,
+  altOwned,
+  onAltChange,
   onClose,
   onPick,
 }: {
   card: Card | null;
   owned?: number;
+  /** Anzahl besessener Alt-Art-Exemplare (nur relevant mit `onAltChange`). */
+  altOwned?: number;
+  /** Sammlungs-Kontext: Alt-Art-Bestand ändern (nur dann erscheint der Zähler). */
+  onAltChange?: (delta: number) => void;
   onClose: () => void;
   /** Optional: einen Synergie-Partner anwählen (öffnet dessen Detail). */
   onPick?: (card: Card) => void;
@@ -90,6 +96,27 @@ export function CardDetail({
             {typeof owned === 'number' && (
               <div className={owned > 0 ? 'text-accent' : 'text-muted'}>
                 {owned > 0 ? `${owned}× im Bestand` : 'nicht im Bestand'}
+              </div>
+            )}
+            {onAltChange && hasAltArt(card.id) && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted">Alt-Art:</span>
+                <button
+                  onClick={() => onAltChange(-1)}
+                  disabled={(altOwned ?? 0) <= 0}
+                  aria-label="Eine Alt-Art weniger"
+                  className="rounded px-2 py-0.5 text-muted hover:bg-white/10 hover:text-text disabled:opacity-30"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-accent">{altOwned ?? 0}×</span>
+                <button
+                  onClick={() => onAltChange(1)}
+                  aria-label="Eine Alt-Art mehr"
+                  className="rounded px-2 py-0.5 text-muted hover:bg-white/10 hover:text-accent"
+                >
+                  +
+                </button>
               </div>
             )}
             {card.tags.length > 0 && (
