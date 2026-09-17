@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { catalog } from './data/catalog';
+import { getThemePref } from './db/db';
+import { applyTheme, isThemeName } from './ui/theme';
+import { ThemePanel } from './ui/ThemePanel';
 import { QuickAdd } from './ui/QuickAdd';
 import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
@@ -37,6 +40,11 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('sammlung');
   const [collectionCollapsed, setCollectionCollapsed] = useState(false);
 
+  // Gespeichertes Farbthema beim Start anwenden (Dexie-Präferenz).
+  useEffect(() => {
+    void getThemePref().then((t) => applyTheme(isThemeName(t) ? t : 'default'));
+  }, []);
+
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24 sm:p-6">
       <header className="flex items-baseline justify-between gap-2">
@@ -59,7 +67,7 @@ export default function App() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 whitespace-nowrap rounded-md px-1.5 py-2 text-center font-mono text-[11px] sm:flex-none sm:px-3 sm:text-sm ${
-              tab === t.id ? 'bg-accent text-bg' : 'text-muted hover:text-text'
+              tab === t.id ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'
             }`}
           >
             {t.label}
@@ -93,6 +101,7 @@ export default function App() {
           <DeckTestPanel />
           <PlaytestPanel />
           <HowToPlay />
+          <ThemePanel />
           <CollectionIoPanel />
           <OfflineImagesPanel />
         </>

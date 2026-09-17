@@ -710,7 +710,7 @@ export function ScannerPanel() {
               <button
                 onClick={() => void scan('full')}
                 disabled={!workerReady || scanning}
-                className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-bg disabled:opacity-40"
+                className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-on-accent disabled:opacity-40"
               >
                 {scanning ? 'Lese…' : 'Scannen'}
               </button>
@@ -719,7 +719,7 @@ export function ScannerPanel() {
                   onClick={() => void toggleTorch()}
                   aria-pressed={torchOn}
                   className={`rounded border px-3 py-1.5 font-mono text-sm ${
-                    torchOn ? 'border-accent bg-accent text-bg' : 'border-white/10 text-muted hover:border-accent'
+                    torchOn ? 'border-accent bg-accent text-on-accent' : 'border-white/10 text-muted hover:border-accent'
                   }`}
                 >
                   {torchOn ? '🔦 Licht an' : '🔦 Licht aus'}
@@ -948,7 +948,7 @@ export function ScannerPanel() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => void commitBasket()}
-                  className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-bg"
+                  className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-on-accent"
                 >
                   Alle in Sammlung übernehmen ({basketTotal})
                 </button>

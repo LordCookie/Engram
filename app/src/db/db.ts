@@ -99,6 +99,19 @@ export async function saveDeck(draft: DeckDraft): Promise<void> {
   await db.decks.put({ ...draft, updatedAt: Date.now() });
 }
 
+// --- Farbthema (UI-Präferenz, Persistenz über Dexie statt LocalStorage) ---------
+
+const THEME_KEY = 'theme';
+
+export async function getThemePref(): Promise<string> {
+  const row = await db.meta.get(THEME_KEY);
+  return typeof row?.value === 'string' ? row.value : 'default';
+}
+
+export async function setThemePref(theme: string): Promise<void> {
+  await db.meta.put({ key: THEME_KEY, value: theme });
+}
+
 export async function getCurrentDeckId(): Promise<string | undefined> {
   const row = await db.meta.get(CURRENT_DECK_KEY);
   return typeof row?.value === 'string' ? row.value : undefined;

@@ -68,7 +68,7 @@ export function SolverPanel() {
               disabled={!hasFeatures}
               title="Vorhergesagt aus dem Kartentext"
               className={`px-2 py-1 disabled:opacity-40 ${
-                effectiveSource === 'predicted' ? 'bg-accent text-bg' : 'text-muted hover:bg-white/5'
+                effectiveSource === 'predicted' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
               Vorhersage
@@ -77,7 +77,7 @@ export function SolverPanel() {
               onClick={() => setSource('empirical')}
               title="Beobachtet aus echten Decks"
               className={`border-l border-white/10 px-2 py-1 ${
-                effectiveSource === 'empirical' ? 'bg-accent text-bg' : 'text-muted hover:bg-white/5'
+                effectiveSource === 'empirical' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
               Empirisch
@@ -86,7 +86,7 @@ export function SolverPanel() {
               onClick={() => setSource('combined')}
               title="Vorhersage + Empirisch, 50/50 normalisiert"
               className={`border-l border-white/10 px-2 py-1 ${
-                effectiveSource === 'combined' ? 'bg-accent text-bg' : 'text-muted hover:bg-white/5'
+                effectiveSource === 'combined' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
               Kombiniert

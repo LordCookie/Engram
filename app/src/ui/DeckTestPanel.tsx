@@ -123,7 +123,7 @@ export function DeckTestPanel() {
           <button
             onClick={go}
             disabled={busy || !a || !b}
-            className="mt-3 rounded-md bg-accent px-4 py-2 font-mono text-sm text-bg disabled:opacity-50"
+            className="mt-3 rounded-md bg-accent px-4 py-2 font-mono text-sm text-on-accent disabled:opacity-50"
           >
             {busy ? 'läuft …' : 'Testen'}
           </button>

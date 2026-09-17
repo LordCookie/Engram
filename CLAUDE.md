@@ -98,11 +98,20 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   im Kombi-Modus. **§ 12 C ist damit vollständig.**
 - **Bestand-Knöpfe:** Sammlung je Karte **„−"/„+"/„✕"** (`addToCollection(-1/+1/-qty)`,
   größere Touch-Ziele — Verzähler korrigieren), Deckeditor „✕" via `setCard(…,0)`.
-- **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): Export bevorzugt den **nativen
-  Share** (`navigator.share` mit Datei → Android/iOS-Share-Sheet nach Files/Drive), fällt
-  auf Blob-Download zurück; zusätzlich **Kopieren/Einfügen** über die Zwischenablage (der
-  Blob-Download alleine ist im nativen WebView unzuverlässig). Wiederherstellen (ersetzt)
-  **fragt vorher nach**.
+- **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): In der **nativen App** teilt
+  „Sichern / Teilen" über das **echte Android/iOS-Share-Sheet** — `@capacitor/filesystem`
+  schreibt die JSON in den Cache, `@capacitor/share` teilt die Datei-URI (Drive/Files/
+  Senden an …). Gated über `Capacitor.isNativePlatform()`, Plugins per dynamischem Import.
+  Im **Web** Web-Share (Dateien) → sonst Blob-Download. Zusätzlich **Kopieren/Einfügen**
+  über die Zwischenablage. Wiederherstellen (ersetzt) **fragt vorher nach**. (Der Web-
+  `navigator.share` griff im nativen WebView nicht zuverlässig → daher die Plugins.)
+- **Farbthemen** (`ui/ThemePanel.tsx` unter „Mehr", `ui/theme.ts`): Standard (Gelb),
+  **Violett** (#6A00F4 + #FFD6A5) und **Synthwave** (#FF4696 + #1E1033) — vom UI-Designer
+  geprüft. Tokens in `index.css` (`:root[data-theme='…']`); neues Token **`--c-on-accent`**
+  (lesbarer Text auf dem Akzent, da die neuen Akzente dunkler als Gelb sind — alle
+  `bg-accent`-Buttons nutzen jetzt `text-on-accent`). Wahl in **Dexie (`meta`)** persistiert
+  (kein LocalStorage), `App` wendet sie beim Start an (`applyTheme` → `data-theme` an <html>).
+  Karten-Farben (Fraktionen) bleiben unberührt.
 - **Scanner** (§ 6, Phase 3) — **OCR-Ansatz wie ManaBox** (der frühere Bild-Hash
   war für echte Fotos zu schwach, entfernt): `domain/nameMatch.ts` (rein/getestet,
   Fuzzy-Namensabgleich) + `ui/ScannerPanel.tsx` (Tab „Scanner"): `tesseract.js`

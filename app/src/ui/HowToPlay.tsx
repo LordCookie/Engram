@@ -38,7 +38,7 @@ export function HowToPlay() {
         </div>
         <button
           onClick={() => setOpen(true)}
-          className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-bg"
+          className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-on-accent"
         >
           Öffnen
         </button>

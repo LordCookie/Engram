@@ -13,6 +13,7 @@ export default {
         text: 'rgb(var(--c-text) / <alpha-value>)',
         muted: 'rgb(var(--c-muted) / <alpha-value>)',
         accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        'on-accent': 'rgb(var(--c-on-accent) / <alpha-value>)',
         card: {
           red: 'rgb(var(--c-red) / <alpha-value>)',
           green: 'rgb(var(--c-green) / <alpha-value>)',

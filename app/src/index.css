@@ -18,11 +18,36 @@
   --c-text: 230 237 243;
   --c-muted: 139 152 165;
   --c-accent: 247 213 29;
+  /* Textfarbe AUF dem Akzent (Buttons/aktive Tabs). Beim gelben Standard = dunkel. */
+  --c-on-accent: 11 15 20;
 
   --c-red: 255 77 94;
   --c-green: 61 220 132;
   --c-blue: 77 166 255;
   --c-yellow: 247 213 29;
+}
+
+/*
+ * Farbthemen (Auswahl unter „Mehr"). Nur der Look (bg/surface/text/muted/accent)
+ * wechselt; die Karten-Farben (red/green/blue/yellow) bleiben semantisch
+ * (Cyberpunk-Fraktionen). `--c-on-accent` sorgt für lesbaren Text auf dem Akzent.
+ * Farben vom UI-Designer geprüft.
+ */
+:root[data-theme='violet'] {
+  --c-bg: 20 10 31;
+  --c-surface: 32 20 50;
+  --c-text: 243 236 247;
+  --c-muted: 158 145 178;
+  --c-accent: 106 0 244; /* #6A00F4 */
+  --c-on-accent: 255 214 165; /* #FFD6A5 — heller Text auf dem dunklen Violett */
+}
+:root[data-theme='synth'] {
+  --c-bg: 30 16 51; /* #1E1033 */
+  --c-surface: 44 26 74;
+  --c-text: 246 236 245;
+  --c-muted: 172 152 186;
+  --c-accent: 255 70 150; /* #FF4696 */
+  --c-on-accent: 30 16 51; /* dunkler Text auf dem hellen Pink */
 }
 
 html,

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Capacitor } from '@capacitor/core';
 import { db, replaceCollection, replaceWants } from '../db/db';
 import {
   serializeCollection,
@@ -29,19 +30,50 @@ export function CollectionIoPanel() {
   async function doExport() {
     const json = serializeCollection(entries, wants);
     const name = fileName();
-    // 1) Nativer Share (Android/iOS): Datei ins Share-Sheet → nach Files/Drive sichern.
+    const done = () => setMsg(`${summary(entries.length, wants.length)} gesichert (geteilt).`);
+    // 1) Native App (Capacitor): Datei schreiben + über das echte Android/iOS-
+    //    Share-Sheet teilen („Senden an …", Drive/Files, WhatsApp …) — der Web-
+    //    `navigator.share` greift im nativen WebView nicht zuverlässig.
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const [{ Filesystem, Directory, Encoding }, { Share }] = await Promise.all([
+          import('@capacitor/filesystem'),
+          import('@capacitor/share'),
+        ]);
+        await Filesystem.writeFile({
+          path: name,
+          data: json,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        const { uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache });
+        await Share.share({
+          title: 'engram Backup',
+          text: 'engram Sammlungs-Backup',
+          url: uri,
+          dialogTitle: 'Backup sichern / teilen',
+        });
+        done();
+      } catch (e) {
+        // Abbruch im Share-Sheet ist kein Fehler; sonst Hinweis auf „Kopieren".
+        const m = (e as Error)?.message ?? '';
+        if (!/cancel/i.test(m)) setMsg('Teilen abgebrochen — „Kopieren" geht immer.');
+      }
+      return;
+    }
+    // 2) Web: Web-Share mit Datei (Handy-Browser) …
     try {
       const file = new File([json], name, { type: 'application/json' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: 'engram Backup' });
-        setMsg(`${summary(entries.length, wants.length)} gesichert (geteilt).`);
+        done();
         return;
       }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return; // Nutzer hat das Share-Sheet abgebrochen
       // sonst: unten weiter mit Download
     }
-    // 2) Fallback: Blob-Download (Desktop / normaler Browser).
+    // 3) Fallback: Blob-Download (Desktop / normaler Browser).
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
