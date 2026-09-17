@@ -47,6 +47,7 @@ export function CollectionView({
   const [filterColor, setFilterColor] = useState<Color | 'ALL'>('ALL');
   const [filterType, setFilterType] = useState<CardType | 'ALL'>('ALL');
   const [sort, setSort] = useState<Sort>('farbe');
+  const [view, setView] = useState<'list' | 'grid'>('list');
   const [detail, setDetail] = useState<Card | null>(null);
 
   const progress = collectionProgress(entries, printingIndex, catalog, cardIndex, rulesetV1Loaded.colors);
@@ -179,6 +180,22 @@ export function CollectionView({
                 <option value="name">Sortierung: Name</option>
                 <option value="anzahl">Sortierung: Anzahl</option>
               </select>
+              <div className="flex overflow-hidden rounded border border-white/10" role="group" aria-label="Ansicht">
+                <button
+                  onClick={() => setView('list')}
+                  aria-pressed={view === 'list'}
+                  className={`px-2 py-1 ${view === 'list' ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'}`}
+                >
+                  Liste
+                </button>
+                <button
+                  onClick={() => setView('grid')}
+                  aria-pressed={view === 'grid'}
+                  className={`px-2 py-1 ${view === 'grid' ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'}`}
+                >
+                  Raster
+                </button>
+              </div>
               <span className="ml-auto text-muted">
                 {shown.length} Karten{shownTotal !== total ? ` · ${shownTotal} Stück` : ''}
               </span>
@@ -187,6 +204,28 @@ export function CollectionView({
 
           {shown.length === 0 ? (
             <p className="text-sm text-muted">Kein Treffer für die Filter.</p>
+          ) : view === 'grid' ? (
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {shown.map(({ card, qty }) => (
+                <li key={card.id}>
+                  <button onClick={() => setDetail(card)} className="block w-full text-left">
+                    <div className="relative overflow-hidden rounded-md border border-white/10 hover:border-accent">
+                      <CardImage
+                        card={card}
+                        src={images.get(card.id)}
+                        className="aspect-[733/1024] w-full"
+                      />
+                      <span className="absolute right-1 top-1 rounded bg-bg/85 px-1.5 py-0.5 font-mono text-xs text-accent">
+                        {qty}×
+                      </span>
+                    </div>
+                    <span className="mt-0.5 block truncate font-mono text-[11px] text-muted">
+                      {card.name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           ) : (
             <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
               {shown.map(({ printingId, card, qty }) => (

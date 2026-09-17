@@ -16,6 +16,8 @@ import { HowToPlay } from './ui/HowToPlay';
 import { PlaytestPanel } from './ui/PlaytestPanel';
 import { DeckTestPanel } from './ui/DeckTestPanel';
 import { SynergyPanel } from './ui/SynergyPanel';
+import { MechanicSearchPanel } from './ui/MechanicSearchPanel';
+import { UpdateBanner } from './ui/UpdateBanner';
 import { DeckEditor } from './ui/DeckEditor';
 import { ScannerPanel } from './ui/ScannerPanel';
 
@@ -57,6 +59,8 @@ export default function App() {
         )}
       </header>
 
+      <UpdateBanner />
+
       {/* Navigation: unten fixiert auf Mobil (Daumen-erreichbar), oben ab sm. */}
       <nav
         className="fixed inset-x-0 bottom-0 z-10 flex justify-center gap-1 border-t border-white/10 bg-surface/95 px-2 py-1.5 backdrop-blur sm:static sm:justify-start sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
@@ -95,7 +99,12 @@ export default function App() {
         </>
       )}
       {tab === 'deck' && <DeckEditor />}
-      {tab === 'synergie' && <SynergyPanel />}
+      {tab === 'synergie' && (
+        <>
+          <MechanicSearchPanel />
+          <SynergyPanel />
+        </>
+      )}
       {tab === 'mehr' && (
         <>
           <DeckTestPanel />

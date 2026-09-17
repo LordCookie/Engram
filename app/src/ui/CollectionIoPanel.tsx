@@ -2,11 +2,13 @@ import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Capacitor } from '@capacitor/core';
 import { db, replaceCollection, replaceWants } from '../db/db';
+import { cardIndex, printingIndex } from '../data/catalog';
 import {
   serializeCollection,
   parseCollection,
   CollectionImportError,
 } from '../domain/collectionIo';
+import { collectionToCsv } from '../domain/collectionCsv';
 import type { CollectionEntry, WantEntry } from '../domain/types';
 
 /**
@@ -27,54 +29,47 @@ export function CollectionIoPanel() {
   const fileName = () => `engram-sammlung-${new Date().toISOString().slice(0, 10)}.json`;
   const summary = (e: number, w: number) => `${e} Einträge + ${w} Wünsche`;
 
-  async function doExport() {
-    const json = serializeCollection(entries, wants);
-    const name = fileName();
-    const done = () => setMsg(`${summary(entries.length, wants.length)} gesichert (geteilt).`);
-    // 1) Native App (Capacitor): Datei schreiben + über das echte Android/iOS-
-    //    Share-Sheet teilen („Senden an …", Drive/Files, WhatsApp …) — der Web-
-    //    `navigator.share` greift im nativen WebView nicht zuverlässig.
+  /**
+   * Teilt eine Datei (native Share-Sheet bzw. Web-Share) oder lädt sie herunter.
+   * Liefert, was passiert ist — für die Rückmeldung. Der Blob-Download alleine ist
+   * im nativen WebView unzuverlässig, daher nativ die Capacitor-Plugins.
+   */
+  async function shareOrDownload(
+    content: string,
+    name: string,
+    mime: string,
+  ): Promise<'shared' | 'downloaded' | 'canceled'> {
     if (Capacitor.isNativePlatform()) {
+      const [{ Filesystem, Directory, Encoding }, { Share }] = await Promise.all([
+        import('@capacitor/filesystem'),
+        import('@capacitor/share'),
+      ]);
+      await Filesystem.writeFile({
+        path: name,
+        data: content,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8,
+      });
+      const { uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache });
       try {
-        const [{ Filesystem, Directory, Encoding }, { Share }] = await Promise.all([
-          import('@capacitor/filesystem'),
-          import('@capacitor/share'),
-        ]);
-        await Filesystem.writeFile({
-          path: name,
-          data: json,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8,
-        });
-        const { uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache });
-        await Share.share({
-          title: 'engram Backup',
-          text: 'engram Sammlungs-Backup',
-          url: uri,
-          dialogTitle: 'Backup sichern / teilen',
-        });
-        done();
+        await Share.share({ title: 'engram', url: uri, dialogTitle: name });
+        return 'shared';
       } catch (e) {
-        // Abbruch im Share-Sheet ist kein Fehler; sonst Hinweis auf „Kopieren".
-        const m = (e as Error)?.message ?? '';
-        if (!/cancel/i.test(m)) setMsg('Teilen abgebrochen — „Kopieren" geht immer.');
+        if (/cancel/i.test((e as Error)?.message ?? '')) return 'canceled';
+        throw e;
       }
-      return;
     }
-    // 2) Web: Web-Share mit Datei (Handy-Browser) …
     try {
-      const file = new File([json], name, { type: 'application/json' });
+      const file = new File([content], name, { type: mime });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'engram Backup' });
-        done();
-        return;
+        await navigator.share({ files: [file], title: 'engram' });
+        return 'shared';
       }
     } catch (e) {
-      if ((e as Error)?.name === 'AbortError') return; // Nutzer hat das Share-Sheet abgebrochen
+      if ((e as Error)?.name === 'AbortError') return 'canceled';
       // sonst: unten weiter mit Download
     }
-    // 3) Fallback: Blob-Download (Desktop / normaler Browser).
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -83,7 +78,30 @@ export function CollectionIoPanel() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setMsg(`${summary(entries.length, wants.length)} exportiert (${name}).`);
+    return 'downloaded';
+  }
+
+  async function doExport() {
+    try {
+      const r = await shareOrDownload(serializeCollection(entries, wants), fileName(), 'application/json');
+      if (r !== 'canceled') {
+        setMsg(`${summary(entries.length, wants.length)} ${r === 'shared' ? 'gesichert (geteilt)' : 'exportiert'}.`);
+      }
+    } catch {
+      setMsg('Export fehlgeschlagen — „Kopieren" geht immer.');
+    }
+  }
+
+  async function doExportCsv() {
+    const name = `engram-sammlung-${new Date().toISOString().slice(0, 10)}.csv`;
+    try {
+      const r = await shareOrDownload(collectionToCsv(entries, printingIndex, cardIndex), name, 'text/csv');
+      if (r !== 'canceled') {
+        setMsg(`Sammlung als CSV ${r === 'shared' ? 'geteilt' : 'exportiert'} (${entries.length} Zeilen).`);
+      }
+    } catch {
+      setMsg('CSV-Export fehlgeschlagen.');
+    }
   }
 
   async function copyJson() {
@@ -150,8 +168,9 @@ export function CollectionIoPanel() {
         <span className="font-mono text-xs text-muted">{summary(entries.length, wants.length)}</span>
       </div>
       <p className="mb-3 text-xs text-muted">
-        Sichert Sammlung + Want-Liste als JSON. Am Handy: „Sichern / Teilen" legt die Datei über
-        das Share-Menü ab (Files/Drive). „Kopieren"/„Einfügen" gehen über die Zwischenablage.
+        Sichert Sammlung + Want-Liste als JSON (zum Wiederherstellen). Am Handy: „Sichern / Teilen"
+        legt die Datei über das Share-Menü ab (Files/Drive). „CSV" exportiert die Sammlung als
+        Tabelle (Excel/Sheets, zum Tauschen). „Kopieren"/„Einfügen" gehen über die Zwischenablage.
       </p>
 
       <div className="space-y-2">
@@ -162,6 +181,9 @@ export function CollectionIoPanel() {
           </button>
           <button onClick={() => void copyJson()} disabled={empty} className={btn}>
             Kopieren
+          </button>
+          <button onClick={() => void doExportCsv()} disabled={entries.length === 0} className={btn}>
+            CSV
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">

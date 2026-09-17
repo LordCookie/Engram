@@ -339,7 +339,23 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Rarität-Budget im Deck**: `domain/deckRarity.ts` (rein/getestet) zählt Kopien je
   Seltenheit (inkl. Legends). Zeile in der Deck-Statistik; **Rare+** im Akzent
   (`isCostlyRarity`) = teurer zu beschaffen.
-- 189 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- **CSV-Export** der Sammlung: `domain/collectionCsv.ts` (rein/getestet, RFC-4180)
+  → Knopf „CSV" im Backup-Panel (für Tabellen/Tausch). Nutzt denselben
+  `shareOrDownload`-Helfer (native Share / Web-Share / Download) wie das JSON-Backup.
+- **Sammlung als Raster**: `ui/CollectionView.tsx` Umschalter **Liste ↔ Raster** —
+  Raster zeigt die Karten-Artworks im Grid (Mengen-Badge, Tap → Detail).
+- **Zieh-Chance (Deck)**: `domain/hypergeom.ts` (rein/getestet) — hypergeometrische
+  P(≥1) je Kopienzahl. Tabelle in der Deck-Statistik (ab legaler Deckgröße): Starthand
+  (`playtest.openingHand`=6) + „Zug 3" (9), für 1/2/3 Kopien.
+- **Mechanik-/Tag-Suche**: `domain/mechanics.ts` (rein/getestet) sammelt alle
+  Merkmals-Tokens aus `features.json` (provides/payoffFor/themes/tags/tagPayoff);
+  `ui/MechanicSearchPanel.tsx` im Tab „Synergie" — Mechanik wählen → alle passenden
+  Karten (über alle 151, mit Bestand-Markierung, Tap → Detail).
+- **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
+  GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
+  schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
+  **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.**
+- 203 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

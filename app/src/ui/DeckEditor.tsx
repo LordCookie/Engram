@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { catalog, cardIndex, printingIndex } from '../data/catalog';
 import { rulesetV1Loaded } from '../rules/ruleset';
@@ -9,6 +9,8 @@ import { validate, computeRamCaps } from '../rules/validate';
 import { collectionToOwnedCounts } from '../domain/collection';
 import { deckMissing } from '../domain/deckMissing';
 import { deckRarityBudget, isCostlyRarity } from '../domain/deckRarity';
+import { hypergeomAtLeast } from '../domain/hypergeom';
+import { playtestRulesLoaded } from '../rules/playtest';
 import {
   db,
   saveDeck,
@@ -628,6 +630,34 @@ export function DeckEditor() {
             </div>
           </div>
         )}
+
+        {/* Zieh-Wahrscheinlichkeit: Chance auf ≥1 Kopie je nach Anzahl im Deck. */}
+        {stats.deckSize >= ruleset.deckMin &&
+          (() => {
+            const hand = playtestRulesLoaded.openingHand;
+            const turn3 = hand + 3; // Starthand + 3 Ziehphasen
+            const pct = (copies: number, draws: number) =>
+              `${Math.round(hypergeomAtLeast(stats.deckSize, copies, draws) * 100)}%`;
+            return (
+              <div className="mt-3 border-t border-white/5 pt-3">
+                <div className="mb-1 font-mono text-xs text-muted">
+                  Zieh-Chance (≥1) · Deck {stats.deckSize}
+                </div>
+                <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-0.5 font-mono text-xs">
+                  <span className="text-muted">Kopien</span>
+                  <span className="text-muted">Starthand ({hand})</span>
+                  <span className="text-muted">Zug 3 ({turn3})</span>
+                  {[1, 2, 3].map((c) => (
+                    <Fragment key={c}>
+                      <span className="text-accent">{c}×</span>
+                      <span className="text-text">{pct(c, hand)}</span>
+                      <span className="text-text">{pct(c, turn3)}</span>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
       </div>
 
       {/* Validierung */}
