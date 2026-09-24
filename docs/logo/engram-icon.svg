@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="512" height="512">
+  <title>engram</title>
+  <!-- App-Icon: Logo „Platine 45°" auf dunkler Kachel (#0B0F14). Auch als Favicon genutzt. -->
+  <rect width="200" height="200" rx="44" fill="#0B0F14"/>
+  <g transform="translate(100 100) scale(0.82) translate(-100 -108)">
+    <path fill="#F7D51D" fill-rule="evenodd" d="M70 24 H130 L154 48 V90 L138 106 V118 H62 V106 L46 90 V48 Z M66 62 H92 V80 L84 88 H66 Z M108 62 H134 V88 H116 L108 80 Z M100 90 L106 98 L100 106 L94 98 Z"/>
+    <path fill="none" stroke="#F7D51D" stroke-width="6" stroke-linejoin="miter" d="M70 117 V128 L52 146 V167 M85 117 V140 L76 149 V175 M100 117 V183 M115 117 V140 L124 149 V175 M130 117 V128 L148 146 V167"/>
+    <g fill="#F7D51D">
+      <rect x="47" y="166" width="10" height="10"/><rect x="71" y="174" width="10" height="10"/>
+      <rect x="95" y="182" width="10" height="10"/><rect x="119" y="174" width="10" height="10"/>
+      <rect x="143" y="166" width="10" height="10"/>
+    </g>
+  </g>
+</svg>

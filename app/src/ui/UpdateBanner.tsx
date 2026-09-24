@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { APP_VERSION } from '../version';
-import { isNewer } from '../domain/semver';
+import { isNewer, pickLatestRelease, type ReleaseInfo } from '../domain/semver';
 
 /**
  * Prüft beim Start das neueste GitHub-Release und zeigt einen dezenten Hinweis,
@@ -18,14 +18,14 @@ export function UpdateBanner() {
     let alive = true;
     void (async () => {
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+        // Liste statt `releases/latest`: die APKs erscheinen als Pre-Release, und
+        // `latest` überspringt Pre-Releases (→ 404, der Hinweis kam nie).
+        const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=10`, {
           headers: { Accept: 'application/vnd.github+json' },
         });
         if (!res.ok) return;
-        const j = (await res.json()) as { tag_name?: string; html_url?: string };
-        if (alive && j.tag_name && j.html_url && isNewer(j.tag_name, APP_VERSION)) {
-          setInfo({ tag: j.tag_name, url: j.html_url });
-        }
+        const latest = pickLatestRelease((await res.json()) as ReleaseInfo[]);
+        if (alive && latest && isNewer(latest.tag, APP_VERSION)) setInfo(latest);
       } catch {
         /* offline / rate-limited — kein Hinweis */
       }

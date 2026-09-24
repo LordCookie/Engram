@@ -25,3 +25,24 @@ export function compareVersions(a: string, b: string): number {
 export function isNewer(latest: string, current: string): boolean {
   return compareVersions(latest, current) > 0;
 }
+
+/** Ausschnitt eines GitHub-Release-Objekts (`GET /repos/{repo}/releases`). */
+export interface ReleaseInfo {
+  tag_name?: string;
+  html_url?: string;
+  draft?: boolean;
+}
+
+/**
+ * Höchste veröffentlichte Version aus der Release-Liste. Pre-Releases zählen mit —
+ * engram veröffentlicht seine APKs als Pre-Release, und GitHubs `releases/latest`
+ * überspringt die (daher erschien der Update-Hinweis nie). Entwürfe zählen nicht.
+ */
+export function pickLatestRelease(releases: readonly ReleaseInfo[]): { tag: string; url: string } | null {
+  let best: { tag: string; url: string } | null = null;
+  for (const r of releases) {
+    if (r.draft || !r.tag_name || !r.html_url) continue;
+    if (!best || compareVersions(r.tag_name, best.tag) > 0) best = { tag: r.tag_name, url: r.html_url };
+  }
+  return best;
+}

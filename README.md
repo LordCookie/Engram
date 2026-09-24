@@ -1,4 +1,6 @@
-# engram 🖧
+<img src="docs/logo/engram-logo.svg" alt="engram logo" width="72" align="left">
+
+# engram
 
 [![CI](https://github.com/LordCookie/Engram/actions/workflows/ci.yml/badge.svg)](https://github.com/LordCookie/Engram/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

@@ -4,6 +4,7 @@ import { getThemePref } from './db/db';
 import { applyTheme, isThemeName } from './ui/theme';
 import { ThemePanel } from './ui/ThemePanel';
 import { FeedbackPanel } from './ui/FeedbackPanel';
+import { Logo } from './ui/Logo';
 import { QuickAdd } from './ui/QuickAdd';
 import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
@@ -51,9 +52,12 @@ export default function App() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24 sm:p-6">
       <header className="flex items-baseline justify-between gap-2">
-        <div>
-          <h1 className="font-mono text-2xl tracking-tight text-accent sm:text-3xl">engram</h1>
-          <p className="text-xs text-muted sm:text-sm">Sammlung &amp; Deckbau · Cyberpunk TCG</p>
+        <div className="flex items-center gap-3">
+          <Logo className="h-12 w-8 shrink-0 text-accent sm:h-14 sm:w-9" />
+          <div>
+            <h1 className="font-mono text-2xl tracking-tight text-accent sm:text-3xl">engram</h1>
+            <p className="text-xs text-muted sm:text-sm">Sammlung &amp; Deckbau · Cyberpunk TCG</p>
+          </div>
         </div>
         {isPlaceholderData && (
           <p className="text-xs text-muted">Testkarten ({catalog.length})</p>

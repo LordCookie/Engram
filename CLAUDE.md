@@ -395,10 +395,18 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Merkmals-Tokens aus `features.json` (provides/payoffFor/themes/tags/tagPayoff);
   `ui/MechanicSearchPanel.tsx` im Tab „Synergie" — Mechanik wählen → alle passenden
   Karten (über alle 151, mit Bestand-Markierung, Tap → Detail).
+- **Logo „Platine 45°"** (Totenkopf → Leiterbahnen mit Lötflächen): Master `docs/logo/engram-logo.svg`
+  + `engram-icon.svg` (dunkle Kachel = Favicon `app/public/favicon.svg`). Alle Raster (Android-Launcher
+  eckig/rund/adaptiver Vordergrund, Splash-Screens, PWA 192/512/maskable, Apple-Touch) erzeugt
+  `python docs/logo/make_icons.py` (Pillow; Geometrie dort doppelt — beim Ändern beide Stellen).
+  In der App `ui/Logo.tsx` (currentColor → folgt dem Farbthema). Android-Icon-Hintergrund und
+  Android-12-Splash: `#0B0F14`.
 - **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
   GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
   schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
-  **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.**
+  **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.** Abfrage über
+  die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
+  `releases/latest` die überspringt (sonst 404).
 - 259 App-JS-Tests + Python-Tests (3 + 7) grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)

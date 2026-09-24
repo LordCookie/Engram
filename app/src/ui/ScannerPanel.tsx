@@ -980,7 +980,7 @@ export function ScannerPanel() {
           onClick={startScanner}
           className="w-full rounded-md bg-accent px-4 py-3 font-mono text-base text-on-accent"
         >
-          📷 Scanner starten
+          Scanner starten
         </button>
         <p className="mt-2 font-mono text-[11px] text-muted">
           Kamera: {useNative ? 'nativ (ML Kit)' : 'Browser'} · Bild-Index:{' '}
