@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
 import { catalog, cardIndex } from '../data/catalog';
 import { deckToText, parseDeckText, type ParsedDeck } from '../domain/deckText';
+import { decodeDeckQr } from '../domain/deckQr';
 import type { DeckDraft } from '../domain/deckDraft';
+import { DeckQrDialog, QrScanOverlay } from './DeckQr';
 
 /**
- * Deck-Text-Export/Import (PLAN.md § 5, Aufgabe 8). MTG-artiges .txt-Format,
- * damit Decks mit anderen Tools ausgetauscht werden können.
+ * Deck teilen: per QR-Code (Gerät zu Gerät, offline) oder als Text-Export/Import
+ * (PLAN.md § 5, Aufgabe 8; MTG-artiges .txt-Format für andere Tools).
  */
 export function DeckTextPanel({
   draft,
@@ -16,6 +18,8 @@ export function DeckTextPanel({
 }) {
   const [paste, setPaste] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
+  const [scanQr, setScanQr] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const text = deckToText(draft, cardIndex);
 
@@ -31,9 +35,7 @@ export function DeckTextPanel({
     URL.revokeObjectURL(url);
   }
 
-  async function doImport(t: string) {
-    if (!t.trim()) return;
-    const parsed = parseDeckText(t, catalog, cardIndex);
+  async function importParsed(parsed: ParsedDeck) {
     await onImport(parsed);
     const n = parsed.cards.reduce((s, c) => s + c.count, 0);
     setMsg(
@@ -41,7 +43,18 @@ export function DeckTextPanel({
         parsed.unresolved.length ? ` · ${parsed.unresolved.length} Zeilen nicht erkannt` : ''
       }.`,
     );
+  }
+
+  async function doImport(t: string) {
+    if (!t.trim()) return;
+    await importParsed(parseDeckText(t, catalog, cardIndex));
     setPaste('');
+  }
+
+  function onQr(text: string) {
+    setScanQr(false);
+    const parsed = decodeDeckQr(text, cardIndex);
+    if (parsed) void importParsed(parsed);
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,7 +66,27 @@ export function DeckTextPanel({
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h3 className="mb-2 font-mono text-sm">Deck-Text (Export / Import)</h3>
+      <h3 className="mb-2 font-mono text-sm">Deck teilen</h3>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setShowQr(true)}
+          className="rounded bg-accent px-3 py-1.5 font-mono text-xs text-on-accent"
+        >
+          Als QR-Code zeigen
+        </button>
+        <button
+          onClick={() => setScanQr(true)}
+          className="rounded border border-white/10 px-3 py-1.5 font-mono text-xs hover:border-accent"
+        >
+          QR-Code scannen
+        </button>
+        <span className="text-xs text-muted">Deck von Handy zu Handy — ohne Internet.</span>
+      </div>
+      {showQr && <DeckQrDialog deck={draft} onClose={() => setShowQr(false)} />}
+      {scanQr && <QrScanOverlay onResult={onQr} onClose={() => setScanQr(false)} />}
+
+      <h4 className="mb-2 font-mono text-xs text-muted">Als Text (Export / Import)</h4>
 
       <div className="mb-4">
         <textarea

@@ -92,11 +92,14 @@ class EngramCameraPlugin : Plugin() {
     @Volatile private var lastRun = 0L
     /** Schärfe-Gate (Laplace-Varianz); 0 = aus. Von JS gesetzt (start). */
     @Volatile private var sharpMin = DEFAULT_SHARP_MIN
+    /** „card" = Texterkennung + Hash-Ausschnitt; „qr" = nur Ausschnitt fürs Deck-QR (jsQR in JS). */
+    @Volatile private var mode = "card"
 
     @PluginMethod
     fun start(call: PluginCall) {
         readReticle(call)
         sharpMin = call.getDouble("sharpMin") ?: DEFAULT_SHARP_MIN
+        mode = call.getString("mode") ?: "card"
         if (getPermissionState("camera") != PermissionState.GRANTED) {
             requestPermissionForAlias("camera", call, "cameraPermsCallback")
             return
@@ -348,6 +351,21 @@ class EngramCameraPlugin : Plugin() {
             }
             crop = Bitmap.createBitmap(full, r[0], r[1], r[2], r[3])
 
+            // Deck-QR: kein Schärfe-Gate, keine Texterkennung — nur den Ausschnitt in
+            // brauchbarer Auflösung an JS (jsQR dekodiert dort).
+            if (mode == "qr") {
+                val qr = JSObject()
+                qr.put("blurry", false)
+                qr.put("sharpness", 0.0)
+                qr.put("qr", qrJpeg(crop))
+                emit(qr)
+                if (crop !== full) full.recycle()
+                src = null
+                crop.recycle()
+                busy = false
+                return
+            }
+
             val sharp = sharpness(crop)
             if (sharpMin > 0 && sharp < sharpMin) {
                 val blur = JSObject()
@@ -466,6 +484,18 @@ class EngramCameraPlugin : Plugin() {
         if (n == 0) return 0.0
         val mean = sum / n
         return sumSq / n - mean * mean
+    }
+
+    /** QR-Ausschnitt: längste Seite max. 640 px — genug für jsQR, klein genug für die Brücke. */
+    private fun qrJpeg(crop: Bitmap): String {
+        val scale = minOf(1f, 640f / max(crop.width, crop.height))
+        val w = max(1, (crop.width * scale).roundToInt())
+        val h = max(1, (crop.height * scale).roundToInt())
+        val small = if (scale < 1f) Bitmap.createScaledBitmap(crop, w, h, true) else crop
+        val out = ByteArrayOutputStream()
+        small.compress(Bitmap.CompressFormat.JPEG, 85, out)
+        if (small !== crop) small.recycle()
+        return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
     }
 
     private fun framePayload(text: Text?, w: Int, h: Int, sharp: Double, jpeg: String, box: JSObject): JSObject {

@@ -85,6 +85,16 @@ opens a full-screen scanner (native camera in the app, webcam in the browser):
 > to framing offsets (2 % shift ≈ 60 of 256 bits). v2 fixes that with a small **crop search**
 > (36 shifted/scaled crops per frame, ~15 ms) and combines it with OCR instead of replacing it.
 
+### ✨ Little extras
+
+- **Themed logo:** the skull-and-circuit logo follows your color theme — in the app, the browser
+  tab icon, the status bar and (optional, Android) the home-screen app icon.
+- **Boot animation:** current flows up the circuit traces into the skull on app start.
+- **Binder view:** a virtual collector's binder (3×3 pages in set order, empty pockets for missing
+  cards, tap ☆ to put them on your want list).
+- **Share decks by QR code:** show a deck as a QR code, scan it on another phone — offline.
+- **Collector achievements:** badges with progress (first Legend, a color complete, all alt arts …).
+
 ### 📚 Collection
 
 - **Set progress:** how much of the 151-card set you own, broken down **by color and rarity**.

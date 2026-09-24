@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { catalog } from './data/catalog';
 import { getThemePref } from './db/db';
 import { applyTheme, isThemeName } from './ui/theme';
 import { ThemePanel } from './ui/ThemePanel';
 import { FeedbackPanel } from './ui/FeedbackPanel';
 import { Logo } from './ui/Logo';
+import { BootSplash } from './ui/BootSplash';
+import { BinderButton } from './ui/BinderView';
+import { AchievementsPanel, AchievementToasts } from './ui/Achievements';
 import { QuickAdd } from './ui/QuickAdd';
 import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
@@ -43,6 +46,8 @@ const tabs: { id: Tab; label: string }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>('sammlung');
   const [collectionCollapsed, setCollectionCollapsed] = useState(false);
+  const [booting, setBooting] = useState(true); // Boot-Animation einmal pro App-Start
+  const endBoot = useCallback(() => setBooting(false), []);
 
   // Gespeichertes Farbthema beim Start anwenden (Dexie-Präferenz).
   useEffect(() => {
@@ -51,6 +56,8 @@ export default function App() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24 sm:p-6">
+      {booting && <BootSplash onDone={endBoot} />}
+      <AchievementToasts />
       <header className="flex items-baseline justify-between gap-2">
         <div className="flex items-center gap-3">
           <Logo className="h-12 w-8 shrink-0 text-accent sm:h-14 sm:w-9" />
@@ -100,7 +107,9 @@ export default function App() {
           />
           <WantListPanel />
           <TradeListPanel />
+          <AchievementsPanel />
           <SolverPanel />
+          <BinderButton />
         </>
       )}
       {tab === 'deck' && <DeckEditor />}

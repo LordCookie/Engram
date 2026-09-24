@@ -30,11 +30,15 @@ export interface NativeFrame {
   crop?: string;
   /** Lage des Rahmens im `crop`-Bild, normiert 0..1 (fehlt = ganzes Bild). */
   cropBox?: { l: number; t: number; r: number; b: number };
+  /** QR-Modus: Ausschnitt (JPEG, Base64, max. 640 px) — jsQR dekodiert in JS. */
+  qr?: string;
 }
+
+export type CameraMode = 'card' | 'qr';
 
 export interface EngramCameraPlugin {
   start(
-    options: ReticleRect & { sharpMin?: number },
+    options: ReticleRect & { sharpMin?: number; mode?: CameraMode },
   ): Promise<{ torch: boolean; zoomMin?: number; zoomMax?: number }>;
   stop(): Promise<void>;
   setReticle(options: ReticleRect): Promise<void>;

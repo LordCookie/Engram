@@ -112,6 +112,33 @@ export async function setThemePref(theme: string): Promise<void> {
   await db.meta.put({ key: THEME_KEY, value: theme });
 }
 
+// --- Sammler-Erfolge: welche schon gemeldet wurden (Einblendung nur einmal) ---------
+
+const ACHIEVEMENTS_SEEN_KEY = 'achievementsSeen';
+
+/** Schon gemeldete Erfolge; `null` = noch nie gespeichert (erster Start). */
+export async function getSeenAchievements(): Promise<string[] | null> {
+  const row = await db.meta.get(ACHIEVEMENTS_SEEN_KEY);
+  return Array.isArray(row?.value) ? (row.value as string[]).filter((x) => typeof x === 'string') : null;
+}
+
+export async function setSeenAchievements(ids: string[]): Promise<void> {
+  await db.meta.put({ key: ACHIEVEMENTS_SEEN_KEY, value: ids });
+}
+
+// --- App-Icon folgt dem Farbthema (Einstellung unter „Mehr", nur Android-App) -------
+
+const ICON_FOLLOWS_KEY = 'iconFollowsTheme';
+
+export async function getIconFollowsThemePref(): Promise<boolean> {
+  const row = await db.meta.get(ICON_FOLLOWS_KEY);
+  return row?.value === true;
+}
+
+export async function setIconFollowsThemePref(on: boolean): Promise<void> {
+  await db.meta.put({ key: ICON_FOLLOWS_KEY, value: on });
+}
+
 // --- Vibration beim Scannen (Einstellung unter „Mehr") ------------------------------
 
 const VIBRATION_KEY = 'scanVibration';

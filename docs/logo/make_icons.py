@@ -27,6 +27,21 @@ PUBLIC = ROOT / "app" / "public"
 YELLOW = (247, 213, 29, 255)
 DARK = (11, 15, 20, 255)
 CLEAR = (0, 0, 0, 0)
+
+# App-Icon je Farbthema (Logo, Kachel) — wie THEMES[].icon in app/src/ui/theme.ts.
+# Violett: Pfirsich auf Violett (Violett auf fast Schwarz wäre zu kontrastarm).
+THEME_ICONS = {
+    "violet": ("#FFD6A5", "#6A00F4"),
+    "synth": ("#FF4696", "#1E1033"),
+    "lime": ("#B6FF2E", "#23262F"),
+}
+
+
+def rgba(hex_color: str) -> tuple:
+    h = hex_color.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
+
+
 SS = 8  # Überabtastung
 
 Pt = Tuple[float, float]
@@ -77,7 +92,7 @@ def stroke_polygon(pts: Sequence[Pt], w: float) -> List[Pt]:
 
 
 def draw_logo(img: Image.Image, cx: float, cy: float, height_px: float, hole: tuple,
-              min_stroke_px: float = 0.0) -> None:
+              min_stroke_px: float = 0.0, fg: tuple = YELLOW) -> None:
     """Logo mittig bei (cx, cy) mit Inhaltshöhe height_px in ein (überabgetastetes) Bild."""
     d = ImageDraw.Draw(img)
     k = height_px / HEIGHT
@@ -87,29 +102,29 @@ def draw_logo(img: Image.Image, cx: float, cy: float, height_px: float, hole: tu
 
     stroke = max(5.0, (min_stroke_px / k) if k else 5.0)
     stroke = min(stroke, 8.0)  # nicht zu fett, sonst laufen die Bahnen zusammen
-    d.polygon(P(CRANIUM), fill=YELLOW)
+    d.polygon(P(CRANIUM), fill=fg)
     for poly in HOLES:
         d.polygon(P(poly), fill=hole)
     for tr in TRACES:
-        d.polygon(P(stroke_polygon(tr, stroke)), fill=YELLOW)
+        d.polygon(P(stroke_polygon(tr, stroke)), fill=fg)
     for x, y in PADS:
-        d.polygon(P([(x, y), (x + 10, y), (x + 10, y + 10), (x, y + 10)]), fill=YELLOW)
+        d.polygon(P([(x, y), (x + 10, y), (x + 10, y + 10), (x, y + 10)]), fill=fg)
 
 
 def render(w: int, h: int, bg: str, logo_frac: float, radius_frac: float = 0.0,
-           min_stroke_px: float = 0.0) -> Image.Image:
-    """bg: 'square' (voll dunkel), 'rounded', 'circle' oder 'clear' (transparent)."""
+           min_stroke_px: float = 0.0, fg: tuple = YELLOW, tile: tuple = DARK) -> Image.Image:
+    """bg: 'square' (voll), 'rounded', 'circle' oder 'clear' (transparent)."""
     W, H = w * SS, h * SS
     img = Image.new("RGBA", (W, H), CLEAR)
     d = ImageDraw.Draw(img)
     if bg == "square":
-        d.rectangle([0, 0, W, H], fill=DARK)
+        d.rectangle([0, 0, W, H], fill=tile)
     elif bg == "rounded":
-        d.rounded_rectangle([0, 0, W - 1, H - 1], radius=int(min(W, H) * radius_frac), fill=DARK)
+        d.rounded_rectangle([0, 0, W - 1, H - 1], radius=int(min(W, H) * radius_frac), fill=tile)
     elif bg == "circle":
-        d.ellipse([0, 0, W - 1, H - 1], fill=DARK)
-    hole = CLEAR if bg == "clear" else DARK
-    draw_logo(img, W / 2, H / 2, min(W, H) * logo_frac, hole, min_stroke_px * SS)
+        d.ellipse([0, 0, W - 1, H - 1], fill=tile)
+    hole = CLEAR if bg == "clear" else tile
+    draw_logo(img, W / 2, H / 2, min(W, H) * logo_frac, hole, min_stroke_px * SS, fg)
     return img.resize((w, h), Image.LANCZOS)
 
 
@@ -128,6 +143,34 @@ def main() -> None:
         # Adaptives Icon (Android 8+): Vordergrund 108 dp, Inhalt in der 66-dp-Schutzzone.
         fg = round(px * 108 / 48)
         save(render(fg, fg, "clear", 54 / 108, min_stroke_px=1.4), RES / f"mipmap-{dpi}" / "ic_launcher_foreground.png")
+
+    print("Android Launcher je Farbthema (App-Icon folgt dem Theme):")
+    DENS = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+    for theme, (fg_hex, bg_hex) in THEME_ICONS.items():
+        fg, tile = rgba(fg_hex), rgba(bg_hex)
+        for dpi, px in DENS.items():
+            base = RES / f"mipmap-{dpi}"
+            save(render(px, px, "rounded", 0.66, 0.2, 1.4, fg, tile), base / f"ic_launcher_{theme}.png")
+            save(render(px, px, "circle", 0.6, 0, 1.4, fg, tile), base / f"ic_launcher_{theme}_round.png")
+            fgpx = round(px * 108 / 48)
+            save(render(fgpx, fgpx, "clear", 54 / 108, 0, 1.4, fg, tile), base / f"ic_launcher_{theme}_foreground.png")
+        for suffix in ("", "_round"):
+            xml = (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+                f'    <background android:drawable="@color/ic_launcher_{theme}_background"/>\n'
+                f'    <foreground android:drawable="@mipmap/ic_launcher_{theme}_foreground"/>\n'
+                "</adaptive-icon>\n"
+            )
+            (RES / "mipmap-anydpi-v26" / f"ic_launcher_{theme}{suffix}.xml").write_text(xml, encoding="utf-8")
+    colors = "".join(
+        f'    <color name="ic_launcher_{t}_background">{bg}</color>\n' for t, (_, bg) in THEME_ICONS.items()
+    )
+    (RES / "values" / "ic_launcher_background.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+        '    <color name="ic_launcher_background">#0B0F14</color>\n' + colors + "</resources>\n",
+        encoding="utf-8",
+    )
 
     print("Splash-Screens:")
     for f in sorted(RES.glob("drawable*/splash.png")):

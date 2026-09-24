@@ -401,13 +401,33 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `python docs/logo/make_icons.py` (Pillow; Geometrie dort doppelt — beim Ändern beide Stellen).
   In der App `ui/Logo.tsx` (currentColor → folgt dem Farbthema). Android-Icon-Hintergrund und
   Android-12-Splash: `#0B0F14`.
+- **Logo folgt dem Farbthema** (`ui/theme.ts` `THEMES[].icon`/`bg`, Geometrie zentral in
+  `domain/logoShape.ts`): Header-Logo (currentColor), Favicon (Data-URL, live), `theme-color`,
+  Android-Statusleiste (`@capacitor/status-bar`). **App-Icon je Theme** (Schalter „App-Icon passt
+  sich an" im Farbthema-Panel, Standard aus, nur App): Launcher-Aliase im Manifest
+  (`.MainActivity` = Standard — der frühere Activity-Name, damit Homescreen-Icons Updates
+  überleben; `.IconViolet/.IconSynth/.IconLime`), echte Activity heißt jetzt `EngramActivity`,
+  `EngramIconPlugin.kt` schaltet beim Verlassen der App um (`handleOnStop`). Icons je Theme
+  erzeugt `make_icons.py` (Violett = Pfirsich auf Violett, Kontrast).
+- **Boot-Animation** (`ui/BootSplash.tsx`): Strom fließt die Leiterbahnen hoch in den Schädel,
+  Augen blitzen, ~1,8 s, Antippen überspringt, bei „Bewegung reduzieren" aus.
+- **Binder-Ansicht** (`domain/binder.ts` rein/getestet, `ui/BinderView.tsx`): Knopf ganz unten in
+  der Sammlung → Vollbild-Sammelmappe, 3×3 in Set-Reihenfolge (Sammlernummer inkl. Suffix),
+  Farbfilter, Wischen/Pfeile, leere Fächer mit ☆ → Want-Liste, Tipp → Kartendetail.
+- **Deck per QR** (`domain/deckQr.ts` rein/getestet): Format `EGD1` (Slugs, ASCII, Name URI-kodiert),
+  Anzeige mit `qrcode-generator` (Fehlerkorrektur L, Ruhezone 4), Scan mit `jsqr` — App: Kamera-
+  Plugin im QR-Modus (`mode: 'qr'`, 640-px-Ausschnitt), Browser: Rahmen-Ausschnitt + ganzes Bild
+  im Wechsel. Knöpfe im Deckeditor unter „Deck teilen". Import legt ein neues Deck an.
+- **Sammler-Erfolge** (`domain/achievements.ts` rein/getestet, `ui/Achievements.tsx`): 21 Abzeichen
+  mit Fortschritt (Sammlung, einklappbar), Einblendung + Vibration bei Freischaltung; gemerkt
+  wird nur, was schon gemeldet wurde (Dexie `meta` `achievementsSeen`, erster Start still).
 - **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
   GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
   schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
   **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.** Abfrage über
   die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
   `releases/latest` die überspringt (sonst 404).
-- 259 App-JS-Tests + Python-Tests (3 + 7) grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 279 App-JS-Tests + Python-Tests (3 + 7) grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,

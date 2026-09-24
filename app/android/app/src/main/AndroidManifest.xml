@@ -11,18 +11,70 @@
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-            android:name=".MainActivity"
+            android:name=".EngramActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:exported="true">
+        </activity>
 
+        <!--
+          Launcher-Einträge = App-Icon je Farbthema (EngramIconPlugin schaltet um, genau einer
+          ist aktiv). „.MainActivity" ist der frühere Activity-Name: als Standard-Alias bleibt
+          er erhalten, damit Icons auf dem Startbildschirm das Update überleben.
+        -->
+        <activity-alias
+            android:name=".MainActivity"
+            android:targetActivity=".EngramActivity"
+            android:label="@string/title_activity_main"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconViolet"
+            android:targetActivity=".EngramActivity"
+            android:label="@string/title_activity_main"
+            android:icon="@mipmap/ic_launcher_violet"
+            android:roundIcon="@mipmap/ic_launcher_violet_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconSynth"
+            android:targetActivity=".EngramActivity"
+            android:label="@string/title_activity_main"
+            android:icon="@mipmap/ic_launcher_synth"
+            android:roundIcon="@mipmap/ic_launcher_synth_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".IconLime"
+            android:targetActivity=".EngramActivity"
+            android:label="@string/title_activity_main"
+            android:icon="@mipmap/ic_launcher_lime"
+            android:roundIcon="@mipmap/ic_launcher_lime_round"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <provider
             android:name="androidx.core.content.FileProvider"
