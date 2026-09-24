@@ -116,6 +116,50 @@ body {
   }
 }
 
+/*
+ * Vollbild-Scanner: Solange er offen ist, wird die Seite durchsichtig und die App
+ * ausgeblendet — sichtbar bleibt nur das Overlay (Portal an <body>, ui/ScanOverlay.tsx).
+ * Nativ liegt das Kamerabild HINTER der transparenten WebView, im Browser liegt das
+ * Webcam-Video im Overlay selbst.
+ */
+html.scan-open,
+html.scan-open body {
+  background: transparent !important;
+}
+html.scan-open #root {
+  visibility: hidden;
+}
+/* Rahmenecken pulsieren, solange noch keine Karte erkannt ist. */
+@keyframes cornerPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.reticle-corner {
+  animation: cornerPulse 1.2s ease-in-out infinite;
+}
+/* Kurzes Aufblitzen des Rahmens, wenn eine Karte in den Korb geht. */
+@keyframes frameFlash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.frame-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  background: rgb(var(--c-green));
+  animation: frameFlash 0.45s ease-out forwards;
+  pointer-events: none;
+}
+
 /* Effekte respektieren die Systemeinstellung (PLAN.md § 6). */
 @media (prefers-reduced-motion: reduce) {
   *,

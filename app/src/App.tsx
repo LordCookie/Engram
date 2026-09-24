@@ -3,6 +3,7 @@ import { catalog } from './data/catalog';
 import { getThemePref } from './db/db';
 import { applyTheme, isThemeName } from './ui/theme';
 import { ThemePanel } from './ui/ThemePanel';
+import { FeedbackPanel } from './ui/FeedbackPanel';
 import { QuickAdd } from './ui/QuickAdd';
 import { StarterQuickadd } from './ui/StarterQuickadd';
 import { SolverPanel } from './ui/SolverPanel';
@@ -111,6 +112,7 @@ export default function App() {
           <PlaytestPanel />
           <HowToPlay />
           <ThemePanel />
+          <FeedbackPanel />
           <CollectionIoPanel />
           <OfflineImagesPanel />
         </>

@@ -1,5 +1,9 @@
 """Ermittelt, welche Karten eine Alt-Art (mehr als ein Printing) haben.
 
+ÜBERHOLT (2026-09-24): Die Künstler-Angabe der Quelle ist unzuverlässig (gleiches Bild
+mit anderem Künstler, zwei Illustrationen vom selben Künstler). Maßgeblich ist jetzt der
+Bildbefund: `python pipeline/hash_images.py --write-altarts`.
+
 Die Listen-API (fetch_cards.py) liefert nur ein Printing je Karte. Der Detail-
 Endpoint `…/api/cards/cyberpunk/<slug>` liefert dagegen das `printings`-Array —
 > 1 Eintrag = die Karte hat mindestens eine Alt-Art. Wir speichern NUR die Slugs

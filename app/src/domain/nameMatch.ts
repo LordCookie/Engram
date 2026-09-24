@@ -64,6 +64,12 @@ export interface NameCandidate {
   cardId: string;
   /** 0..1 — Konfidenz: Namens-Trefferanteil (+ Bonus, wenn die Nummer passt). */
   score: number;
+  /**
+   * 0..1 — nur der Namens-Trefferanteil, OHNE Nummern-Bonus. Die Nummer hängt am
+   * Namen (nur pro Farbe eindeutig) und ist bei OCR-Rauschen kein unabhängiges Signal —
+   * die Scanner-Fusion bewertet darum den Namen getrennt.
+   */
+  nameScore: number;
   /** Zahl korrekt gematchter Namenszeichen (für die Rangfolge bei Gleichstand). */
   matched: number;
   /** Die Sammlernummer der Karte wurde im OCR-Text exakt gefunden. */
@@ -139,7 +145,7 @@ export function matchCardName(
     // (schützt gegen eine verlesene letzte Ziffer bei 080/081/082).
     const numberHit = collectorHit(c.collectorNumber, numberTokens) && best.score >= 0.1;
     const score = Math.min(1, best.score + (numberHit ? 0.5 : 0));
-    if (score > 0) out.push({ cardId: c.id, score, matched: best.matched, numberHit });
+    if (score > 0) out.push({ cardId: c.id, score, nameScore: best.score, matched: best.matched, numberHit });
   }
   out.sort(
     (a, b) =>

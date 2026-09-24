@@ -98,16 +98,18 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   im Kombi-Modus. **§ 12 C ist damit vollständig.**
 - **Bestand-Knöpfe:** Sammlung je Karte **„−"/„+"/„✕"** (`addToCollection(-1/+1/-qty)`,
   größere Touch-Ziele — Verzähler korrigieren), Deckeditor „✕" via `setCard(…,0)`.
-- **Alt-Arts** (alternative Illustrationen, getrennt zählbar): `pipeline/fetch_altarts.py`
-  ermittelt über den Detail-Endpoint, welche Karten eine echte Alt-Art haben
-  (**> 1 Künstler**, nicht bloß >1 Printing = auch Reprints/Foils) → `data/altArts.json`
-  (gitignored, 43/151). `catalog.ts` legt für diese Karten eine **aggregierte ALT_ART-
+- **Alt-Arts** (alternative Darstellungen inkl. Full-Arts, getrennt zählbar):
+  `data/altArts.json` (gitignored) kommt jetzt aus dem **Bildbefund** von
+  `pipeline/hash_images.py --write-altarts` (Bildabstand zum Standard-Druck ≥ 40 →
+  67/151). Früher `fetch_altarts.py` (> 1 Künstler, 43/151) — überholt, die
+  Künstler-Angabe der Quelle ist unzuverlässig. `catalog.ts` legt für diese Karten eine **aggregierte ALT_ART-
   Printing** `<cardId>#alt` an (`hasAltArt`/`altPrintingId`/`isAltPrintingId`); der
   Bestand liegt im **selben** Collection-Speicher, `printingIndex` löst Alt→Karte auf
   (zählt korrekt zu Set-Fortschritt etc.). Im **Karten-Detail** (nur Sammlungs-Kontext,
   via `onAltChange`-Prop) ein **Alt-Art-Zähler − N +**, nur bei Karten mit Alt-Art;
   `CollectionView` gruppiert je Karte Standard/Alt und zeigt „3× · 2 Alt" (Liste) bzw.
-  ein „Alt"-Badge (Raster). **Scanner/Erfassen bewusst außen vor** (noch offen).
+  ein „Alt"-Badge (Raster). **Der Scanner erkennt Alt-Arts am Bild**; Erfassen
+  (Suche) noch ohne Alt-Wahl.
 - **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): In der **nativen App** teilt
   „Sichern / Teilen" über das **echte Android/iOS-Share-Sheet** — `@capacitor/filesystem`
   schreibt die JSON in den Cache, `@capacitor/share` teilt die Datei-URI (Drive/Files/
@@ -169,6 +171,38 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   formatfüllend, ruhig halten, gegen Glanz kippen" schließt die Lücke. (Ein früherer
   Versuch mit Nummern-Band/Sweep/Schärfe-Gate/Frame-Konsens verschlechterte es durch
   Text-Rauschen und wurde verworfen.)
+- **Scanner v2 (aus ScryGlass portiert — `scanner-v2-plan.md`), seit 2026-09-24 der
+  EINZIGE Scanner** (am Handy getestet → alter Tesseract-only-Scanner + Beta-Schalter
+  entfernt). Tab Scanner = nur noch Knopf **„📷 Scanner starten"** → **Vollbild-Scanner**
+  `ui/ScanOverlay.tsx` (Portal, `html.scan-open`) für **beide Wege**: App nativ, Browser
+  mit dem Webcam-Video als Vollbild dahinter (object-fit: cover; `cropRegion` rechnet den
+  Rahmen in Videokoordinaten um, Live-Lesen nur bei Bildwechsel, 3 Tesseract-Pässe).
+  **Vibration** über `@capacitor/haptics` (`native/feedback.ts`; `navigator.vibrate`
+  verpufft in der Android-WebView), abschaltbar unter „Mehr" (`ui/FeedbackPanel.tsx`,
+  Dexie `meta` `scanVibration`). **Fusions-Fix:** die Sammlernummer hängt am Namen
+  (`NameCandidate.nameScore` = Name OHNE Nummern-Bonus geht in die Fusion); eine nur
+  durch den Namen bestätigte Nummer schlägt keinen starken Bildtreffer (echter Fehltreffer
+  im E2E-Test: OCR-Rauschen traf die Nummer von Gilded Matón statt Delamain Cab).
+  Technik: **Bild-Erkennung per pHash**
+  (256 Bit, `data/imageHash.ts`, bit-identisch zu `pipeline/hash_images.py`, Paritäts-Test
+  auf beiden Seiten) gegen einen Index aller **550 englischen Printings** (`hashes.json`,
+  gitignored, **Lazy-Chunk**). **Ausschnitt-Suche** (`searchRects`: 3×3 Versatz ±3 % × 3
+  Skalierungen + 9 gedrehte = 36 Query-Hashes) — der pHash ist extrem versatz-empfindlich
+  (2 % Versatz ≈ 60 Bit), die Suche macht ihn handtauglich (Simulation 50/50 statt 38/50,
+  0 Fehltreffer). **Fusion** `domain/scanFuse.ts` (Nummer > Bild+Name > Bild > Name,
+  `FUSE_DEFAULTS` am Index gemessen: fremde Karten ab 68 Bit), **Auto-Korb mit
+  Kartenwechsel-Erkennung** `domain/autoBasket.ts` (Schlüssel = Karte, nicht Std/Alt),
+  `ocrQuality.ts`, `focus.ts`, `cardText.ts` (ML-Kit-Zeilen, **Cyberpunk-Namenszonen**:
+  oben für Legends + Untertitel-Paar, unteres Bilddrittel für Units). **Alt-Art beim
+  Scannen automatisch** (Bildtreffer auf Alt-Druck → `<cardId>#alt`), im Korb **Std/Alt**-
+  Umschalter. **Nativ in der App:** Kotlin-Plugin `EngramCameraPlugin.kt` (CameraX hinter
+  transparenter WebView + **ML Kit** Texterkennung on-device, Schärfe-Gate 30, Tipp-Fokus,
+  Torch, Zoom; schickt den Hash-Ausschnitt mit 8 % Rand + `cropBox`), registriert in
+  `MainActivity`, Brücke `native/engramCamera.ts`. Kotlin 1.9.22 / CameraX 1.3.4 / ML Kit
+  16.0.1, nur ARM-ABIs (APK ~15,6 MB). Im Browser: Tesseract + Bild-Hash. **Scan-Protokoll**
+  (Kalibrierung, kopierbar). **Alt-Arts per Bildbefund** (`hash_images.py --write-altarts`,
+  67 statt 43 Karten; die Künstler-Heuristik war falsch: gleiches Bild mit anderem
+  Künstler bzw. zwei Bilder vom selben Künstler).
 - **Deckbau-Synergie & Filter** (§ 5/§ 12): `domain/deckSynergy.ts` (rein/getestet)
   — `suggestAdditions` (RAM-legale, synergistische Vorschläge zu den Legends) +
   `deckSynergyRating`. Im Deckeditor Sektion „Synergie" (Vorschläge mit „+"-Einbau)
@@ -365,7 +399,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
   schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
   **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.**
-- 203 App-JS-Tests + Python-Tests grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 259 App-JS-Tests + Python-Tests (3 + 7) grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -378,7 +412,10 @@ Community-Decks sind oft illegal. Details in DECISIONS.md.)
 ## Pipelines neu laufen lassen
 ```
 python pipeline/fetch_cards.py        # 151 Karten von api.netdeck.gg -> cards.json + printings.json
-python pipeline/fetch_altarts.py      # Karten mit Alt-Art (>1 Künstler, Detail-Endpoint) -> altArts.json
+python pipeline/hash_images.py --write-altarts  # pHash aller Printings -> hashes.json (Scanner v2)
+                                      # + altArts.json aus dem BILDbefund (fortsetzbar, braucht Pillow)
+python pipeline/test_hash_images.py   # u. a. Paritäts-Vektoren (müssen zu imageHash.test.ts passen)
+# fetch_altarts.py (>1 Künstler) ist überholt — die Künstler-Angabe der Quelle ist unzuverlässig
 python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> features.json, aus features_curated.json
 python pipeline/ingest_decks.py       # Decklisten aus pipeline/decklists/*.json -> coplay.json (Co-Play-Korpus)
 python pipeline/test_fetch_cards.py
@@ -386,7 +423,8 @@ python pipeline/test_fetch_cards.py
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
 ```
 
-Nächste sinnvolle Schritte: **mehr Meta-Decks ins Ingest-Korpus** (nur 10 → schwaches
+Nächste sinnvolle Schritte: **Scanner-Feinschliff** per Scan-Protokoll (Schwellen/
+Namenszonen nachziehen); **mehr Meta-Decks ins Ingest-Korpus** (nur 10 → schwaches
 Signal; weitere Deck-IDs für `pull_meta` finden, dann `ingest_decks.py`); Deck-UX &
 Synergie-Vorschläge im Editor; **iOS-Kamera** (Spike 0.1). (Tipp-zum-Fokussieren im
 Scanner: erledigt.)

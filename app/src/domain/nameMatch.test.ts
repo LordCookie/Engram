@@ -72,6 +72,9 @@ describe('matchCardName', () => {
     const top = matchCardName('V 012', vs, 3); // nur „V" + Nummer lesbar
     expect(top[0].cardId).toBe('v-exile');
     expect(top[0].numberHit).toBe(true);
+    // nameScore = Name allein (ohne Nummern-Bonus) — für die Scanner-Fusion getrennt.
+    expect(top[0].nameScore).toBeLessThan(top[0].score);
+    expect(top[0].score - top[0].nameScore).toBeCloseTo(0.5, 5);
   });
 
   it('lässt eine verlesene Nummer keinen klaren Namens-Volltreffer überschreiben', () => {

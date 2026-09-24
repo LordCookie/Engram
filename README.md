@@ -57,14 +57,31 @@ locally — no images leave the device.
 
 - **Continuous autofocus** + **tap-to-focus** and a **torch** toggle — the levers that make
   phone capture reliable against glare and foils.
-- **Bulk mode:** confident hits drop into a **scan basket** automatically (guarded by a
-  2-of-3 frame consensus, so flipping through a binder doesn't misfire); commit the basket to
-  your collection in one tap. An adjustable **scan pause** paces the auto-add.
+- **Bulk mode (Auto-basket):** confident hits drop into a **scan basket** automatically; the
+  same card is only added again after a real card change (hand/empty frame), so a card lying
+  still never double-counts. Fix mistakes in the basket (−/+, correct the card, standard ↔
+  alt art), then commit the basket to your collection in one tap.
 - **Parallel OCR:** the recognition passes run across a small **worker pool** (several CPU
   cores) instead of one at a time.
 
-> An earlier perceptual-hash (pHash) approach was replaced by OCR after testing — text
-> recognition proved far more robust for real-world photos across visually similar cards.
+**Scanner v2** — ported from its sister project ScryGlass; one tap on **Start scanner**
+opens a full-screen scanner (native camera in the app, webcam in the browser):
+
+- **Image recognition** alongside the name: a 256-bit **perceptual hash** of every printing
+  (550 of them) is matched against the camera frame, which also tells **alt arts / full arts**
+  apart from the standard print automatically.
+- **Signal fusion:** collector number > image + name agreeing > image > name, with a temporal
+  consensus and a stack-scanning auto-basket that only re-adds the same card after a real
+  card change.
+- **Native in the Android app:** CameraX preview + on-device **ML Kit** text recognition via a
+  small Kotlin Capacitor plugin (faster and more accurate than WASM OCR). In the browser, v2
+  runs Tesseract + image hash.
+- **Haptic feedback** when a card lands in the basket (toggle under **More**).
+- A built-in **scan log** captures raw distances and scores to calibrate the thresholds.
+
+> A first single-hash attempt was dropped for OCR: the pHash turned out to be very sensitive
+> to framing offsets (2 % shift ≈ 60 of 256 bits). v2 fixes that with a small **crop search**
+> (36 shifted/scaled crops per frame, ~15 ms) and combines it with OCR instead of replacing it.
 
 ### 📚 Collection
 
@@ -108,7 +125,9 @@ combinations. engram provides:
 - **Frontend:** React 18, TypeScript (`strict`), Vite, Tailwind CSS (Cyberpunk-skinned).
 - **State & persistence:** React state + **Dexie.js** (IndexedDB) via `dexie-react-hooks`
   live queries — no external state library, no LocalStorage.
-- **Scanner:** **Tesseract.js** OCR running in a multi-worker pool (`createScheduler`).
+- **Scanner:** **Tesseract.js** OCR running in a multi-worker pool (`createScheduler`);
+  scanner v2 adds a pHash index + fusion, and on Android **CameraX + ML Kit** through a
+  Kotlin Capacitor plugin.
 - **PWA / offline:** `vite-plugin-pwa` (Workbox) for the app shell and a runtime image cache.
 - **Native mobile:** wrapped for **Android** via **Capacitor** (`app/android/`); debug APKs
   are published in [Releases](https://github.com/LordCookie/Engram/releases). iOS is a later
@@ -184,7 +203,9 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
   ingested meta-decklist corpus) + normalized combination.
 - **Phase 3 — Scanner:** ✅ Usable on mobile. On-device OCR name + collector-number matching,
   continuous autofocus, tap-to-focus, torch, bulk auto-add with frame consensus, and parallel
-  OCR via a worker pool. iOS camera support is still open.
+  OCR via a worker pool. **Scanner v2** (image hash + fusion + native ML Kit, alt-art
+  detection) replaced the OCR-only scanner after on-phone testing. iOS camera support is
+  still open.
 - **Phase 4 — Stats service:** 🔄 In progress. The **local ingest pipeline** is in place
   (`pipeline/ingest_decks.py` aggregates legal decklists — your own plus pulled meta decks —
   into a co-play corpus the app merges in); a FastAPI/SQLite service to broaden the signal is

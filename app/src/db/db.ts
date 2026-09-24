@@ -112,6 +112,20 @@ export async function setThemePref(theme: string): Promise<void> {
   await db.meta.put({ key: THEME_KEY, value: theme });
 }
 
+// --- Vibration beim Scannen (Einstellung unter „Mehr") ------------------------------
+
+const VIBRATION_KEY = 'scanVibration';
+
+/** Vibration beim Scannen an? Default an. */
+export async function getVibrationPref(): Promise<boolean> {
+  const row = await db.meta.get(VIBRATION_KEY);
+  return typeof row?.value === 'boolean' ? row.value : true;
+}
+
+export async function setVibrationPref(on: boolean): Promise<void> {
+  await db.meta.put({ key: VIBRATION_KEY, value: on });
+}
+
 export async function getCurrentDeckId(): Promise<string | undefined> {
   const row = await db.meta.get(CURRENT_DECK_KEY);
   return typeof row?.value === 'string' ? row.value : undefined;

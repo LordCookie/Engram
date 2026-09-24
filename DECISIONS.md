@@ -1176,3 +1176,43 @@ Go-Wide, Gig-Swing) UND abweichenden Turnier-Decks. Heraus kamen **Unique-1
 Gig-Swing/Tempo (BLAU/GRÜN, 57 %)** und **Unique-2 Control/Removal (ROT/BLAU, 53 %)** —
 beide BLAU-basiert (die Tops meiden BLAU), < 25 % Überschneidung mit Top A, und
 mechanisch klar profiliert. Ausgabe `sim/decks/unique-1/2-v2.*` (gitignored).
+
+## 2026-09-24 — Scanner v2: Bild-Hash + Fusion aus ScryGlass (Beta)
+
+**Entscheidung:** Der Scanner aus dem Schwesterprojekt ScryGlass wird portiert
+(`scanner-v2-plan.md`), und zwar **hinter einem Beta-Schalter**. Ist der Schalter aus,
+läuft der bisherige Tesseract-Scanner unverändert, denn er ist am Handy erprobt und
+frühere Scanner-Umbauten hatten Rückschritte gebracht. Mit v2 kommen dazu: pHash-Index
+aller Printings, Fusion Bild/Name/Nummer, Auto-Korb mit Kartenwechsel-Erkennung und in
+der Android-App CameraX + ML Kit (Kotlin-Plugin).
+
+**Warum der Bild-Hash jetzt trägt (früher verworfen):** Gemessen ist der 256-Bit-pHash
+unempfindlich gegen Unschärfe und Licht (Abstand ~4), aber **extrem empfindlich gegen
+Versatz** (2 % → ~60 Bit, 4 % → scheitert). Das erklärt das frühere Scheitern mit echten
+Fotos. v2 sucht deshalb über 36 verschobene, skalierte und gedrehte Ausschnitte. In der
+Simulation (Drehung ±3°, Versatz ±4,5 %, Unschärfe, Licht, JPEG) waren **50/50 korrekt
+statt 38/50**, bei **0 Fehltreffern** in der Gegenprobe (leerer Tisch, Hand, quer liegende
+oder überlappende Karten). Der Hash ersetzt OCR nicht, er bestätigt sie: stimmen Bild und
+Name überein, ist das das stärkste Signal.
+
+**Alt-Art per Bild statt per Künstler:** Die Künstler-Angabe der NetDeck-Quelle ist
+unzuverlässig. Der Beta-Druck von Delamain Cab hat denselben Bildinhalt, aber einen
+anderen Künstler; V: Streetkid 005a/005b sind zwei Illustrationen vom selben Künstler.
+Maßgeblich ist jetzt der Bildabstand zum Standard-Druck (≥ 40 Bit; Nachdrucke inkl.
+Stempel ≤ 38, Full-Arts ≥ 42). Ergebnis: 67 statt 43 Karten mit Alt-Art. `altArts.json`
+wird von `hash_images.py --write-altarts` geschrieben, `fetch_altarts.py` ist überholt.
+
+**Schwellen gemessen statt übernommen:** Fremde Karten liegen bei engram untereinander
+schon ab 68 Bit (MTG: ~72). Die Defaults liegen deshalb zwischen ScryGlass-Voll- und
+-Set-Modus. Sie werden in Phase 6 am Handy per Scan-Protokoll nachgezogen.
+
+**Nachtrag (2026-09-24, nach dem Handy-Test):** Der neue Scanner ist jetzt der einzige.
+Der alte Tesseract-only-Scanner und der Beta-Schalter sind entfernt. Der Tab Scanner hat
+nur noch einen Startknopf, der den Vollbild-Scanner öffnet, auch im Browser (Webcam als
+Vollbild). Im E2E-Test mit künstlichem Kamerastream fiel ein echter Fehltreffer auf:
+OCR-Rauschen traf die Sammlernummer einer fremden Karte, und „Nummer + Name" überstimmte
+den klaren Bildtreffer. Bei engram hängt die Nummer am Namensabgleich und ist darum kein
+unabhängiges Signal. Deshalb geht nur noch `nameScore` (Name ohne Nummern-Bonus) in die
+Fusion, und eine nur durch den Namen bestätigte Nummer schlägt keinen starken Bildtreffer.
+Vibration läuft über `@capacitor/haptics`, weil `navigator.vibrate` in der Android-WebView
+ohne Berechtigung stumm bleibt. Sie ist unter „Mehr" abschaltbar.
