@@ -17,9 +17,9 @@ import { rulesetV1Loaded } from '../app/src/rules/ruleset';
  * Nur **legale** Decks fließen ein (`validate`). Unauflösbare Zeilen (Tippfehler /
  * fremde Karten) werden gemeldet, damit man nachbessern kann. Alles lokal/gitignored.
  *
- *   npx tsx import_decklists.ts                # liest sim/deck-import/*.txt
- *   npx tsx import_decklists.ts a.txt b.txt    # gezielte Dateien
- *   npx tsx import_decklists.ts --ingest       # danach ingest_decks.py laufen lassen
+ *   npx vite-node --script import_decklists.ts                # liest sim/deck-import/*.txt
+ *   npx vite-node --script import_decklists.ts a.txt b.txt    # gezielte Dateien
+ *   npx vite-node --script import_decklists.ts --ingest       # danach ingest_decks.py laufen lassen
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));

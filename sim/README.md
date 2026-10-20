@@ -7,7 +7,9 @@ kann, ob ein besser gebautes / synergistischeres Deck hier tendenziell öfter
 gewinnt. Ein starkes Signal ist es nicht, ein bequemes schon.
 
 Braucht die lokal generierten App-Daten (`app/src/data/cards.json`,
-`features.json` — via `pipeline/`), genau wie die App. Läuft mit `tsx`.
+`features.json` — via `pipeline/`), genau wie die App. Läuft mit `vite-node --script`
+(nicht `tsx`): die App-Quellen nutzen Vites `import.meta.glob` für optionale Daten
+(z. B. `altArts.json`), das nur ein Vite-basierter Runner versteht.
 
 ## Nutzung
 

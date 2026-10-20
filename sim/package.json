@@ -5,19 +5,19 @@
   "type": "module",
   "description": "Konsolen-Test-Engine (Dev-Werkzeug) zum groben Durchspielen von Decks/Synergien.",
   "scripts": {
-    "test": "tsx engine.test.ts && tsx engine2.test.ts",
-    "verify": "tsx verify.ts",
-    "build-decks": "tsx build.ts",
-    "pull-meta": "tsx pull_meta.ts",
-    "eval-meta": "tsx eval_meta.ts",
-    "import-decklists": "tsx import_decklists.ts",
-    "decks": "tsx run.ts decks",
-    "battle": "tsx run.ts battle",
-    "game": "tsx run.ts game",
-    "agent-init": "tsx run.ts agent-init",
-    "agent-step": "tsx run.ts agent-step"
+    "test": "vite-node --script engine.test.ts && vite-node --script engine2.test.ts",
+    "verify": "vite-node --script verify.ts",
+    "build-decks": "vite-node --script build.ts",
+    "pull-meta": "vite-node --script pull_meta.ts",
+    "eval-meta": "vite-node --script eval_meta.ts",
+    "import-decklists": "vite-node --script import_decklists.ts",
+    "decks": "vite-node --script run.ts decks",
+    "battle": "vite-node --script run.ts battle",
+    "game": "vite-node --script run.ts game",
+    "agent-init": "vite-node --script run.ts agent-init",
+    "agent-step": "vite-node --script run.ts agent-step"
   },
   "devDependencies": {
-    "tsx": "^4.19.2"
+    "vite-node": "^2.1.9"
   }
 }

@@ -18,8 +18,8 @@ import type { SimDeck } from './engine';
  * Ehrlichkeit (§ 12): die Sim ist ein grobes Modell. Effektlastige Meta-Decks
  * werden systematisch unterschätzt — deshalb die Kontrolle + die Lesbarkeits-Spalte.
  *
- *   npx tsx eval_meta.ts                 # Standard (matrix 400 Spiele, rr 200)
- *   npx tsx eval_meta.ts --games 800 --rr 400
+ *   npx vite-node --script eval_meta.ts                 # Standard (matrix 400 Spiele, rr 200)
+ *   npx vite-node --script eval_meta.ts --games 800 --rr 400
  */
 
 function argNum(flag: string, def: number): number {

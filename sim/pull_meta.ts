@@ -19,10 +19,10 @@ import type { SimDeck } from './engine';
  *  - § 8: wir speichern NUR Slugs + Stückzahlen (== `cards.json`-IDs), niemals
  *    Kartentexte oder -bilder. Die gezogenen Daten sind gitignored.
  *
- *   npx tsx pull_meta.ts                 # Discovery über die Listing-Seiten + Pull
- *   npx tsx pull_meta.ts --refresh       # Cache ignorieren, frisch ziehen
- *   npx tsx pull_meta.ts --id <uuid> ... # zusätzliche Deck-IDs
- *   npx tsx pull_meta.ts --limit 20
+ *   npx vite-node --script pull_meta.ts                 # Discovery über die Listing-Seiten + Pull
+ *   npx vite-node --script pull_meta.ts --refresh       # Cache ignorieren, frisch ziehen
+ *   npx vite-node --script pull_meta.ts --id <uuid> ... # zusätzliche Deck-IDs
+ *   npx vite-node --script pull_meta.ts --limit 20
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));

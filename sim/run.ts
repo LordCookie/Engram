@@ -27,12 +27,12 @@ import { loadDecks, findDeck, makeConfig } from './data';
  * CLI der Test-Engine. Bewusst nüchtern gehalten — ein Dev-Werkzeug zum groben
  * Durchspielen von Decks/Synergien, kein Spiel zum Vorzeigen.
  *
- *   npx tsx run.ts battle --a "The Heist" --b "Embracing Power" --games 200
- *   npx tsx run.ts battle --a "The Heist" --b "The Heist" --synergy off   # A/B-Test
- *   npx tsx run.ts game   --a "The Heist" --b "Embracing Power" --seed 7   # ein Spiel, ausführlich
- *   npx tsx run.ts decks                                                   # spielbare Decks listen
- *   npx tsx run.ts agent-init --a "The Heist" --b "Embracing Power" --agent b
- *   npx tsx run.ts agent-step --play 0,2 --attack true
+ *   npx vite-node --script run.ts battle --a "The Heist" --b "Embracing Power" --games 200
+ *   npx vite-node --script run.ts battle --a "The Heist" --b "The Heist" --synergy off   # A/B-Test
+ *   npx vite-node --script run.ts game   --a "The Heist" --b "Embracing Power" --seed 7   # ein Spiel, ausführlich
+ *   npx vite-node --script run.ts decks                                                   # spielbare Decks listen
+ *   npx vite-node --script run.ts agent-init --a "The Heist" --b "Embracing Power" --agent b
+ *   npx vite-node --script run.ts agent-step --play 0,2 --attack true
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -241,5 +241,5 @@ switch (cmd) {
   case 'agent-step': cmdAgentStep(a); break;
   default:
     console.log('Modi: decks | battle | game | agent-init | agent-step');
-    console.log('Beispiel: npx tsx run.ts battle --a "The Heist" --b "Embracing Power" --games 200');
+    console.log('Beispiel: npx vite-node --script run.ts battle --a "The Heist" --b "Embracing Power" --games 200');
 }
