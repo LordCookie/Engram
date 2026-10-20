@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { CollectionEntry, WantEntry } from '../domain/types';
 import { emptyDraft, type DeckDraft } from '../domain/deckDraft';
+import { BACKUP_SETTING_KEYS, type BackupSettings, type ParsedBackup } from '../domain/collectionIo';
 
 export type { WantEntry };
 
@@ -153,6 +154,32 @@ export async function setVibrationPref(on: boolean): Promise<void> {
   await db.meta.put({ key: VIBRATION_KEY, value: on });
 }
 
+// --- Willkommenskarte beim ersten Start (ausblendbar) ------------------------------
+
+const WELCOME_KEY = 'welcomeDismissed';
+
+export async function getWelcomeDismissed(): Promise<boolean> {
+  return (await db.meta.get(WELCOME_KEY))?.value === true;
+}
+
+export async function dismissWelcome(): Promise<void> {
+  await db.meta.put({ key: WELCOME_KEY, value: true });
+}
+
+// --- Oberflächensprache (Einstellung unter „Mehr"; ohne Wahl gilt die Gerätesprache) ---
+
+const LANGUAGE_KEY = 'language';
+
+/** Gespeicherte Sprache (`de`/`en`) oder `null` = noch nie gewählt. */
+export async function getLanguagePref(): Promise<string | null> {
+  const row = await db.meta.get(LANGUAGE_KEY);
+  return typeof row?.value === 'string' ? row.value : null;
+}
+
+export async function setLanguagePref(lang: string): Promise<void> {
+  await db.meta.put({ key: LANGUAGE_KEY, value: lang });
+}
+
 export async function getCurrentDeckId(): Promise<string | undefined> {
   const row = await db.meta.get(CURRENT_DECK_KEY);
   return typeof row?.value === 'string' ? row.value : undefined;
@@ -163,7 +190,7 @@ export async function setCurrentDeckId(id: string): Promise<void> {
 }
 
 /** Legt ein neues, leeres Deck an und macht es zum aktuellen. */
-export async function createDeck(rulesetVersion: string, name = 'Neues Deck'): Promise<DeckDraft> {
+export async function createDeck(rulesetVersion: string, name?: string): Promise<DeckDraft> {
   const draft = emptyDraft(rulesetVersion, undefined, name);
   await db.decks.put({ ...draft, updatedAt: Date.now() });
   await setCurrentDeckId(draft.id);
@@ -234,6 +261,80 @@ export async function wantAtLeast(items: { cardId: string; count: number }[]): P
       await db.wants.put({ cardId, count: next, addedAt: existing?.addedAt ?? Date.now() });
     }
   });
+}
+
+// --- Komplett-Backup (Format v3) + Backup-Erinnerung ---------------------------
+
+export interface BackupData {
+  entries: CollectionEntry[];
+  wants: WantEntry[];
+  decks: DeckDraft[];
+  settings: BackupSettings;
+}
+
+/** Alles, was ins Backup gehört (Sammlung, Wants, Decks, Einstellungen). */
+export async function readBackupData(): Promise<BackupData> {
+  const [entries, wants, decks, metaRows] = await Promise.all([
+    db.collection.toArray(),
+    db.wants.toArray(),
+    db.decks.toArray(),
+    db.meta.bulkGet([...BACKUP_SETTING_KEYS]),
+  ]);
+  const settings: BackupSettings = {};
+  BACKUP_SETTING_KEYS.forEach((k, i) => {
+    const row = metaRows[i];
+    if (row && row.value !== undefined) settings[k] = row.value;
+  });
+  return { entries, wants, decks, settings };
+}
+
+/**
+ * Stellt ein Backup wieder her (ersetzt). Sammlung + Want-Liste immer; Decks und
+ * Einstellungen nur, wenn das Backup sie enthält (v3) — ältere Backups lassen sie
+ * unangetastet. Alles in einer Transaktion.
+ */
+export async function restoreBackup(b: ParsedBackup): Promise<void> {
+  await db.transaction('rw', [db.collection, db.wants, db.decks, db.meta], async () => {
+    await db.collection.clear();
+    if (b.entries.length > 0) await db.collection.bulkPut(b.entries);
+    await db.wants.clear();
+    if (b.wants.length > 0) await db.wants.bulkPut(b.wants);
+    if (b.hasDecks) {
+      await db.decks.clear();
+      if (b.decks.length > 0) await db.decks.bulkPut(b.decks);
+    }
+    if (b.hasSettings) {
+      for (const k of BACKUP_SETTING_KEYS) {
+        if (b.settings[k] !== undefined) await db.meta.put({ key: k, value: b.settings[k] });
+      }
+    }
+    // Zeiger aufs aktuelle Deck muss auf ein vorhandenes Deck zeigen.
+    const current = await db.meta.get(CURRENT_DECK_KEY);
+    if (typeof current?.value !== 'string' || !(await db.decks.get(current.value))) {
+      const first = await db.decks.orderBy('updatedAt').last();
+      if (first) await db.meta.put({ key: CURRENT_DECK_KEY, value: first.id });
+      else await db.meta.delete(CURRENT_DECK_KEY);
+    }
+  });
+}
+
+const LAST_BACKUP_KEY = 'lastBackupAt';
+const BACKUP_SNOOZE_KEY = 'backupSnoozeUntil';
+
+export async function getBackupTimes(): Promise<{ lastBackupAt: number | null; snoozeUntil: number | null }> {
+  const [last, snooze] = await db.meta.bulkGet([LAST_BACKUP_KEY, BACKUP_SNOOZE_KEY]);
+  return {
+    lastBackupAt: typeof last?.value === 'number' ? last.value : null,
+    snoozeUntil: typeof snooze?.value === 'number' ? snooze.value : null,
+  };
+}
+
+export async function setLastBackupAt(ts: number): Promise<void> {
+  await db.meta.put({ key: LAST_BACKUP_KEY, value: ts });
+}
+
+export async function snoozeBackupReminder(until: number): Promise<void> {
+  await db.meta.put({ key: BACKUP_SNOOZE_KEY, value: until });
 }
 
 /** Trägt mehrere Karten mit Stückzahlen ein (für den Starter-Quickadd, Aufgabe 7). */

@@ -4,6 +4,7 @@
  */
 import type { OwnedCount } from './binder';
 import type { Card, Color } from './types';
+import { t, tk } from '../i18n';
 
 export interface AchievementInput {
   cards: readonly Card[];
@@ -25,12 +26,12 @@ export interface Achievement {
   unlocked: boolean;
 }
 
-const COLOR_LABEL: Record<Color, string> = { RED: 'Rot', GREEN: 'Grün', BLUE: 'Blau', YELLOW: 'Gelb' };
+const COLOR_LABEL: Record<Color, string> = { RED: tk('Rot'), GREEN: tk('Grün'), BLUE: tk('Blau'), YELLOW: tk('Gelb') };
 const COLORS: Color[] = ['RED', 'GREEN', 'BLUE', 'YELLOW'];
 
 function make(id: string, title: string, description: string, current: number, target: number): Achievement {
-  const t = Math.max(1, target);
-  return { id, title, description, current: Math.min(current, t), target: t, unlocked: current >= t };
+  const tg = Math.max(1, target);
+  return { id, title, description, current: Math.min(current, tg), target: tg, unlocked: current >= tg };
 }
 
 /** Alle Erfolge mit aktuellem Fortschritt (Reihenfolge = Anzeige-Reihenfolge). */
@@ -61,41 +62,41 @@ export function computeAchievements(inp: AchievementInput): Achievement[] {
   const rarityTotal = (r: string) => cards.filter((c) => c.rarity === r).length;
 
   const list: Achievement[] = [
-    make('first-card', 'Erster Chip', 'Die erste Karte in der Sammlung.', unique, 1),
-    make('unique-25', 'Streetkid', '25 verschiedene Karten.', unique, 25),
-    make('unique-75', 'Söldner', '75 verschiedene Karten.', unique, 75),
-    make('unique-all', 'Legende von Night City', 'Das komplette Set.', unique, cards.length),
-    make('copies-100', 'Stapelweise', '100 Karten insgesamt (mit Kopien).', totalCopies, 100),
-    make('legends-3', 'Drei Legenden', 'Drei Legends — genug für ein Deck.', ownedLegends, 3),
-    make('legends-all', 'Legendensammler', 'Alle Legends.', ownedLegends, legends.length),
+    make('first-card', t('Erster Chip'), t('Die erste Karte in der Sammlung.'), unique, 1),
+    make('unique-25', t('Streetkid'), t('25 verschiedene Karten.'), unique, 25),
+    make('unique-75', t('Söldner'), t('75 verschiedene Karten.'), unique, 75),
+    make('unique-all', t('Legende von Night City'), t('Das komplette Set.'), unique, cards.length),
+    make('copies-100', t('Stapelweise'), t('100 Karten insgesamt (mit Kopien).'), totalCopies, 100),
+    make('legends-3', t('Drei Legenden'), t('Drei Legends — genug für ein Deck.'), ownedLegends, 3),
+    make('legends-all', t('Legendensammler'), t('Alle Legends.'), ownedLegends, legends.length),
     ...COLORS.map((col) => {
       const ofColor = cards.filter((c) => c.color === col);
       return make(
         `color-${col.toLowerCase()}`,
-        `${COLOR_LABEL[col]} komplett`,
-        `Alle Karten der Farbe ${COLOR_LABEL[col]}.`,
+        t('{color} komplett', { color: t(COLOR_LABEL[col]) }),
+        t('Alle Karten der Farbe {color}.', { color: t(COLOR_LABEL[col]) }),
         ofColor.filter(has).length,
         ofColor.length,
       );
     }),
-    make('playset-1', 'Playset', `Eine Karte ${inp.maxCopies}× (volles Playset).`, playsets, 1),
-    make('playset-10', 'Arsenal', `Zehn Karten als volles Playset.`, playsets, 10),
-    make('alt-1', 'Andere Sicht', 'Die erste Alt-Art.', altOwned, 1),
-    make('alt-10', 'Kunstkenner', '10 verschiedene Alt-Arts.', altOwned, 10),
-    make('both-sides', 'Zwei Gesichter', 'Standard und Alt-Art derselben Karte.', bothSides, 1),
+    make('playset-1', t('Playset'), t('Eine Karte {n}× (volles Playset).', { n: inp.maxCopies }), playsets, 1),
+    make('playset-10', t('Arsenal'), t('Zehn Karten als volles Playset.'), playsets, 10),
+    make('alt-1', t('Andere Sicht'), t('Die erste Alt-Art.'), altOwned, 1),
+    make('alt-10', t('Kunstkenner'), t('10 verschiedene Alt-Arts.'), altOwned, 10),
+    make('both-sides', t('Zwei Gesichter'), t('Standard und Alt-Art derselben Karte.'), bothSides, 1),
   ];
   if (inp.altArtCards.size > 0) {
-    list.push(make('alt-all', 'Galerie', 'Jede Alt-Art des Sets.', altOwned, inp.altArtCards.size));
+    list.push(make('alt-all', t('Galerie'), t('Jede Alt-Art des Sets.'), altOwned, inp.altArtCards.size));
   }
   if (rarityTotal('Secret') > 0) {
-    list.push(make('secret', 'Geheimnisträger', 'Eine Secret Rare.', rarityOwned('Secret'), 1));
+    list.push(make('secret', t('Geheimnisträger'), t('Eine Secret Rare.'), rarityOwned('Secret'), 1));
   }
   if (rarityTotal('Nova Rare') > 0) {
-    list.push(make('nova', 'Supernova', 'Eine Nova Rare.', rarityOwned('Nova Rare'), 1));
+    list.push(make('nova', t('Supernova'), t('Eine Nova Rare.'), rarityOwned('Nova Rare'), 1));
   }
   list.push(
-    make('deck-legal', 'Deckbauer', 'Ein legales Deck gebaut.', inp.legalDeckCount, 1),
-    make('deck-5', 'Flotte', 'Fünf Decks angelegt.', inp.deckCount, 5),
+    make('deck-legal', t('Deckbauer'), t('Ein legales Deck gebaut.'), inp.legalDeckCount, 1),
+    make('deck-5', t('Flotte'), t('Fünf Decks angelegt.'), inp.deckCount, 5),
   );
   return list;
 }

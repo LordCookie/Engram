@@ -14,6 +14,7 @@ import { db, addToCollection } from '../db/db';
 import { CardImage } from './CardImage';
 import { CardDetail } from './CardDetail';
 import type { Card, CardType, CollectionEntry, Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Sammlungsansicht (PLAN.md § 5, Aufgabe 6): Fortschritt „x von y" je Farbe plus
@@ -106,20 +107,20 @@ export function CollectionView({
     <section className="rounded-lg bg-surface p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <div className="flex items-baseline gap-2">
-          <h2 className="font-mono text-lg">Sammlung</h2>
+          <h2 className="font-mono text-lg">{t('Sammlung')}</h2>
           {onToggleCollapsed && (
             <button
               onClick={onToggleCollapsed}
               aria-expanded={!collapsed}
               className="rounded px-1.5 font-mono text-xs text-muted hover:text-accent"
-              title={collapsed ? 'Sammlung ausklappen' : 'Sammlung einklappen (schneller zum Solver)'}
+              title={collapsed ? t('Sammlung ausklappen') : t('Sammlung einklappen (schneller zum Solver)')}
             >
-              {collapsed ? '▸ ausklappen' : '▾ einklappen'}
+              {collapsed ? t('▸ ausklappen') : t('▾ einklappen')}
             </button>
           )}
         </div>
         <span className="font-mono text-sm text-muted">
-          {total} Karten · {owned.length} verschiedene
+          {t('{n} Karten · {m} verschiedene', { n: total, m: owned.length })}
         </span>
       </div>
 
@@ -146,7 +147,7 @@ export function CollectionView({
 
       {owned.length === 0 ? (
         <p className="text-sm text-muted">
-          Noch nichts erfasst. Nutze „Scannen" oder „Erfassen".
+          {t('Noch nichts erfasst. Nutze „Scannen" oder „Erfassen".')}
         </p>
       ) : (
         <>
@@ -155,7 +156,7 @@ export function CollectionView({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="In der Sammlung suchen (Name oder Nummer)…"
+              placeholder={t('In der Sammlung suchen (Name oder Nummer)…')}
               className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-accent"
             />
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
@@ -163,9 +164,9 @@ export function CollectionView({
                 value={filterColor}
                 onChange={(e) => setFilterColor(e.target.value as Color | 'ALL')}
                 className="rounded border border-white/10 bg-bg px-2 py-1 outline-none focus:border-accent"
-                aria-label="Farbe filtern"
+                aria-label={t('Farbe filtern')}
               >
-                <option value="ALL">Farbe: alle</option>
+                <option value="ALL">{t('Farbe: alle')}</option>
                 {rulesetV1Loaded.colors.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -176,9 +177,9 @@ export function CollectionView({
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as CardType | 'ALL')}
                 className="rounded border border-white/10 bg-bg px-2 py-1 outline-none focus:border-accent"
-                aria-label="Typ filtern"
+                aria-label={t('Typ filtern')}
               >
-                <option value="ALL">Typ: alle</option>
+                <option value="ALL">{t('Typ: alle')}</option>
                 {typeOrder.map((t) => (
                   <option key={t} value={t}>
                     {t}
@@ -189,36 +190,37 @@ export function CollectionView({
                 value={sort}
                 onChange={(e) => setSort(e.target.value as Sort)}
                 className="rounded border border-white/10 bg-bg px-2 py-1 outline-none focus:border-accent"
-                aria-label="Sortierung"
+                aria-label={t('Sortierung')}
               >
-                <option value="farbe">Sortierung: Farbe</option>
-                <option value="name">Sortierung: Name</option>
-                <option value="anzahl">Sortierung: Anzahl</option>
+                <option value="farbe">{t('Sortierung: Farbe')}</option>
+                <option value="name">{t('Sortierung: Name')}</option>
+                <option value="anzahl">{t('Sortierung: Anzahl')}</option>
               </select>
-              <div className="flex overflow-hidden rounded border border-white/10" role="group" aria-label="Ansicht">
+              <div className="flex overflow-hidden rounded border border-white/10" role="group" aria-label={t('Ansicht')}>
                 <button
                   onClick={() => setView('list')}
                   aria-pressed={view === 'list'}
                   className={`px-2 py-1 ${view === 'list' ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'}`}
                 >
-                  Liste
+                  {t('Liste')}
                 </button>
                 <button
                   onClick={() => setView('grid')}
                   aria-pressed={view === 'grid'}
                   className={`px-2 py-1 ${view === 'grid' ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'}`}
                 >
-                  Raster
+                  {t('Raster')}
                 </button>
               </div>
               <span className="ml-auto text-muted">
-                {shown.length} Karten{shownTotal !== total ? ` · ${shownTotal} Stück` : ''}
+                {t('{n} Karten', { n: shown.length })}
+                {shownTotal !== total ? t(' · {n} Stück', { n: shownTotal }) : ''}
               </span>
             </div>
           </div>
 
           {shown.length === 0 ? (
-            <p className="text-sm text-muted">Kein Treffer für die Filter.</p>
+            <p className="text-sm text-muted">{t('Kein Treffer für die Filter.')}</p>
           ) : view === 'grid' ? (
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {shown.map(({ card, std, alt }) => (
@@ -235,7 +237,7 @@ export function CollectionView({
                       </span>
                       {alt > 0 && (
                         <span className="absolute left-1 top-1 rounded bg-accent/85 px-1 py-0.5 font-mono text-[10px] text-on-accent">
-                          {alt} Alt
+                          {alt} {t('Alt')}
                         </span>
                       )}
                     </div>
@@ -260,23 +262,23 @@ export function CollectionView({
                     <span className="truncate">{card.name}</span>
                     {alt > 0 && (
                       <span className="shrink-0 rounded bg-accent/15 px-1 text-[10px] text-accent">
-                        · {alt} Alt
+                        · {alt} {t('Alt')}
                       </span>
                     )}
                   </button>
                   <button
                     onClick={() => void addToCollection(card.id, -1)}
                     disabled={std <= 0}
-                    aria-label={`Ein Exemplar ${card.name} entfernen`}
-                    title="Ein Standard-Exemplar entfernen"
+                    aria-label={t('Ein Exemplar {name} entfernen', { name: card.name })}
+                    title={t('Ein Standard-Exemplar entfernen')}
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text disabled:opacity-30"
                   >
                     −
                   </button>
                   <button
                     onClick={() => void addToCollection(card.id, 1)}
-                    aria-label={`Ein Exemplar ${card.name} hinzufügen`}
-                    title="Ein Standard-Exemplar hinzufügen"
+                    aria-label={t('Ein Exemplar {name} hinzufügen', { name: card.name })}
+                    title={t('Ein Standard-Exemplar hinzufügen')}
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-accent"
                   >
                     +
@@ -286,8 +288,8 @@ export function CollectionView({
                       if (std > 0) void addToCollection(card.id, -std);
                       if (alt > 0) void addToCollection(altPrintingId(card.id), -alt);
                     }}
-                    aria-label={`${card.name} ganz entfernen`}
-                    title="Ganz entfernen (inkl. Alt-Art)"
+                    aria-label={t('{name} ganz entfernen', { name: card.name })}
+                    title={t('Ganz entfernen (inkl. Alt-Art)')}
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                   >
                     ✕

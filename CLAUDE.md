@@ -11,6 +11,8 @@ Vollständiger Plan: siehe [PLAN.md](PLAN.md). Getroffene Entscheidungen: [DECIS
 - Kein LocalStorage. Persistenz ausschließlich über Dexie.
 - Jede Änderung an Validator oder Solver braucht Tests im selben Commit.
 - Antworten und Commit-Messages auf Deutsch.
+- Oberflächentexte nur über `t('deutscher Text')` (`app/src/i18n/`); neue Texte brauchen einen
+  Eintrag in `i18n/en.ts` (der Test `en.test.ts` schlägt sonst fehl).
 
 ## Projektstruktur
 - `app/` — Vite-Frontend (React 18, TypeScript strict, Tailwind, Vitest).
@@ -108,8 +110,8 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   (zählt korrekt zu Set-Fortschritt etc.). Im **Karten-Detail** (nur Sammlungs-Kontext,
   via `onAltChange`-Prop) ein **Alt-Art-Zähler − N +**, nur bei Karten mit Alt-Art;
   `CollectionView` gruppiert je Karte Standard/Alt und zeigt „3× · 2 Alt" (Liste) bzw.
-  ein „Alt"-Badge (Raster). **Der Scanner erkennt Alt-Arts am Bild**; Erfassen
-  (Suche) noch ohne Alt-Wahl.
+  ein „Alt"-Badge (Raster). **Der Scanner erkennt Alt-Arts am Bild**; in der
+  **Schnellerfassung** (v0.2) „+Alt" je Treffer bzw. Umschalt+Enter (nur Karten mit Alt-Art).
 - **Backup mobil-robust** (`ui/CollectionIoPanel.tsx`): In der **nativen App** teilt
   „Sichern / Teilen" über das **echte Android/iOS-Share-Sheet** — `@capacitor/filesystem`
   schreibt die JSON in den Cache, `@capacitor/share` teilt die Datei-URI (Drive/Files/
@@ -256,8 +258,22 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   nur legale fließen ein), meldet unauflösbare Zeilen und schreibt slug-basierte
   JSONs nach `pipeline/decklists/`. Dann `ingest_decks.py` (oder `--ingest`). So
   speist man eigene Decks stapelweise ins empirische Korpus. `sim/deck-import/`
-  gitignored. **Quelle cyberpunkmeta.org ist bei ~8 Decks gedeckelt** (Sitemap) —
-  eigene Decks sind der realistische Hebel für mehr empirisches Signal.
+  gitignored. **Quelle cyberpunkmeta.org ist bei ~8 Decks gedeckelt** (Sitemap).
+  **Community-Decks (v0.2, 13 → 946 Decks):** `pipeline/fetch_community_decks.py` (stdlib) zieht
+  die öffentlichen Decks, die die offizielle Seite cyberpunktcg.com unter „Community decks"
+  zeigt — über dieselbe NetDeck-API wie `fetch_cards.py` (`/api/cyberpunk/decks/public` +
+  `/decks/<id>`, robots `Allow: /`, Slugs = unsere IDs). Höflich (UA, 1 s Pause, Cache je Deck
+  in `pipeline/.cache/netdeck-decks/` nach `updated_at`), **nur Slugs + Stückzahlen** (keine
+  Namen/Nutzer/Texte), **≤ 3 Decks je Ersteller** (gegen Verzerrung), exakte Kopien einmal →
+  `pipeline/decklists/netdeck-community.json` (gitignored). Stand 2026-09-30: 1.184 öffentliche
+  Decks von 613 Erstellern → 964 ausgewählt → 936 eindeutig, alle legal. `ingest_decks.py` schreibt
+  jetzt **`ingest-v2`** (kompakt: `cards`/`df`-Listen + `pairs` [i, j, n], ab 100 Decks nur Paare
+  ≥ 2×; 946 Decks = 102 KB statt 155 KB bei 13) mit **`sources`** (meta/community/eigene),
+  dedupliziert über alle Quellen; die App liest v1 + v2 (`corpusFromIngest` in `domain/coplay.ts`)
+  und zeigt die Herkunft („13 Meta + 933 Community + Starter + deine"). Deckeditor-Tag heißt jetzt
+  „✓ N Decks" statt „✓ Meta N". Ehrlichkeit: Community ≠ Turnier — getrennt ausgewiesen.
+  Nicht genutzt: tcgcontender (robots sperrt `/api/`), exburst (nennt `anthropic-ai` in robots).
+  Refresh: `python pipeline/fetch_community_decks.py && python pipeline/ingest_decks.py`.
 - **Simulationsmodus / Playtest** (Roadmap „Proberunden") — **manuelles** Playtest
   wie ManaBox: echte Zonen (Deck/Hand/Feld/Trash + verdeckte Legends), du bewegst
   Karten selbst, **keine erzwungene Regel-Engine** (Ehrlichkeit). Reine Maschine
@@ -273,7 +289,9 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Konsolen-Test-Engine** (`sim/`, internes Dev-Werkzeug, **kein App-Feature**,
   nicht im Bundle/CI): grobes Heuristik-Modell, das Decks **deck-vs-deck** durchspielt,
   um Decks/Synergien in Szenarien zu vergleichen — kein regeltreuer Simulator. Läuft
-  mit `tsx` (eigenes `package.json`), lädt die App-Domäne direkt (`../app/src/...`).
+  mit **`vite-node --script`** (eigenes `package.json`; seit 2026-10 statt `tsx`, weil die
+  App-Quellen Vites `import.meta.glob` für optionale Daten nutzen, z. B. `altArts.json` in
+  `catalog.ts` — `tsx` brach daran ab), lädt die App-Domäne direkt (`../app/src/...`).
   Modi `decks`/`battle`/`game` + Schrittbetrieb `agent-init`/`agent-step`, über den ein
   **Subagent** eine Seite spielen kann. Unsere Synergie-Vorhersage fließt als Power-
   Bonus ein; im A/B-Test (`--synergy off`) verschiebt sie die Siegquote messbar
@@ -283,7 +301,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   spends 2 Legends") als Parameter → Startvorteil im Modell ~66 % statt 76 %.
   **`npm run verify`** prüft die Engine: Determinismus, Schritt-Modus == Batch,
   Invarianten (Gigs≥0/Budget/Terminierung), Spiegel≈50 %, Dominanz, Monte-Carlo-
-  Stabilität, Synergie-Monotonie — alle grün. 7 Engine-Tests (`npm test`, tsx).
+  Stabilität, Synergie-Monotonie — alle grün. 7 Engine-Tests (`npm test`, vite-node).
   **Befund:** die Engine ist deck-dominiert (ein Subagent mit Baumsuche fand über
   6 Seeds keine Gewinnlinie fürs schwächere Deck → Heuristik ≈ optimal). Bleibt ein
   grober Proxy, kein Regel-Simulator. **`npm run build-decks`** konstruiert aus allen
@@ -317,7 +335,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   **Discovery zuerst über die `sitemap.xml`** (kanonisch, robots nennt sie), dann die
   Listing-Seiten als Fallback. **Die Quelle veröffentlicht aktuell nur ~8 Decks** (das
   ist die Obergrenze der Sitemap) — mehr „echte Meta-Decks" gibt es dort schlicht nicht;
-  ins Ingest-Korpus fließen zusätzlich `pipeline/decklists/` (aktuell zusammen n≈13).
+  ins Ingest-Korpus fließen zusätzlich `pipeline/decklists/` (seit v0.2 inkl. Community: n=946).
   § 8: nur Slugs + Stückzahlen, keine Kartentexte/-bilder. `eval_meta` fährt eine Matrix
   (v2, mit 95%-CI), nimmt die Starter als **Kontrolle**, rankt die Meta-Decks intern und
   misst „Engine-Lesbarkeit" (Körper/Effekt vs. blinde Effekt-/Gear-/Control-Karten) →
@@ -421,13 +439,47 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
 - **Sammler-Erfolge** (`domain/achievements.ts` rein/getestet, `ui/Achievements.tsx`): 21 Abzeichen
   mit Fortschritt (Sammlung, einklappbar), Einblendung + Vibration bei Freischaltung; gemerkt
   wird nur, was schon gemeldet wurde (Dexie `meta` `achievementsSeen`, erster Start still).
+- **Englische Oberfläche (v0.2)** (`app/src/i18n/`): gettext-Stil — der **deutsche Text ist der
+  Schlüssel** (`t('Scanner starten')`, Platzhalter `t('{n} Karten', { n })`, Plural `tn(n, …, …)`,
+  `tk('…')` markiert Konstanten auf Modulebene, übersetzt wird dann zur Renderzeit mit `t(x)`).
+  Englisch in `i18n/en.ts` (eigener Chunk, ~34 KB, lädt nur bei Englisch). Fett in Sätzen per
+  `**…**` + `ui/Rich.tsx` (Sätze bleiben am Stück übersetzbar). Standard = Gerätesprache
+  (`de*` → Deutsch, sonst Englisch), Umschalter unter „Mehr" (`ui/LanguagePanel.tsx`, Dexie `meta`
+  `language`); `main.tsx` wartet auf `initLang()` (kein deutsches Aufblitzen), Wechsel baut den
+  Inhalt über `key={lang}` neu auf. Auch Domäne übersetzt (Validator-Meldungen, Erfolge,
+  Kampf-Modell-Log, Scan-Methoden, CSV-Kopf); Tests laufen auf Deutsch. Kuratierte Combos haben
+  `nameEn`/`whyEn`. **`en.test.ts`** prüft: jeder `t/tk/tn`-Text übersetzt, nichts verwaist,
+  Platzhalter und `**` erhalten.
+- **Legend-Explorer (v0.2)** (`domain/legendExplorer.ts` rein/getestet, `ui/LegendExplorer.tsx`
+  oben im Tab „Synergie"): EDHREC-Gedanke auf dem Co-Play-Korpus — Legends nach Verbreitung,
+  je Legend Partner-Legends (Anteil ihrer Decks), häufigste Trios (→ „Als Deck anlegen": neues
+  Deck mit dem Trio, springt in den Deckeditor) und typische Karten mit Einsatzquote + Lift +
+  Bestand. Trios kommen aus `coplay.json` (`trios` [i, j, k, n], `ingest_decks.py`) plus Starter
+  und eigenen legalen Decks (`countTrios`/`sumCounts` in `domain/coplay.ts`, `useCorpus().trios`).
+  Unter 5 Decks keine Aussage; gleichnamige Legends mit Untertitel. Ehrlich beschriftet:
+  „Beliebt heißt nicht automatisch stark."
+- **Einstieg beim ersten Start (v0.2)** (`ui/Welcome.tsx`, oben in der Sammlung): solange
+  Sammlung, Want-Liste und Decks leer sind — Starter-Deck mit einem Tipp, Scannen/Erfassen,
+  Backup wiederherstellen (springt zu „Mehr" → Backup). Ausblendbar (Dexie `meta`
+  `welcomeDismissed`), verschwindet sonst von selbst, sobald Karten da sind.
+- **Komplett-Backup (v0.2, Format v3)** (`domain/collectionIo.ts`, `ui/backup.ts`,
+  `ui/CollectionIoPanel.tsx`): Sammlung + Want-Liste + **Decks** + **Einstellungen**
+  (`BACKUP_SETTING_KEYS`: Theme, Sprache, Vibration, App-Icon, gemeldete Erfolge, aktuelles Deck;
+  NICHT gerätebezogenes wie Bild-Cache/Backup-Datum). `db.readBackupData`/`restoreBackup`
+  (eine Transaktion; v1/v2-Backups lassen Decks + Einstellungen stehen). Nach dem Wiederherstellen
+  werden Theme/Sprache/Vibration sofort angewendet, Erfolgs-Einblendungen kurz stumm
+  (`ui/achievementsQuiet.ts`). **Backup-Erinnerung** (`domain/backupReminder.ts` rein/getestet,
+  `ui/BackupReminder.tsx` oben in der App): noch nie gesichert → ab 3 Tage alten Daten; sonst nach
+  14 Tagen, aber nur wenn sich seitdem etwas geändert hat; „Jetzt sichern" startet direkt das
+  Backup, „Später" = 7 Tage Ruhe (Dexie `meta` `lastBackupAt`/`backupSnoozeUntil`).
 - **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
   GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
   schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
-  **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen.** Abfrage über
+  **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen** — die
+  Android-`versionName`/`versionCode` liest `app/android/app/build.gradle` daraus (0.2.0 → 200). Abfrage über
   die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
   `releases/latest` die überspringt (sonst 404).
-- 279 App-JS-Tests + Python-Tests (3 + 7) grün; **sim: 7 v1 + 18 v2 (tsx)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 305 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -445,14 +497,16 @@ python pipeline/hash_images.py --write-altarts  # pHash aller Printings -> hashe
 python pipeline/test_hash_images.py   # u. a. Paritäts-Vektoren (müssen zu imageHash.test.ts passen)
 # fetch_altarts.py (>1 Künstler) ist überholt — die Künstler-Angabe der Quelle ist unzuverlässig
 python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> features.json, aus features_curated.json
-python pipeline/ingest_decks.py       # Decklisten aus pipeline/decklists/*.json -> coplay.json (Co-Play-Korpus)
+python pipeline/fetch_community_decks.py  # öffentliche Community-Decks (NetDeck) -> pipeline/decklists/netdeck-community.json
+python pipeline/ingest_decks.py       # Decklisten (decklists/ + sim/meta-decks/) -> coplay.json (ingest-v2, mit Quellen)
+python pipeline/test_ingest_decks.py
 python pipeline/test_fetch_cards.py
 # bootstrap_features.py = Heuristik-Fallback (überschreibt features.json!) — nur ohne kuratierte Quelle nutzen
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
 ```
 
 Nächste sinnvolle Schritte: **Scanner-Feinschliff** per Scan-Protokoll (Schwellen/
-Namenszonen nachziehen); **mehr Meta-Decks ins Ingest-Korpus** (nur 10 → schwaches
-Signal; weitere Deck-IDs für `pull_meta` finden, dann `ingest_decks.py`); Deck-UX &
+Namenszonen nachziehen); Korpus regelmäßig auffrischen (`fetch_community_decks.py` +
+`ingest_decks.py`); Release-Signierschlüssel statt Debug-Key; Deck-UX &
 Synergie-Vorschläge im Editor; **iOS-Kamera** (Spike 0.1). (Tipp-zum-Fokussieren im
 Scanner: erledigt.)

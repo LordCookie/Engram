@@ -1,5 +1,6 @@
 import type { Card, CardIndex, Color } from '../domain/types';
 import type { Ruleset } from './ruleset';
+import { t } from '../i18n';
 
 /**
  * Minimale Deck-Form, die der Validator braucht — so kann auch ein Deck-Entwurf
@@ -79,7 +80,7 @@ export function validate(
       violations.push({
         code: 'LEGEND_NOT_FOUND',
         cardId: id,
-        message: `Legend „${id}“ ist nicht im Kartenindex.`,
+        message: t('Legend „{id}“ ist nicht im Kartenindex.', { id }),
       });
       continue;
     }
@@ -87,7 +88,7 @@ export function validate(
       violations.push({
         code: 'LEGEND_WRONG_TYPE',
         cardId: id,
-        message: `„${card.name}“ ist keine Legend, kann also keinen Legend-Slot füllen.`,
+        message: t('„{name}“ ist keine Legend, kann also keinen Legend-Slot füllen.', { name: card.name }),
       });
       continue;
     }
@@ -97,7 +98,10 @@ export function validate(
   if (legendCards.length !== ruleset.legendCount) {
     violations.push({
       code: 'LEGEND_COUNT',
-      message: `Ein Deck braucht genau ${ruleset.legendCount} gültige Legends, gefunden wurden ${legendCards.length}.`,
+      message: t('Ein Deck braucht genau {n} gültige Legends, gefunden wurden {found}.', {
+        n: ruleset.legendCount,
+        found: legendCards.length,
+      }),
     });
   }
 
@@ -106,7 +110,7 @@ export function validate(
     if (new Set(names).size !== names.length) {
       violations.push({
         code: 'LEGEND_NAMES_NOT_UNIQUE',
-        message: `Die ${ruleset.legendCount} Legends müssen unterschiedliche Namen haben.`,
+        message: t('Die {n} Legends müssen unterschiedliche Namen haben.', { n: ruleset.legendCount }),
       });
     }
   }
@@ -120,7 +124,7 @@ export function validate(
       violations.push({
         code: 'INVALID_COUNT',
         cardId: entry.cardId,
-        message: `Ungültige Anzahl ${entry.count} für „${entry.cardId}“.`,
+        message: t('Ungültige Anzahl {n} für „{id}“.', { n: entry.count, id: entry.cardId }),
       });
       continue;
     }
@@ -133,7 +137,11 @@ export function validate(
   if (deckSize < ruleset.deckMin || deckSize > ruleset.deckMax) {
     violations.push({
       code: 'DECK_SIZE',
-      message: `Deckgröße ${deckSize} liegt außerhalb von ${ruleset.deckMin}–${ruleset.deckMax} (Legends zählen nicht mit).`,
+      message: t('Deckgröße {n} liegt außerhalb von {min}–{max} (Legends zählen nicht mit).', {
+        n: deckSize,
+        min: ruleset.deckMin,
+        max: ruleset.deckMax,
+      }),
     });
   }
 
@@ -147,7 +155,7 @@ export function validate(
       violations.push({
         code: 'CARD_NOT_FOUND',
         cardId,
-        message: `Karte „${cardId}“ ist nicht im Kartenindex.`,
+        message: t('Karte „{id}“ ist nicht im Kartenindex.', { id: cardId }),
       });
       continue;
     }
@@ -156,7 +164,7 @@ export function validate(
       violations.push({
         code: 'LEGEND_IN_DECK',
         cardId,
-        message: `„${card.name}“ ist eine Legend und gehört in den Legend-Slot, nicht ins Deck.`,
+        message: t('„{name}“ ist eine Legend und gehört in den Legend-Slot, nicht ins Deck.', { name: card.name }),
       });
       continue;
     }
@@ -166,7 +174,11 @@ export function validate(
       violations.push({
         code: 'MAX_COPIES',
         cardId,
-        message: `„${card.name}“: ${count} Kopien, erlaubt sind höchstens ${ruleset.maxCopiesPerCard}.`,
+        message: t('„{name}“: {n} Kopien, erlaubt sind höchstens {max}.', {
+          name: card.name,
+          n: count,
+          max: ruleset.maxCopiesPerCard,
+        }),
       });
     }
 
@@ -178,7 +190,12 @@ export function validate(
         code: 'RAM_LIMIT',
         cardId,
         color: card.color,
-        message: `„${card.name}“ (RAM ${ram}, ${card.color}) übersteigt den ${card.color}-Cap von ${cap}.`,
+        message: t('„{name}“ (RAM {ram}, {color}) übersteigt den {color}-Cap von {cap}.', {
+          name: card.name,
+          ram,
+          color: card.color,
+          cap,
+        }),
       });
     }
   }

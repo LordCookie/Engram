@@ -24,7 +24,9 @@ import { feedbackAdded, initFeedbackPrefs } from '../native/feedback';
 import { CardImage } from './CardImage';
 import { ScanOverlay } from './ScanOverlay';
 import type { Card, Color } from '../domain/types';
+import { t, tn } from '../i18n';
 
+import { Rich } from './Rich';
 /**
  * Kartenscanner (PLAN.md § 6; Aufbau aus ScryGlass, scanner-v2-plan.md). Ein Knopf öffnet
  * den Vollbild-Scanner (`ScanOverlay`), der die Karte an BILD und NAME erkennt:
@@ -571,9 +573,9 @@ export function ScannerPanel() {
 
     const h = inp.hash;
     setDebug(
-      `Name ${ocrBest ? `${ocrBest.cardId} ${Math.round(ocrBest.nameScore * 100)}%${ocrBest.numberHit ? ' +Nr' : ''}` : '–'}` +
-        ` · Bild ${h ? `${h.cardId}${h.alt ? ' (Alt)' : ''} d${h.distance} m${h.margin}` : '–'}` +
-        ` · Schärfe ${Math.round(inp.sharpness)} → ${methodLabel(fused.method)}`,
+      `${t('Name')} ${ocrBest ? `${ocrBest.cardId} ${Math.round(ocrBest.nameScore * 100)}%${ocrBest.numberHit ? ' +Nr' : ''}` : '–'}` +
+        ` · ${t('Bild')} ${h ? `${h.cardId}${h.alt ? ' (Alt)' : ''} d${h.distance} m${h.margin}` : '–'}` +
+        ` · ${t('Schärfe')} ${Math.round(inp.sharpness)} → ${methodLabel(fused.method)}`,
     );
     if (fused.method !== 'none' || h) {
       logProtocol({
@@ -675,7 +677,7 @@ export function ScannerPanel() {
       setBlurry(true);
       autoBasketRef.current = observeFrame(autoBasketRef.current, { blurry: true, hasCard: false });
       consensusRef.current = { cardId: '', count: 0 };
-      setDebug(`unscharf · Schärfe ${Math.round(f.sharpness)}`);
+      setDebug(`${t('unscharf')} · ${t('Schärfe')} ${Math.round(f.sharpness)}`);
       return;
     }
     setBlurry(false);
@@ -756,7 +758,11 @@ export function ScannerPanel() {
       // Rückfall: Browser-Kamera (lädt dafür die Texterkennung).
       setForceWeb(true);
       await startWeb();
-      setCamError(`${e instanceof Error ? e.message : 'Native Kamera nicht verfügbar'} — nutze die Browser-Kamera`);
+      setCamError(
+        t('{err} — nutze die Browser-Kamera', {
+          err: e instanceof Error ? e.message : t('Native Kamera nicht verfügbar'),
+        }),
+      );
     }
   }
 
@@ -804,7 +810,7 @@ export function ScannerPanel() {
       setTorchOn(false);
     } catch (e) {
       await closeScanner();
-      setCamError(e instanceof Error ? e.message : 'Kamera nicht verfügbar.');
+      setCamError(e instanceof Error ? e.message : t('Kamera nicht verfügbar.'));
     }
   }
 
@@ -957,55 +963,64 @@ export function ScannerPanel() {
     const lines = protocolRef.current.map((e) => JSON.stringify(e)).join('\n');
     try {
       await navigator.clipboard.writeText(lines);
-      setProtocolMsg(`${protocolRef.current.length} Einträge kopiert.`);
+      setProtocolMsg(t('{n} Einträge kopiert.', { n: protocolRef.current.length }));
     } catch {
-      setProtocolMsg('Kopieren nicht möglich (Zwischenablage gesperrt).');
+      setProtocolMsg(t('Kopieren nicht möglich (Zwischenablage gesperrt).'));
     }
     window.setTimeout(() => setProtocolMsg(null), 2500);
   }
 
   const basketTotal = basket.reduce((s, it) => s + it.count, 0);
   const overlayStatus =
-    open === 'web' && !workerReady ? 'Texterkennung wird geladen… (einmalig)' : null;
+    open === 'web' && !workerReady ? t('Texterkennung wird geladen… (einmalig)') : null;
 
   return (
     <section className="space-y-4">
       <div className="rounded-lg bg-surface p-4">
-        <h2 className="mb-1 font-mono text-lg">Scanner</h2>
+        <h2 className="mb-1 font-mono text-lg">{t('Scanner')}</h2>
         <p className="mb-3 text-xs text-muted">
-          Karte formatfüllend in den Rahmen halten. Erkennt die Karte am <b>Bild</b> und am{' '}
-          <b>Namen</b> — auch Alt-Arts. Alles lokal, keine Bilder verlassen das Gerät (§ 8).
+          <Rich
+            text={t(
+              'Karte formatfüllend in den Rahmen halten. Erkennt die Karte am **Bild** und am **Namen** — auch Alt-Arts. Alles lokal, keine Bilder verlassen das Gerät (§ 8).',
+            )}
+          />
         </p>
         <button
           onClick={startScanner}
           className="w-full rounded-md bg-accent px-4 py-3 font-mono text-base text-on-accent"
         >
-          Scanner starten
+          {t('Scanner starten')}
         </button>
         <p className="mt-2 font-mono text-[11px] text-muted">
-          Kamera: {useNative ? 'nativ (ML Kit)' : 'Browser'} · Bild-Index:{' '}
-          {hashCount === null ? 'lädt…' : hashCount > 0 ? `${hashCount} Drucke` : 'fehlt — nur Namens-Abgleich'}
-          {needOcr && ` · ${workerReady ? 'Texterkennung bereit' : 'Texterkennung lädt…'}`}
+          {t('Kamera:')} {useNative ? t('nativ (ML Kit)') : 'Browser'} {t('· Bild-Index:')}{' '}
+          {hashCount === null
+            ? t('lädt…')
+            : hashCount > 0
+              ? t('{n} Drucke', { n: hashCount })
+              : t('fehlt — nur Namens-Abgleich')}
+          {needOcr && ` · ${workerReady ? t('Texterkennung bereit') : t('Texterkennung lädt…')}`}
         </p>
 
         {camError && (
           <p className="mt-2 text-sm text-card-red">
-            Kamera nicht verfügbar: {camError}.{' '}
+            {t('Kamera nicht verfügbar:')} {camError}.{' '}
             {isNativeApp
-              ? 'Beim Start fragt die App nach Kamerazugriff — bitte erlauben. Falls zuvor abgelehnt: Android-Einstellungen → Apps → engram → Berechtigungen → Kamera aktivieren, dann erneut „Scanner starten".'
-              : 'Auf dem Handy: HTTPS-Adresse öffnen und Kamerazugriff erlauben.'}
+              ? t(
+                  'Beim Start fragt die App nach Kamerazugriff — bitte erlauben. Falls zuvor abgelehnt: Android-Einstellungen → Apps → engram → Berechtigungen → Kamera aktivieren, dann erneut „Scanner starten".',
+                )
+              : t('Auf dem Handy: HTTPS-Adresse öffnen und Kamerazugriff erlauben.')}
           </p>
         )}
 
         {/* Fallback: nicht erkannt? Karte manuell suchen und in den Korb legen. */}
         <details className="mt-3">
           <summary className="cursor-pointer select-none font-mono text-xs text-muted">
-            Nicht erkannt? Manuell hinzufügen
+            {t('Nicht erkannt? Manuell hinzufügen')}
           </summary>
           <input
             value={manualQuery}
             onChange={(e) => setManualQuery(e.target.value)}
-            placeholder="Karte suchen (Name oder Nummer)…"
+            placeholder={t('Karte suchen (Name oder Nummer)…')}
             className="mt-2 w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-accent"
           />
           {manualResults.length > 0 && (
@@ -1023,7 +1038,7 @@ export function ScannerPanel() {
                   <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
                   <span className="font-mono text-sm">{card.name}</span>
                   {card.subtitle && <span className="text-xs text-muted">{card.subtitle}</span>}
-                  <span className="ml-auto font-mono text-xs text-accent">＋ Korb</span>
+                  <span className="ml-auto font-mono text-xs text-accent">{t('＋ Korb')}</span>
                 </li>
               ))}
             </ul>
@@ -1033,12 +1048,10 @@ export function ScannerPanel() {
         {/* Kalibrierung: Rohwerte je Scan zum Nachjustieren der Schwellen. */}
         <details className="mt-2">
           <summary className="cursor-pointer select-none font-mono text-xs text-muted">
-            Scan-Protokoll (Kalibrierung) · {protocolCount} Einträge
+            {t('Scan-Protokoll (Kalibrierung) · {n} Einträge', { n: protocolCount })}
           </summary>
           <p className="mt-1 text-[11px] text-muted">
-            Merkt sich je Bild Name-/Bild-Treffer, Abstand, Schärfe und was im Korb landete
-            (inkl. Korrekturen) — nur im Speicher, nichts verlässt das Gerät. Zum Feinjustieren
-            kopieren und weitergeben.
+            {t('Merkt sich je Bild Name-/Bild-Treffer, Abstand, Schärfe und was im Korb landete (inkl. Korrekturen) — nur im Speicher, nichts verlässt das Gerät. Zum Feinjustieren kopieren und weitergeben.')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
@@ -1046,7 +1059,7 @@ export function ScannerPanel() {
               disabled={protocolCount === 0}
               className="rounded border border-white/10 px-3 py-1 font-mono text-xs hover:border-accent disabled:opacity-40"
             >
-              Protokoll kopieren
+              {t('Protokoll kopieren')}
             </button>
             <button
               onClick={() => {
@@ -1056,7 +1069,7 @@ export function ScannerPanel() {
               disabled={protocolCount === 0}
               className="rounded border border-white/10 px-3 py-1 font-mono text-xs text-muted hover:border-card-red hover:text-card-red disabled:opacity-40"
             >
-              Leeren
+              {t('Leeren')}
             </button>
             {protocolMsg && <span className="font-mono text-[11px] text-card-green">{protocolMsg}</span>}
           </div>
@@ -1067,20 +1080,20 @@ export function ScannerPanel() {
       {(basket.length > 0 || added > 0) && (
         <div className="rounded-lg bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-mono text-sm">Scan-Korb</h3>
+            <h3 className="font-mono text-sm">{t('Scan-Korb')}</h3>
             {basketTotal > 0 && (
               <span
                 key={basketTotal}
                 className="animate-pop inline-block rounded-full bg-accent/20 px-2 py-0.5 font-mono text-xs text-accent"
               >
-                {basketTotal} Karten
+                {t('{n} Karten', { n: basketTotal })}
               </span>
             )}
           </div>
 
           {added > 0 && basket.length === 0 && (
             <p className="mb-2 text-sm text-card-green">
-              {added} Karte{added === 1 ? '' : 'n'} in die Sammlung übernommen ✓
+              {tn(added, '{n} Karte in die Sammlung übernommen ✓', '{n} Karten in die Sammlung übernommen ✓')}
             </p>
           )}
 
@@ -1099,7 +1112,7 @@ export function ScannerPanel() {
                         <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
                         <button
                           onClick={() => basketAdjust(it.printingId, -1)}
-                          aria-label="Eins weniger"
+                          aria-label={t('Eins weniger')}
                           className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
                         >
                           −
@@ -1107,7 +1120,7 @@ export function ScannerPanel() {
                         <span className="w-8 text-center text-accent">{it.count}×</span>
                         <button
                           onClick={() => basketAdjust(it.printingId, 1)}
-                          aria-label="Eins mehr"
+                          aria-label={t('Eins mehr')}
                           className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-text"
                         >
                           +
@@ -1117,7 +1130,7 @@ export function ScannerPanel() {
                             setCorrectingId(correcting ? null : it.printingId);
                             setCorrectQuery('');
                           }}
-                          title="Falsch erkannt? Antippen, um die Karte zu korrigieren"
+                          title={t('Falsch erkannt? Antippen, um die Karte zu korrigieren')}
                           className={`truncate text-left ${correcting ? 'text-accent' : 'hover:text-accent'}`}
                         >
                           {card.name}
@@ -1125,7 +1138,7 @@ export function ScannerPanel() {
                         {hasAltArt(card.id) && (
                           <button
                             onClick={() => basketToggleAlt(it.printingId)}
-                            title={isAlt ? 'Ist ein Standard-Druck? Antippen' : 'Ist eine Alt-Art? Antippen'}
+                            title={isAlt ? t('Ist ein Standard-Druck? Antippen') : t('Ist eine Alt-Art? Antippen')}
                             className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${
                               isAlt ? 'bg-accent/20 text-accent' : 'border border-white/10 text-muted hover:text-text'
                             }`}
@@ -1135,7 +1148,7 @@ export function ScannerPanel() {
                         )}
                         <button
                           onClick={() => basketAdjust(it.printingId, -it.count)}
-                          aria-label={`${card.name} aus dem Korb entfernen`}
+                          aria-label={t('{name} aus dem Korb entfernen', { name: card.name })}
                           className="ml-auto rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                         >
                           ✕
@@ -1147,7 +1160,7 @@ export function ScannerPanel() {
                             autoFocus
                             value={correctQuery}
                             onChange={(e) => setCorrectQuery(e.target.value)}
-                            placeholder="Richtige Karte suchen…"
+                            placeholder={t('Richtige Karte suchen…')}
                             className="w-full rounded border border-white/10 bg-bg px-2 py-1.5 text-sm outline-none focus:border-accent"
                           />
                           {correctQuery.trim() && (
@@ -1177,13 +1190,13 @@ export function ScannerPanel() {
                   onClick={() => void commitBasket()}
                   className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-on-accent"
                 >
-                  Alle in Sammlung übernehmen ({basketTotal})
+                  {t('Alle in Sammlung übernehmen ({n})', { n: basketTotal })}
                 </button>
                 <button
                   onClick={() => setBasket([])}
                   className="rounded border border-white/10 px-3 py-1.5 font-mono text-sm text-muted hover:border-card-red hover:text-card-red"
                 >
-                  Korb leeren
+                  {t('Korb leeren')}
                 </button>
               </div>
             </>

@@ -66,6 +66,54 @@ describe('Export/Import der Sammlung', () => {
     expect(parsed.wants).toEqual([{ cardId: 'ok', count: 1, addedAt: 1 }]);
   });
 
+  const deck = (id: string, updatedAt = 5) => ({
+    id,
+    name: `Deck ${id}`,
+    rulesetVersion: 'v1',
+    legendIds: ['l1', 'l2', 'l3'],
+    cards: [{ cardId: 'c1', count: 3 }],
+    updatedAt,
+  });
+
+  it('Komplett-Backup (v3): Decks und Einstellungen im Round-Trip, byte-identisch', () => {
+    const extras = {
+      decks: [deck('b'), deck('a')],
+      settings: { theme: 'violet', language: 'en', scanVibration: false, achievementsSeen: ['first-card'] },
+    };
+    const once = serializeCollection(sample, wants, 1000, extras);
+    const p = parseCollection(once);
+    expect(p.version).toBe(3);
+    expect(p.hasDecks).toBe(true);
+    expect(p.hasSettings).toBe(true);
+    expect(p.decks.map((d) => d.id)).toEqual(['a', 'b']);
+    expect(p.settings).toEqual(extras.settings);
+    expect(serializeCollection(p.entries, p.wants, 1000, { decks: p.decks, settings: p.settings })).toBe(once);
+  });
+
+  it('nimmt nur bekannte Einstellungen und saubere Decks mit', () => {
+    const p = parseCollection(
+      JSON.stringify({
+        schema: 'engram-collection',
+        version: 3,
+        exportedAt: 1,
+        entries: [],
+        decks: [deck('ok'), { id: 'kaputt' }, { ...deck('extra'), fremd: 'x' }],
+        settings: { theme: 'lime', imageUrlCache: { a: 1 }, lastBackupAt: 5, language: { nope: 1 } },
+      }),
+    );
+    expect(p.decks.map((d) => d.id)).toEqual(['extra', 'ok']);
+    expect(Object.keys(p.decks[0])).not.toContain('fremd');
+    expect(p.settings).toEqual({ theme: 'lime' });
+  });
+
+  it('v2-Backup: Decks/Einstellungen fehlen → werden beim Restore nicht angefasst', () => {
+    const v2 = JSON.stringify({ schema: 'engram-collection', version: 2, exportedAt: 1, entries: [], wants: [] });
+    const p = parseCollection(v2);
+    expect(p.hasDecks).toBe(false);
+    expect(p.hasSettings).toBe(false);
+    expect(p.decks).toEqual([]);
+  });
+
   it('wirft bei kaputtem JSON', () => {
     expect(() => parseCollection('{nope')).toThrow(CollectionImportError);
   });

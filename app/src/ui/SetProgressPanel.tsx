@@ -3,6 +3,7 @@ import { db } from '../db/db';
 import { catalog, printingIndex } from '../data/catalog';
 import { computeSetProgress, ownedCardIdSet, type ProgressBucket } from '../domain/setProgress';
 import type { CollectionEntry } from '../domain/types';
+import { t, tk } from '../i18n';
 
 /**
  * Set-Fortschritt: „Wie viel des Sets besitze ich?" — der Kernnutzen eines
@@ -17,10 +18,10 @@ const COLOR_VAR: Record<string, string> = {
   YELLOW: '--c-yellow',
 };
 const COLOR_LABEL: Record<string, string> = {
-  RED: 'Rot',
-  GREEN: 'Grün',
-  BLUE: 'Blau',
-  YELLOW: 'Gelb',
+  RED: tk('Rot'),
+  GREEN: tk('Grün'),
+  BLUE: tk('Blau'),
+  YELLOW: tk('Gelb'),
 };
 
 function pct(owned: number, total: number): number {
@@ -28,7 +29,7 @@ function pct(owned: number, total: number): number {
 }
 
 function Row({ bucket, colorVar }: { bucket: ProgressBucket; colorVar: string }) {
-  const label = COLOR_LABEL[bucket.key] ?? bucket.key;
+  const label = COLOR_LABEL[bucket.key] ? t(COLOR_LABEL[bucket.key]) : bucket.key;
   return (
     <div className="flex items-center gap-3">
       <span className="w-20 shrink-0 font-mono text-xs text-muted sm:w-24">{label}</span>
@@ -54,7 +55,7 @@ export function SetProgressPanel() {
   return (
     <section className="rounded-lg bg-surface p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h2 className="font-mono text-lg">Set-Fortschritt</h2>
+        <h2 className="font-mono text-lg">{t('Set-Fortschritt')}</h2>
         <span className="font-mono text-sm text-muted tabular-nums">
           <span className="text-accent">{p.ownedCards}</span>/{p.totalCards} · {overall}%
         </span>
@@ -70,13 +71,13 @@ export function SetProgressPanel() {
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <h3 className="font-mono text-xs uppercase tracking-wide text-muted">Nach Farbe</h3>
+          <h3 className="font-mono text-xs uppercase tracking-wide text-muted">{t('Nach Farbe')}</h3>
           {p.byColor.map((b) => (
             <Row key={b.key} bucket={b} colorVar={COLOR_VAR[b.key] ?? '--c-accent'} />
           ))}
         </div>
         <div className="space-y-2">
-          <h3 className="font-mono text-xs uppercase tracking-wide text-muted">Nach Rarität</h3>
+          <h3 className="font-mono text-xs uppercase tracking-wide text-muted">{t('Nach Rarität')}</h3>
           {p.byRarity.map((b) => (
             <Row key={b.key} bucket={b} colorVar="--c-accent" />
           ))}
@@ -85,7 +86,7 @@ export function SetProgressPanel() {
 
       {p.ownedCards === 0 && (
         <p className="mt-4 text-xs text-muted">
-          Noch keine Karten in der Sammlung — erfasse oder scanne welche, dann füllt sich das hier.
+          {t('Noch keine Karten in der Sammlung — erfasse oder scanne welche, dann füllt sich das hier.')}
         </p>
       )}
     </section>

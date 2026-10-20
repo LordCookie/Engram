@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { APP_VERSION } from '../version';
 import { isNewer, pickLatestRelease, type ReleaseInfo } from '../domain/semver';
+import { t } from '../i18n';
 
 /**
  * Prüft beim Start das neueste GitHub-Release und zeigt einen dezenten Hinweis,
@@ -39,18 +40,18 @@ export function UpdateBanner() {
 
   return (
     <div className="flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-sm">
-      <span className="text-accent">Neue Version {info.tag} verfügbar</span>
+      <span className="text-accent">{t('Neue Version {tag} verfügbar', { tag: info.tag })}</span>
       <a
         href={info.url}
         target="_blank"
         rel="noopener noreferrer"
         className="underline hover:text-accent"
       >
-        Zum Download
+        {t('Zum Download')}
       </a>
       <button
         onClick={() => setDismissed(true)}
-        aria-label="Hinweis schließen"
+        aria-label={t('Hinweis schließen')}
         className="ml-auto rounded px-2 text-muted hover:text-text"
       >
         ✕

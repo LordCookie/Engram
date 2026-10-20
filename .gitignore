@@ -54,3 +54,5 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+# NetDeck-Community-Decks: Abruf-Cache (nur Slugs/Zahlen, trotzdem fremde Deckdaten) → nur lokal.
+pipeline/.cache/

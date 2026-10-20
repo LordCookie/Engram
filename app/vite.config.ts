@@ -39,7 +39,7 @@ export default defineConfig({
       manifest: {
         name: 'engram',
         short_name: 'engram',
-        description: 'Local-first Sammlungs- und Deckbau-Tool fürs Cyberpunk TCG',
+        description: 'Local-first collection tracker and deckbuilder for the Cyberpunk TCG',
         theme_color: '#0b0f14',
         background_color: '#0b0f14',
         display: 'standalone',

@@ -1216,3 +1216,62 @@ unabhängiges Signal. Deshalb geht nur noch `nameScore` (Name ohne Nummern-Bonus
 Fusion, und eine nur durch den Namen bestätigte Nummer schlägt keinen starken Bildtreffer.
 Vibration läuft über `@capacitor/haptics`, weil `navigator.vibrate` in der Android-WebView
 ohne Berechtigung stumm bleibt. Sie ist unter „Mehr" abschaltbar.
+
+## 2026-09-30 — v0.2: Englische Oberfläche, Community-Korpus, Komplett-Backup
+
+**Englisch per Umschalter, deutscher Text als Schlüssel.** Die Oberfläche kann jetzt Deutsch
+und Englisch. Standard ist die Gerätesprache (`de*` → Deutsch, sonst Englisch), umschaltbar
+unter „Mehr". Umgesetzt im gettext-Stil ohne Bibliothek (`app/src/i18n/`): `t('deutscher Text')`
+ist zugleich Schlüssel und deutscher Fallback. So bleibt der Code lesbar, und kein Text kann auf
+Deutsch „verloren gehen". Das englische Wörterbuch ist ein eigener Chunk (~34 KB), den nur
+englische Nutzer laden. Ein Test sammelt alle `t/tk/tn`-Texte aus dem Quelltext und prüft, dass
+jeder übersetzt ist, nichts verwaist ist und Platzhalter erhalten bleiben. Verworfen wurden
+i18next (zu schwer für diesen Umfang) und Schlüssel-IDs wie `scanner.start` (jeder Text bräuchte
+einen Namen, der Umbau wäre fehleranfälliger). Kartennamen und Regeltexte bleiben englisch, wie
+gedruckt.
+
+**Mehr Empirie: Community-Decks der offiziellen Seite.** Das Korpus basierte auf 13 Meta-Decks,
+und cyberpunkmeta.org hat nicht mehr. Die offizielle Seite cyberpunktcg.com zeigt öffentliche
+Community-Decks und lädt sie über dieselbe NetDeck-API, aus der schon die Kartendaten kommen
+(robots `Allow: /`). `pipeline/fetch_community_decks.py` zieht sie höflich und speichert nur Slugs
+und Stückzahlen, keine Decknamen oder Nutzer. Je Ersteller zählen höchstens 3 Decks, damit
+einzelne Vielbauer das Signal nicht dominieren. Kopien zählen einmal. Ergebnis: **946 statt 13
+Decks**, alle nach unserem Validator legal. Nicht genutzt wurden tcgcontender (robots sperrt die
+API) und exburst (nennt `anthropic-ai` in robots). **Ehrlichkeit:** Community-Decks sind keine
+Turnierergebnisse. Die App weist die Herkunft deshalb getrennt aus („13 Meta + 933 Community"),
+und der Deckeditor zeigt „✓ N Decks" statt „✓ Meta N". Das Korpus-Format wurde kompakter
+(`ingest-v2`: Indexliste + Paare, Einzelpaare ab 100 Decks weggelassen), 946 Decks brauchen
+102 KB statt früher 155 KB für 13.
+
+**Komplett-Backup statt nur Sammlung.** Das Backup (Format v3) enthält jetzt auch Decks und
+Einstellungen. Vorher waren nach einer Neuinstallation alle Decks weg. Gerätebezogenes wie der
+Bild-Cache und das Backup-Datum bleiben draußen. Ältere Backups (v1/v2) lassen beim
+Wiederherstellen Decks und Einstellungen unangetastet, statt sie zu leeren. Dazu kommt eine
+**Erinnerung**, die nicht nervt: beim ersten Mal erst ab 3 Tage alten Daten, danach nach 14 Tagen,
+aber nur wenn sich seit dem letzten Backup etwas geändert hat. „Später" gibt 7 Tage Ruhe.
+
+**Versionsnummer aus einer Quelle.** Android zeigte bisher „1.0" (`versionCode 1`).
+`build.gradle` liest die Version jetzt aus `app/src/version.ts` (0.2.0 → versionCode 200).
+
+**Nachtrag (2026-10-20): `sim/` läuft mit vite-node statt tsx.** Seit dem Alt-Art-Commit lädt
+`app/src/data/catalog.ts` die optionale `altArts.json` über Vites `import.meta.glob`. Das kennt
+`tsx` nicht, deshalb brachen alle sim-Kommandos (Tests, `pull-meta`, `build-decks` …) beim Laden
+ab. Die App bleibt unverändert: Ein `typeof import.meta.glob`-Schutz würde im Browser zu einem
+leeren Objekt führen, weil Vite nur den literalen Aufruf ersetzt. Stattdessen laufen die
+sim-Skripte jetzt mit `vite-node --script`. Das versteht `import.meta.glob` genau wie die App,
+auch fehlende optionale Dateien, und `--script` hält `process.argv[1]` auf dem Skriptpfad.
+
+**Nachtrag (2026-10-20): Legend-Explorer, Alt-Art beim Erfassen, Einstieg.** Mit 946 Decks
+trägt das Korpus jetzt eine EDHREC-artige Ansicht je Legend: Partner, Trios und typische Karten.
+Dafür zählt das Ingest zusätzlich die Legend-Trios (`trios`, +5 KB). Alles bleibt als Statistik
+beschriftet. Die Schnellerfassung bucht Alt-Arts über „+Alt" bzw. Umschalt+Enter. Die
+Willkommenskarte zeigt neuen Nutzern drei Wege zum Start und verschwindet, sobald es Daten gibt.
+
+**Alt-Art-Erkennung: pHash bleibt, keine CLIP-Embeddings.** Gefragt war, ob Alt-Arts besser per
+pHash oder per CLIP-Embeddings erkannt werden. Der Scanner erkennt sie bereits am Bild per pHash
+mit Ausschnitt-Suche. Alt-Arts liegen ab 40 Bit vom Standard-Druck entfernt, Full-Arts ab 42,
+während Nachdrucke höchstens 38 Bit abweichen; das trennt sauber. CLIP würde das Modell
+(mobile Varianten ≈ 40–150 MB, gegenüber einer APK von ~16 MB) und deutlich mehr Rechenzeit pro Bild
+mitbringen. Das lohnt sich erst, wenn das Scan-Protokoll echte Alt-Verwechslungen zeigt (z. B.
+bei Foils oder schräg gehaltenen Karten). Beim Erfassen per Suche gibt es kein Foto, dort
+entscheidet der Nutzer mit „+Alt".

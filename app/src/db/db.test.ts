@@ -14,7 +14,18 @@ import {
   setCurrentDeckId,
   deleteDeck,
   ensureCurrentDeck,
+  addWant,
+  setThemePref,
+  getThemePref,
+  setLanguagePref,
+  getLanguagePref,
+  readBackupData,
+  restoreBackup,
+  setLastBackupAt,
+  getBackupTimes,
+  snoozeBackupReminder,
 } from './db';
+import { parseCollection, serializeCollection } from '../domain/collectionIo';
 
 const RV = 'beta-2026-05-29';
 
@@ -107,5 +118,58 @@ describe('Mehr-Deck-Verwaltung', () => {
     const id = await ensureCurrentDeck(RV);
     expect((await listDecks()).length).toBe(1);
     expect(await ensureCurrentDeck(RV)).toBe(id); // kein zweites
+  });
+});
+
+describe('Komplett-Backup (v3)', () => {
+  beforeEach(async () => {
+    await Promise.all([db.collection.clear(), db.wants.clear(), db.decks.clear(), db.meta.clear()]);
+  });
+
+  it('readBackupData → serialisieren → restoreBackup stellt alles wieder her', async () => {
+    await addToCollection('leg-vex', 2);
+    await addWant('red-blast', 1);
+    const deck = await createDeck(RV, 'Mein Deck');
+    await setThemePref('violet');
+    await setLanguagePref('en');
+    await setLastBackupAt(123); // gerätebezogen → gehört NICHT ins Backup
+
+    const data = await readBackupData();
+    expect(data.settings).toMatchObject({ theme: 'violet', language: 'en', currentDeckId: deck.id });
+    expect(data.settings).not.toHaveProperty('lastBackupAt');
+    const json = serializeCollection(data.entries, data.wants, 1, { decks: data.decks, settings: data.settings });
+
+    await Promise.all([db.collection.clear(), db.wants.clear(), db.decks.clear(), db.meta.clear()]);
+    await restoreBackup(parseCollection(json));
+
+    expect((await db.collection.get('leg-vex'))?.quantity).toBe(2);
+    expect((await db.wants.get('red-blast'))?.count).toBe(1);
+    expect((await getDeck(deck.id))?.name).toBe('Mein Deck');
+    expect(await getCurrentDeckId()).toBe(deck.id);
+    expect(await getThemePref()).toBe('violet');
+    expect(await getLanguagePref()).toBe('en');
+  });
+
+  it('altes Backup ohne Decks lässt vorhandene Decks und Einstellungen stehen', async () => {
+    const deck = await createDeck(RV, 'Bleibt');
+    await setThemePref('lime');
+    const v2 = JSON.stringify({
+      schema: 'engram-collection',
+      version: 2,
+      exportedAt: 1,
+      entries: [{ printingId: 'x', quantity: 1, addedAt: 1 }],
+      wants: [],
+    });
+    await restoreBackup(parseCollection(v2));
+    expect((await getDeck(deck.id))?.name).toBe('Bleibt');
+    expect(await getThemePref()).toBe('lime');
+    expect((await db.collection.get('x'))?.quantity).toBe(1);
+  });
+
+  it('Backup-Zeiten: letztes Backup und „Später"', async () => {
+    expect(await getBackupTimes()).toEqual({ lastBackupAt: null, snoozeUntil: null });
+    await setLastBackupAt(10);
+    await snoozeBackupReminder(20);
+    expect(await getBackupTimes()).toEqual({ lastBackupAt: 10, snoozeUntil: 20 });
   });
 });

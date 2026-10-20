@@ -10,6 +10,7 @@ import { starters } from '../domain/starters';
 import type { DeckDraft } from '../domain/deckDraft';
 import type { Card } from '../domain/types';
 import { CardImage } from './CardImage';
+import { Rich } from './Rich';
 import {
   newGame,
   mulligan,
@@ -28,6 +29,7 @@ import {
   type PlaytestState,
   type Zone,
 } from '../domain/playtest';
+import { t } from '../i18n';
 
 /**
  * Simulationsmodus (Roadmap „Playtest / Proberunden"). Manuelles Playtest wie
@@ -160,21 +162,22 @@ export function PlaytestPanel() {
   if (!state) {
     return (
       <section className="rounded-lg bg-surface p-4">
-        <h2 className="mb-1 font-mono text-lg">Simulation · Proberunden</h2>
+        <h2 className="mb-1 font-mono text-lg">{t('Simulation · Proberunden')}</h2>
         <p className="mb-3 text-xs text-muted">
-          Deck vor dem Tisch testen: Starthand ziehen, mulliganen, Züge durchspielen,
-          Karten per <b>Drag &amp; Drop</b> zwischen den Zonen bewegen (wie ManaBox — echte
-          Zonen, keine erzwungenen Regeln). Nur <b>legale eigene Decks</b> und die <b>Starter</b>.
+          <Rich
+            text={t(
+              'Deck vor dem Tisch testen: Starthand ziehen, mulliganen, Züge durchspielen, Karten per **Drag & Drop** zwischen den Zonen bewegen (wie ManaBox — echte Zonen, keine erzwungenen Regeln). Nur **legale eigene Decks** und die **Starter**.',
+            )}
+          />
         </p>
         {isPlaceholder && (
           <p className="mb-3 rounded-md bg-bg/60 p-2 text-xs text-muted">
-            Testkarten aktiv — echte Kartendaten fehlen (Pipeline nicht gelaufen).
+            {t('Testkarten aktiv — echte Kartendaten fehlen (Pipeline nicht gelaufen).')}
           </p>
         )}
         {playables.length === 0 ? (
           <p className="text-sm text-muted">
-            Noch kein spielbares Deck. Bau im Tab „Deck" ein legales Deck (3 Legends,
-            40–50 Karten) oder trag im Tab „Erfassen" einen Starter ein.
+            {t('Noch kein spielbares Deck. Bau im Tab „Deck" ein legales Deck (3 Legends, 40–50 Karten) oder trag im Tab „Erfassen" einen Starter ein.')}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -186,7 +189,7 @@ export function PlaytestPanel() {
                 >
                   <span className="truncate">{p.label}</span>
                   <span className="ml-2 shrink-0 text-xs text-muted">
-                    {deckCardTotal(p.deck)} Karten · ▶ spielen
+                    {t('{n} Karten · ▶ spielen', { n: deckCardTotal(p.deck) })}
                   </span>
                 </button>
               </li>
@@ -195,8 +198,7 @@ export function PlaytestPanel() {
         )}
         {hiddenOwn > 0 && (
           <p className="mt-3 text-xs text-muted">
-            {hiddenOwn} unvollständige/illegale eigene Deck(s) ausgeblendet — nur legale
-            Decks sind spielbar.
+            {t('{n} unvollständige/illegale eigene Deck(s) ausgeblendet — nur legale Decks sind spielbar.', { n: hiddenOwn })}
           </p>
         )}
       </section>
@@ -241,13 +243,13 @@ export function PlaytestPanel() {
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="truncate font-mono text-base">🎮 {s.deckName}</h2>
-            <p className="text-xs text-muted">Manuelles Playtest · Zug {s.turn}</p>
+            <p className="text-xs text-muted">{t('Manuelles Playtest · Zug {n}', { n: s.turn })}</p>
           </div>
           <button
             onClick={() => setState(null)}
             className="shrink-0 rounded border border-white/10 px-2 py-1 font-mono text-xs text-muted hover:border-accent"
           >
-            Deck wechseln
+            {t('Deck wechseln')}
           </button>
         </div>
 
@@ -264,49 +266,48 @@ export function PlaytestPanel() {
             }
             className="rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs hover:border-accent"
           >
-            ⟳ Neues Spiel
+            {t('⟳ Neues Spiel')}
           </button>
           <button
             onClick={() => patch((x) => mulligan(x, RULES))}
             disabled={!canMulligan}
             className="rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs hover:border-accent disabled:opacity-40"
           >
-            Mulligan{canMulligan ? '' : ' ✓'}
+            {t('Mulligan')}{canMulligan ? '' : ' ✓'}
           </button>
           <button
             onClick={() => patch((x) => draw(x, 1))}
             className="rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs hover:border-accent"
           >
-            Ziehen
+            {t('Ziehen')}
           </button>
           <button
             onClick={() => patch((x) => nextTurn(x, RULES))}
             className="rounded border border-accent bg-accent/20 px-2.5 py-1.5 font-mono text-xs text-accent hover:bg-accent/30"
           >
-            ▶ Nächster Zug
+            {t('▶ Nächster Zug')}
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted">
-          Karten <b>ziehen</b>, um sie zwischen Hand · Feld · Trash · Deck zu bewegen. Feldkarte
-          <b> tippen</b> = spenden/bereit.
+          <Rich text={t('Karten **ziehen**, um sie zwischen Hand · Feld · Trash · Deck zu bewegen. Feldkarte **tippen** = spenden/bereit.')} />
         </p>
       </div>
 
       {/* Zähler (Deck-Kachel ist zugleich Ablage-Zone) */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Counter label="Zug" value={s.turn} />
+        <Counter label={t('Zug')} value={s.turn} />
         <div
           ref={(el) => (zoneRefs.current.deck = el)}
           className={`rounded-lg bg-surface p-3 font-mono ${dz('deck')}`}
         >
-          <div className="text-xs text-muted">Deck {drag ? '· ablegen' : ''}</div>
+          <div className="text-xs text-muted">Deck {drag ? t('· ablegen') : ''}</div>
           <div className="text-lg">
             {s.deck.length}
-            {s.deck.length === 0 && <span className="ml-1 text-xs text-card-red">leer!</span>}
+            {s.deck.length === 0 && <span className="ml-1 text-xs text-card-red">{t('leer!')}</span>}
           </div>
         </div>
         <div className={`rounded-lg p-3 font-mono ${won ? 'bg-card-green/20' : 'bg-surface'}`}>
-          <div className="text-xs text-muted">Gigs (Ziel {RULES.gigWinThreshold})</div>
+          <div className="text-xs text-muted">{t('Gigs (Ziel {n})', { n: RULES.gigWinThreshold })}</div>
           <div className="flex items-center gap-2">
             <button onClick={() => patch((x) => adjustGigs(x, -1))} className="rounded bg-bg/60 px-2 leading-6">−</button>
             <span className={`text-lg ${won ? 'text-card-green' : ''}`}>{s.gigs}</span>
@@ -314,7 +315,7 @@ export function PlaytestPanel() {
           </div>
         </div>
         <div className="rounded-lg bg-surface p-3 font-mono">
-          <div className="text-xs text-muted">Eddies €$</div>
+          <div className="text-xs text-muted">{t('Eddies €$')}</div>
           <div className="flex items-center gap-2">
             <button onClick={() => patch((x) => adjustEddies(x, -1))} className="rounded bg-bg/60 px-2 leading-6">−</button>
             <span className="text-lg">{s.eddies}</span>
@@ -325,13 +326,13 @@ export function PlaytestPanel() {
 
       {won && (
         <div className="rounded-lg bg-card-green/20 p-3 text-center font-mono text-sm text-card-green">
-          🎉 {s.gigs} Gigs — mit so vielen Gigs würdest du deinen Zug als Sieg beginnen.
+          🎉 {t('{n} Gigs — mit so vielen Gigs würdest du deinen Zug als Sieg beginnen.', { n: s.gigs })}
         </div>
       )}
 
       {/* Legends */}
       <div className="rounded-lg bg-surface p-3">
-        <h3 className="mb-2 font-mono text-sm">Legends</h3>
+        <h3 className="mb-2 font-mono text-sm">{t('Legends')}</h3>
         <div className="flex flex-wrap gap-3">
           {s.legends.map((l, i) => {
             const cd = card(l.cardId);
@@ -342,7 +343,7 @@ export function PlaytestPanel() {
                   <CardImage card={cd} src={images.get(cd.id)} className={`h-20 w-14 ${l.spent ? 'rotate-90 opacity-70' : ''}`} />
                 ) : (
                   <div className="flex h-20 w-14 items-center justify-center rounded border border-dashed border-white/20 bg-bg/60 text-center font-mono text-[9px] text-muted">
-                    verdeckt
+                    {t('verdeckt')}
                   </div>
                 )}
                 {l.revealed ? (
@@ -350,14 +351,14 @@ export function PlaytestPanel() {
                     onClick={() => patch((x) => toggleLegendSpent(x, i))}
                     className="rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted hover:border-accent"
                   >
-                    {l.spent ? 'bereit' : 'spenden'}
+                    {l.spent ? t('bereit') : t('spenden')}
                   </button>
                 ) : (
                   <button
                     onClick={() => patch((x) => callLegend(x, i))}
                     className="rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] hover:border-accent"
                   >
-                    Call
+                    {t('Call')}
                   </button>
                 )}
               </div>
@@ -372,10 +373,10 @@ export function PlaytestPanel() {
         className={`rounded-lg bg-surface p-3 ${dz('play')}`}
       >
         <h3 className="mb-2 font-mono text-sm">
-          Feld <span className="text-muted">({s.play.length})</span>
+          {t('Feld')} <span className="text-muted">({s.play.length})</span>
         </h3>
         {s.play.length === 0 ? (
-          <p className="text-xs text-muted">Leer. Zieh eine Handkarte hierher, um sie auszuspielen.</p>
+          <p className="text-xs text-muted">{t('Leer. Zieh eine Handkarte hierher, um sie auszuspielen.')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {s.play.map((c) => (
@@ -391,10 +392,10 @@ export function PlaytestPanel() {
         className={`rounded-lg bg-surface p-3 ${dz('hand')}`}
       >
         <h3 className="mb-2 font-mono text-sm">
-          Hand <span className="text-muted">({s.hand.length})</span>
+          {t('Hand')} <span className="text-muted">({s.hand.length})</span>
         </h3>
         {s.hand.length === 0 ? (
-          <p className="text-xs text-muted">Hand leer.</p>
+          <p className="text-xs text-muted">{t('Hand leer.')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {s.hand.map((c) => (
@@ -414,8 +415,8 @@ export function PlaytestPanel() {
           className="flex w-full items-center justify-between font-mono text-sm"
         >
           <span>
-            Trash <span className="text-muted">({s.trash.length})</span>
-            {drag && <span className="ml-2 text-[11px] text-muted">· hierher ziehen</span>}
+            {t('Trash')} <span className="text-muted">({s.trash.length})</span>
+            {drag && <span className="ml-2 text-[11px] text-muted">{t('· hierher ziehen')}</span>}
           </span>
           <span className="text-muted">{showTrash ? '▾' : '▸'}</span>
         </button>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { t } from '../i18n';
+import { Rich } from './Rich';
 
 /**
  * Kurze Spielhilfe („How to play"), aufklappbar als Overlay unter „Mehr".
@@ -33,14 +35,14 @@ export function HowToPlay() {
     <section className="rounded-lg bg-surface p-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="font-mono text-lg">How to play</h2>
-          <p className="text-xs text-muted">Kurze Spielhilfe fürs Cyberpunk TCG.</p>
+          <h2 className="font-mono text-lg">{t('How to play')}</h2>
+          <p className="text-xs text-muted">{t('Kurze Spielhilfe fürs Cyberpunk TCG.')}</p>
         </div>
         <button
           onClick={() => setOpen(true)}
           className="rounded bg-accent px-3 py-1.5 font-mono text-sm text-on-accent"
         >
-          Öffnen
+          {t('Öffnen')}
         </button>
       </div>
 
@@ -54,65 +56,67 @@ export function HowToPlay() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="font-mono text-lg">How to play</h2>
+              <h2 className="font-mono text-lg">{t('How to play')}</h2>
               <button
                 onClick={() => setOpen(false)}
-                aria-label="Schließen"
+                aria-label={t('Schließen')}
                 className="rounded px-2 py-1 text-muted hover:text-text"
               >
                 ✕
               </button>
             </div>
 
-            <Section title="Ziel">
+            <Section title={t('Ziel')}>
               <p>
-                Du gewinnst, indem deine <b>Units</b> die <b>Gigs</b> des Gegners stehlen
-                (sie greifen dessen Gig-Bereich an). Ohne Units, die angreifen, kein Sieg.
+                <Rich text={t('Du gewinnst, indem deine **Units** die **Gigs** des Gegners stehlen (sie greifen dessen Gig-Bereich an). Ohne Units, die angreifen, kein Sieg.')} />
               </p>
             </Section>
 
-            <Section title="Dein Deck (die 4 Regeln)">
+            <Section title={t('Dein Deck (die 4 Regeln)')}>
               <ul className="list-inside list-disc space-y-0.5">
-                <li>Genau <b>3 Legends</b> mit unterschiedlichen Namen.</li>
-                <li><b>40–50 Karten</b> im Deck (Legends zählen nicht mit).</li>
-                <li>Höchstens <b>3 Kopien</b> derselben Karte.</li>
-                <li><b>RAM-Limit pro Farbe</b> (siehe unten).</li>
+                <li><Rich text={t('Genau **3 Legends** mit unterschiedlichen Namen.')} /></li>
+                <li><Rich text={t('**40–50 Karten** im Deck (Legends zählen nicht mit).')} /></li>
+                <li><Rich text={t('Höchstens **3 Kopien** derselben Karte.')} /></li>
+                <li><Rich text={t('**RAM-Limit pro Farbe** (siehe unten).')} /></li>
               </ul>
             </Section>
 
-            <Section title="RAM & Farben — der Kern des Deckbaus">
+            <Section title={t('RAM & Farben — der Kern des Deckbaus')}>
               <p>
-                Jede Legend hat eine Farbe (Rot/Grün/Blau/Gelb) und einen RAM-Wert. Das
-                RAM-Limit einer Farbe ist die <b>Summe der RAM ihrer Legends dieser Farbe</b>.
-                Eine Karte darfst du nur spielen, wenn ihr RAM das Limit <b>ihrer eigenen
-                Farbe</b> nicht übersteigt — RAM wird pro Farbe getrennt gezählt. Deine
-                3 Legends legen also fest, welche Farben und wie viel „Budget" du hast.
+                <Rich
+                  text={t(
+                    'Jede Legend hat eine Farbe (Rot/Grün/Blau/Gelb) und einen RAM-Wert. Das RAM-Limit einer Farbe ist die **Summe der RAM ihrer Legends dieser Farbe**. Eine Karte darfst du nur spielen, wenn ihr RAM das Limit **ihrer eigenen Farbe** nicht übersteigt — RAM wird pro Farbe getrennt gezählt. Deine 3 Legends legen also fest, welche Farben und wie viel „Budget" du hast.',
+                  )}
+                />
               </p>
               <p className="text-xs">
-                Genau das nutzt der <b>Solver</b> (welche Legends schöpfen deinen Bestand aus)
-                und die Deck-Statistik (Cap/Farbe).
+                <Rich text={t('Genau das nutzt der **Solver** (welche Legends schöpfen deinen Bestand aus) und die Deck-Statistik (Cap/Farbe).')} />
               </p>
             </Section>
 
-            <Section title="Kartentypen">
+            <Section title={t('Kartentypen')}>
               <ul className="list-inside list-disc space-y-0.5">
-                <li><b>Unit</b> — greift an, stehlt Gigs, kämpft.</li>
-                <li><b>Gear</b> — wird an eine Unit/Legend ausgerüstet.</li>
-                <li><b>Program</b> — Einmal-/Effektkarte.</li>
-                <li><b>Legend</b> — deine 3 Anführer; geben Farbe/RAM und eigene Fähigkeiten.</li>
+                <li><Rich text={t('**Unit** — greift an, stiehlt Gigs, kämpft.')} /></li>
+                <li><Rich text={t('**Gear** — wird an eine Unit/Legend ausgerüstet.')} /></li>
+                <li><Rich text={t('**Program** — Einmal-/Effektkarte.')} /></li>
+                <li><Rich text={t('**Legend** — deine 3 Anführer; geben Farbe/RAM und eigene Fähigkeiten.')} /></li>
               </ul>
             </Section>
 
-            <Section title="Gigs, Eddies & Keywords">
+            <Section title={t('Gigs, Eddies & Keywords')}>
               <p>
-                <b>Gigs</b> sind Würfel mit Werten; viele Karten interagieren mit ihnen
-                (hohe/niedrige Werte, gerade/ungerade, gleiche Werte = „Value-Pairs").
-                <b> Eddies (€$)</b> sind die Ressource zum Ausspielen — die „Eddie-Kurve"
-                im Deckeditor zeigt, wie teuer dein Deck ist.
+                <Rich
+                  text={t(
+                    '**Gigs** sind Würfel mit Werten; viele Karten interagieren mit ihnen (hohe/niedrige Werte, gerade/ungerade, gleiche Werte = „Value-Pairs"). **Eddies (€$)** sind die Ressource zum Ausspielen — die „Eddie-Kurve" im Deckeditor zeigt, wie teuer dein Deck ist.',
+                  )}
+                />
               </p>
               <p className="text-xs">
-                Keywords wie {'{Go Solo}'}, {'{Blocker}'} oder {'{Adrenaline}'} stehen auf den
-                Karten; die Synergie-Ansicht erklärt, welche zusammenpassen.
+                {t('Keywords wie {a}, {b} oder {c} stehen auf den Karten; die Synergie-Ansicht erklärt, welche zusammenpassen.', {
+                  a: '{Go Solo}',
+                  b: '{Blocker}',
+                  c: '{Adrenaline}',
+                })}
               </p>
             </Section>
 
@@ -122,7 +126,7 @@ export function HowToPlay() {
               rel="noreferrer"
               className="inline-block font-mono text-sm text-accent hover:underline"
             >
-              Vollständige Regeln auf cyberpunktcg.com ↗
+              {t('Vollständige Regeln auf cyberpunktcg.com ↗')}
             </a>
           </div>
         </div>

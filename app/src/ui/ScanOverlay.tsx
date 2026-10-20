@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CardImage } from './CardImage';
 import { hapticTap } from '../native/feedback';
 import type { Card } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Vollbild-Scanner (Aufbau aus ScryGlass). Hängt per Portal direkt an <body>, der Rest
@@ -117,14 +118,14 @@ export function ScanOverlay(p: Props) {
     state === 'sure' ? 'rgb(var(--c-green))' : state === 'unsure' ? 'rgb(var(--c-accent))' : 'rgb(255 255 255 / 0.85)';
 
   const status = p.blurry
-    ? 'Unscharf — ruhig halten, Abstand ändern · Tippen stellt scharf'
+    ? t('Unscharf — ruhig halten, Abstand ändern · Tippen stellt scharf')
     : p.status
       ? p.status
       : p.best
         ? null
         : p.scanning
-          ? 'Lese…'
-          : 'Karte formatfüllend in den Rahmen · Tippen stellt scharf';
+          ? t('Lese…')
+          : t('Karte formatfüllend in den Rahmen · Tippen stellt scharf');
 
   // Kamerafenster: Hochformat = Höhe minus Leisten (3.5rem + 12rem), Querformat = volle
   // Höhe, Breite minus Seitenleiste. Rahmen im Kartenformat (733 × 1024).
@@ -137,20 +138,20 @@ export function ScanOverlay(p: Props) {
   };
 
   const closeBtn = (
-    <button onClick={withTick(p.onClose)} aria-label="Scanner schließen" className="rounded px-2 py-1 text-lg text-text">
+    <button onClick={withTick(p.onClose)} aria-label={t('Scanner schließen')} className="rounded px-2 py-1 text-lg text-text">
       ✕
     </button>
   );
   const title = (
     <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted">
-      Scanner · {p.mode === 'native' ? 'nativ' : 'Browser'}
+      {p.mode === 'native' ? t('Scanner · nativ') : t('Scanner · Browser')}
     </span>
   );
   const torchBtn = p.torchAvailable && (
     <button
       onClick={withTick(p.onToggleTorch)}
       aria-pressed={p.torchOn}
-      aria-label="Licht"
+      aria-label={t('Licht')}
       className={`shrink-0 rounded px-2 py-1.5 text-sm ${p.torchOn ? 'bg-accent text-on-accent' : 'bg-surface text-muted'}`}
     >
       🔦
@@ -162,12 +163,12 @@ export function ScanOverlay(p: Props) {
       aria-pressed={p.autoAdd}
       className={`shrink-0 rounded px-2 py-1.5 font-mono text-xs ${p.autoAdd ? 'bg-accent text-on-accent' : 'bg-surface text-muted'}`}
     >
-      Auto-Korb {p.autoAdd ? 'an' : 'aus'}
+      {p.autoAdd ? t('Auto-Korb an') : t('Auto-Korb aus')}
     </button>
   );
   const zoomCtl = p.zoom && p.zoom.max > p.zoom.min && (
     <label className="flex items-center gap-2 font-mono text-[11px] text-muted">
-      <span className="shrink-0">Zoom</span>
+      <span className="shrink-0">{t('Zoom')}</span>
       <input
         type="range"
         min={p.zoom.min}
@@ -176,14 +177,14 @@ export function ScanOverlay(p: Props) {
         value={p.zoom.value}
         onChange={(e) => p.onZoom(Number(e.target.value))}
         className="min-w-0 flex-1 accent-accent"
-        aria-label="Kamera-Zoom"
+        aria-label={t('Kamera-Zoom')}
       />
       <span className="w-9 shrink-0 text-right">{p.zoom.value.toFixed(1)}×</span>
     </label>
   );
   const toast = p.toast && (
     <div className="truncate rounded bg-card-green/15 px-2 py-0.5 font-mono text-xs text-card-green">
-      ✓ {p.toast} in den Korb
+      {t('✓ {name} in den Korb', { name: p.toast })}
     </div>
   );
   const matchInfo = p.best && (
@@ -193,16 +194,16 @@ export function ScanOverlay(p: Props) {
         <div className="truncate text-text">
           {p.best.card.name}
           {p.best.alt && (
-            <span className="ml-1 rounded bg-accent/20 px-1 align-middle text-[10px] text-accent">Alt</span>
+            <span className="ml-1 rounded bg-accent/20 px-1 align-middle text-[10px] text-accent">{t('Alt')}</span>
           )}
         </div>
         {p.best.card.subtitle && <div className="truncate text-[11px] text-muted">{p.best.card.subtitle}</div>}
         <div className="text-[11px] text-muted">
           {p.best.method} ·{' '}
           {p.best.confident ? (
-            <span className="text-card-green">sicher</span>
+            <span className="text-card-green">{t('sicher')}</span>
           ) : (
-            <span className="text-accent">unsicher</span>
+            <span className="text-accent">{t('unsicher')}</span>
           )}
         </div>
       </div>
@@ -210,14 +211,14 @@ export function ScanOverlay(p: Props) {
   );
   const addBtn = (
     <button onClick={p.onAdd} className="shrink-0 rounded bg-accent px-3 py-2 font-mono text-sm text-on-accent">
-      ＋ Korb
+      {t('＋ Korb')}
     </button>
   );
-  const noMatch = <p className="pt-3 text-center font-mono text-xs text-muted">Noch kein Treffer.</p>;
+  const noMatch = <p className="pt-3 text-center font-mono text-xs text-muted">{t('Noch kein Treffer.')}</p>;
   const debugLine = p.debug && <p className="truncate font-mono text-[9px] text-muted/70">{p.debug}</p>;
   const doneBtn = (
     <button onClick={withTick(p.onClose)} className="shrink-0 rounded bg-surface px-3 py-1.5 font-mono text-xs text-text">
-      Korb ({p.basketCount}) · Fertig
+      {t('Korb ({n}) · Fertig', { n: p.basketCount })}
     </button>
   );
 

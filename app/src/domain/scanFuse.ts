@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * Scanner v2: Fusion von OCR-, Bild- und Nummern-Signal (übernommen aus ScryGlass,
  * scanner-v2-plan.md). Framework-frei & rein testbar: entscheidet, welche Karte oben
@@ -144,13 +146,13 @@ export function fuseScan(
 export function methodLabel(m: FuseMethod): string {
   switch (m) {
     case 'druck':
-      return 'Nummer';
+      return t('Nummer');
     case 'bild+ocr':
-      return 'Bild + Name';
+      return t('Bild + Name');
     case 'bild':
-      return 'Bild';
+      return t('Bild');
     case 'ocr':
-      return 'Name';
+      return t('Name');
     default:
       return '—';
   }

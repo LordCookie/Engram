@@ -9,8 +9,10 @@ import type { CollectionEntry } from '../domain/types';
 import { feedbackAdded } from '../native/feedback';
 import { rulesetV1Loaded } from '../rules/ruleset';
 import { validate } from '../rules/validate';
+import { achievementsQuiet } from './achievementsQuiet';
 import { Collapsible } from './Collapsible';
 import { Logo } from './Logo';
+import { t, tn } from '../i18n';
 
 /**
  * Sammler-Erfolge: Liste mit Fortschritt (Sammlung, einklappbar) und eine kurze
@@ -45,7 +47,7 @@ export function AchievementsPanel() {
   );
   return (
     <Collapsible
-      title="Erfolge"
+      title={t('Erfolge')}
       right={
         <>
           <span className="text-accent">{done}</span>/{list.length}
@@ -108,6 +110,7 @@ export function AchievementToasts() {
       if (fresh.length === 0) return;
       for (const a of fresh) seen.add(a.id);
       await setSeenAchievements([...seen]);
+      if (achievementsQuiet()) return; // frisch wiederhergestellt → nichts „Neues"
       feedbackAdded();
       const now = Date.now();
       setToasts((t) => [...t, ...fresh.map((a, i) => ({ key: now + i, a }))]);
@@ -121,7 +124,7 @@ export function AchievementToasts() {
     <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 flex flex-col items-center gap-2 px-4 sm:bottom-6">
       {hidden > 0 && (
         <div className="rounded-full bg-surface px-3 py-0.5 font-mono text-[11px] text-accent">
-          +{hidden} weitere{hidden === 1 ? 'r Erfolg' : ' Erfolge'} — siehe Sammlung → Erfolge
+          {tn(hidden, '+{n} weiterer Erfolg — siehe Sammlung → Erfolge', '+{n} weitere Erfolge — siehe Sammlung → Erfolge')}
         </div>
       )}
       {toasts.slice(-3).map(({ key, a }) => (
@@ -131,7 +134,7 @@ export function AchievementToasts() {
         >
           <Logo className="h-8 w-5 shrink-0 text-accent" />
           <div className="min-w-0">
-            <div className="font-mono text-[11px] uppercase tracking-wide text-muted">Erfolg freigeschaltet</div>
+            <div className="font-mono text-[11px] uppercase tracking-wide text-muted">{t('Erfolg freigeschaltet')}</div>
             <div className="truncate font-mono text-sm text-accent">{a.title}</div>
           </div>
         </div>

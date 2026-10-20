@@ -10,6 +10,7 @@ import {
   coPlayPartners,
   coPlayLift,
   makeCoPlayScore,
+  corpusFromIngest,
   type CorpusDeck,
 } from './coplay';
 import { rulesetV1Loaded } from '../rules/ruleset';
@@ -116,6 +117,43 @@ describe('buildCorpus + coPlayPartners', () => {
 
   it('gibt für unbekannte oder nie gespielte Karten nichts zurück', () => {
     expect(coPlayPartners('unbekannt', corpus, index)).toEqual([]);
+  });
+});
+
+describe('corpusFromIngest', () => {
+  it('liest das kompakte ingest-v2 (symmetrisch, mit Quellen) wie buildCorpus', () => {
+    const r = corpusFromIngest({
+      version: 'ingest-v2',
+      n: 2,
+      sources: { meta: 1, community: 1 },
+      cards: ['a', 'b', 'c'],
+      df: [2, 2, 1],
+      pairs: [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 2, 1],
+      ],
+    });
+    const ref = buildCorpus([deck('a', 'b', 'c'), deck('a', 'b')]);
+    expect(r.corpus?.n).toBe(ref.n);
+    expect([...(r.corpus?.df ?? [])]).toEqual([...ref.df]);
+    expect(r.corpus?.co.get('a')?.get('b')).toBe(2);
+    expect(r.corpus?.co.get('b')?.get('a')).toBe(2);
+    expect(r.corpus?.co.get('c')?.get('b')).toBe(1);
+    expect(coPlayLift('a', 'b', r.corpus!)).toBeCloseTo(coPlayLift('a', 'b', ref));
+    expect(r.sources).toEqual({ meta: 1, community: 1 });
+  });
+
+  it('liest weiterhin das alte ingest-v1 (Maps als Objekte)', () => {
+    const r = corpusFromIngest({ n: 1, df: { a: 1, b: 1 }, co: { a: { b: 1 }, b: { a: 1 } } });
+    expect(r.corpus?.co.get('a')?.get('b')).toBe(1);
+    expect(r.sources).toEqual({ unbekannt: 1 });
+  });
+
+  it('unbrauchbar oder leer → kein Korpus', () => {
+    expect(corpusFromIngest(null).corpus).toBeNull();
+    expect(corpusFromIngest({ n: 0 }).corpus).toBeNull();
+    expect(corpusFromIngest('x').corpus).toBeNull();
   });
 });
 

@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * Deck-Entwurf und seine reinen Mutatoren (PLAN.md § 5, Aufgabe 2).
  * Framework-frei, immutabel — jede Änderung liefert einen neuen Entwurf.
@@ -25,7 +27,7 @@ export function newDeckId(): string {
 export function emptyDraft(
   rulesetVersion: string,
   id: string = newDeckId(),
-  name = 'Neues Deck',
+  name = t('Neues Deck'),
 ): DeckDraft {
   return { id, name, rulesetVersion, legendIds: [], cards: [], updatedAt: 0 };
 }

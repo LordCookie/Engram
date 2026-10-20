@@ -1,5 +1,6 @@
 import { mulberry32, shuffle, type SimDeck } from './rng';
 import { model, type Effect } from './model';
+import { t } from '../../i18n';
 
 /**
  * engine2 — Kampf-/Keyword-/Interaktions-Modell für Deck-Tests. Einheiten kommen
@@ -96,10 +97,10 @@ export function beginTurn2(g: Game2, cfg: Sim2Params): boolean {
   const me = g[p];
   g.turnNo[p] += 1;
   for (const u of me.board) { u.spent = false; u.lag = false; }
-  if (me.deck.length === 0) { g.winner = other(p); g.reason = `${me.name} deckt aus`; return false; }
+  if (me.deck.length === 0) { g.winner = other(p); g.reason = t('{name} deckt aus', { name: me.name }); return false; }
   me.hand.push(me.deck.shift()!);
   me.gigs += 1;
-  if (me.gigs >= cfg.gigWin) { g.winner = p; g.reason = `${me.name} beginnt Zug ${g.turnNo[p]} mit ${me.gigs} Gigs`; return false; }
+  if (me.gigs >= cfg.gigWin) { g.winner = p; g.reason = t('{name} beginnt Zug {turn} mit {gigs} Gigs', { name: me.name, turn: g.turnNo[p], gigs: me.gigs }); return false; }
   return true;
 }
 
@@ -142,7 +143,7 @@ function defeatUnit(g: Game2, cfg: Sim2Params, side: PlayerId, uid: string) {
 }
 
 function checkGigWin(g: Game2, cfg: Sim2Params, p: PlayerId) {
-  if (!g.winner && g[p].gigs >= cfg.gigWin) { g.winner = p; g.reason = `${g[p].name} erreicht ${g[p].gigs} Gigs`; }
+  if (!g.winner && g[p].gigs >= cfg.gigWin) { g.winner = p; g.reason = t('{name} erreicht {gigs} Gigs', { name: g[p].name, gigs: g[p].gigs }); }
 }
 
 /** Imperativen Karteneffekt anwenden (Removal, Spend-Rival, Gig-Swing, Buff, Draw).
@@ -169,7 +170,7 @@ function applyEffect(g: Game2, cfg: Sim2Params, e: Effect, actor: PlayerId = g.a
     }
   }
   if (e.gig) {
-    if (e.gig.self) { const s = Math.min(e.gig.self, op.gigs); op.gigs -= s; me.gigs += s; g.log.push(`  ${me.name}: Effekt klaut ${s} Gig(s)`); checkGigWin(g, cfg, p); }
+    if (e.gig.self) { const s = Math.min(e.gig.self, op.gigs); op.gigs -= s; me.gigs += s; g.log.push('  ' + t('{name}: Effekt klaut {n} Gig(s)', { name: me.name, n: s })); checkGigWin(g, cfg, p); }
     if (e.gig.rival) op.gigs = Math.max(0, op.gigs - e.gig.rival);
   }
   if (e.buff) {
@@ -217,7 +218,7 @@ export function attackPhase(g: Game2, cfg: Sim2Params, attackerUids: string[], d
     if (!A || A.spent || A.lag) continue; // muss bereit & ohne Lag sein
     A.spent = true;
     const am = model(A.cardId); // {Attack} Gig-Swing (z. B. „decrease a Gig")
-    if (am.onAttack.gig) { const d = Math.min(am.onAttack.gig, op.gigs); if (d > 0) { op.gigs -= d; g.log.push(`  ${me.name}: {Attack} senkt Rival-Gig um ${d}`); } }
+    if (am.onAttack.gig) { const d = Math.min(am.onAttack.gig, op.gigs); if (d > 0) { op.gigs -= d; g.log.push('  ' + t('{name}: {Attack} senkt Rival-Gig um {n}', { name: me.name, n: d, Attack: '{Attack}' })); } }
     const dv = view2For(g, cfg, other(p)); // Sicht des Verteidigers
     const bUid = defender.block({ uid: A.uid, name: model(A.cardId).name, power: A.power, spent: A.spent, lag: A.lag, blocker: A.blocker }, dv);
     const B = bUid ? op.board.find((u) => u.uid === bUid) : undefined;
@@ -228,10 +229,10 @@ export function attackPhase(g: Game2, cfg: Sim2Params, attackerUids: string[], d
       if (A.power > B.power) defeatUnit(g, cfg, other(p), B.uid); // Blocker besiegt, Angriff gestoppt
       else if (B.power > A.power) defeatUnit(g, cfg, p, A.uid); // Angreifer besiegt
       // Gleichstand: beide überleben; in jedem Fall KEIN Gig-Klau (geblockt)
-      g.log.push(`  ${me.name}: Angriff (P${A.power}) geblockt von P${B.power}`);
+      g.log.push('  ' + t('{name}: Angriff (P{a}) geblockt von P{b}', { name: me.name, a: A.power, b: B.power }));
     } else {
       const steal = Math.min(1 + Math.floor(A.power / 10), op.gigs);
-      if (steal > 0) { op.gigs -= steal; me.gigs += steal; g.log.push(`  ${me.name} klaut ${steal} Gig(s) (P${A.power}, unblocked)`); }
+      if (steal > 0) { op.gigs -= steal; me.gigs += steal; g.log.push('  ' + t('{name} klaut {n} Gig(s) (P{a}, unblocked)', { name: me.name, n: steal, a: A.power })); }
     }
   }
 }
@@ -256,7 +257,7 @@ export function playGame2(g: Game2, cfg: Sim2Params, pa: Policy2, pb: Policy2): 
     const opp = g.active === 'a' ? pb : pa;
     playTurn2(g, cfg, self, opp);
     if (g.turnNo.a >= cfg.turnCap || g.turnNo.b >= cfg.turnCap) {
-      if (!g.winner) { g.winner = g.a.gigs === g.b.gigs ? null : g.a.gigs > g.b.gigs ? 'a' : 'b'; g.reason = 'Zugobergrenze'; }
+      if (!g.winner) { g.winner = g.a.gigs === g.b.gigs ? null : g.a.gigs > g.b.gigs ? 'a' : 'b'; g.reason = t('Zugobergrenze'); }
       break;
     }
   }

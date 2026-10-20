@@ -85,6 +85,12 @@ opens a full-screen scanner (native camera in the app, webcam in the browser):
 > to framing offsets (2 % shift ≈ 60 of 256 bits). v2 fixes that with a small **crop search**
 > (36 shifted/scaled crops per frame, ~15 ms) and combines it with OCR instead of replacing it.
 
+### 🌐 English & German
+
+The interface is available in **English and German** — it follows your device language on first
+start and can be switched any time under *More → Language*. Card names and rules text are always
+the official English printing.
+
 ### ✨ Little extras
 
 - **Themed logo:** the skull-and-circuit logo follows your color theme — in the app, the browser
@@ -102,7 +108,10 @@ opens a full-screen scanner (native camera in the app, webcam in the browser):
   synergy partners); collapse the list to jump straight to the solver.
 - **Missing-cards shopping list** for any deck — what you still need to build it, with
   **Legends included**.
-- **JSON** backup import/export and MTG-style **deck text** import/export.
+- **Full backup** (JSON): collection, want list, **decks and settings** in one file — shared via
+  the Android share sheet or downloaded, restorable on a new phone. A gentle reminder appears when
+  your last backup is old and something has changed since.
+- MTG-style **deck text** import/export and a CSV export of the collection.
 
 ### 🧠 Synergy & Legend Solver
 
@@ -112,10 +121,13 @@ combinations. engram provides:
 - A **Legend Solver** that computes valid Legend trios from *only the cards you own* and ranks
   them by how much of your collection they unlock.
 - **Swap analysis** — see how changing one Legend unlocks or locks out parts of your pool.
+- **Legend explorer:** for any Legend, what real decks play with it — partner Legends, the most
+  popular trios (one tap creates a deck from a trio) and the typical cards with their play rate.
 - **EDHREC-style synergy scoring** in three flavors, selectable in the solver and shown while
   building: **predicted** (from structured card-text analysis), **empirical** (co-play from
-  your own legal decks plus an ingested corpus of public meta decklists), and a **normalized
-  combination** of both.
+  your own legal decks plus an ingested corpus of public decklists — meta decks and several
+  hundred community decks from the official deckbuilder), and a **normalized combination** of
+  both.
 
 ### 🧪 Deck testing & playtest (in-app)
 
@@ -128,7 +140,8 @@ combinations. engram provides:
 
 ### ⚡ Fast tracking
 
-- Keyboard quick-add and one-click **starter-deck** import for speed.
+- Keyboard quick-add (alt arts with **+Alt** or Shift+Enter) and one-click **starter-deck**
+  import for speed; a short welcome card on first start shows the ways to get going.
 - **Offline-capable PWA:** once loaded, card images are served from a local Service-Worker
   cache, so the app works without a connection.
 
@@ -145,11 +158,14 @@ combinations. engram provides:
   are published in [Releases](https://github.com/LordCookie/Engram/releases). iOS is a later
   step.
 - **Data pipeline (offline, Python stdlib):** scripts to fetch card data from the NetDeck API,
-  build the synergy-feature set, and ingest legal decklists into a co-play corpus. A
+  build the synergy-feature set, pull public community decklists, and ingest legal decklists
+  into a compact co-play corpus. A
   **FastAPI + SQLite** service to broaden the community-stats signal is planned for Phase 4.
 - **Framework-free core:** the rules, validation, the solver, synergy scoring, name/number
   matching and the combat model all live in pure, unit-tested TypeScript modules (no UI
   dependencies).
+- **i18n:** a tiny gettext-style layer (`app/src/i18n/`) — the German text is the key, the
+  English dictionary loads as its own chunk, and a test checks that every string is translated.
 
 ## 🧑‍💻 Getting Started (developers)
 
@@ -163,6 +179,8 @@ cd Engram
 # 1) Generate the (gitignored) card data + synergy features
 python pipeline/fetch_cards.py         # -> app/src/data/cards.json + printings.json
 python pipeline/bootstrap_features.py  # -> app/src/data/features.json (no API key needed)
+# optional: empirical synergy from public community decks (slugs + counts only, gitignored)
+python pipeline/fetch_community_decks.py && python pipeline/ingest_decks.py  # -> coplay.json
 
 # 2) Run the app
 cd app

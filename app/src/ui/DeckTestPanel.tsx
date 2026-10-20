@@ -8,6 +8,7 @@ import { starters } from '../domain/starters';
 import type { DeckDraft } from '../domain/deckDraft';
 import type { SimDeck } from '../domain/sim/rng';
 import { testMatchup, sampleGame, type DeckTestResult, type SampleGame } from '../domain/sim/deckTest';
+import { t } from '../i18n';
 
 /**
  * „Deck testen" — spielt dein Deck im Kampf-Modell (engine2) seat-fair gegen einen
@@ -78,28 +79,26 @@ export function DeckTestPanel() {
   if (isPlaceholder) {
     return (
       <section className="rounded-lg border border-white/10 bg-surface p-4">
-        <h2 className="font-mono text-lg text-accent">Deck testen</h2>
-        <p className="mt-2 text-sm text-muted">Mit Testkarten nicht verfügbar — lade die echten Kartendaten.</p>
+        <h2 className="font-mono text-lg text-accent">{t('Deck testen')}</h2>
+        <p className="mt-2 text-sm text-muted">{t('Mit Testkarten nicht verfügbar — lade die echten Kartendaten.')}</p>
       </section>
     );
   }
 
   return (
     <section className="rounded-lg border border-white/10 bg-surface p-4">
-      <h2 className="font-mono text-lg text-accent">Deck testen</h2>
+      <h2 className="font-mono text-lg text-accent">{t('Deck testen')}</h2>
       <p className="mt-1 text-xs text-muted">
-        Spielt dein Deck im Kampf-Modell gegen einen Gegner (je 400 Spiele, beide Sitzpositionen)
-        und schätzt die Siegquote. <span className="text-text">Grobes Modell, kein echtes Ergebnis</span> —
-        ein Richtungssignal für Deckstärke.
+        {t('Spielt dein Deck im Kampf-Modell gegen einen Gegner (je 400 Spiele, beide Sitzpositionen) und schätzt die Siegquote.')} <span className="text-text">{t('Grobes Modell, kein echtes Ergebnis')}</span> {t('— ein Richtungssignal für Deckstärke.')}
       </p>
 
       {list.length < 1 ? (
-        <p className="mt-3 text-sm text-muted">Keine spielbaren Decks. Baue ein legales Deck oder importiere einen Starter.</p>
+        <p className="mt-3 text-sm text-muted">{t('Keine spielbaren Decks. Baue ein legales Deck oder importiere einen Starter.')}</p>
       ) : (
         <>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="text-muted">Dein Deck</span>
+              <span className="text-muted">{t('Dein Deck')}</span>
               <select
                 className="mt-1 w-full rounded-md border border-white/10 bg-bg px-2 py-2 font-mono text-sm"
                 value={a?.key ?? ''}
@@ -109,7 +108,7 @@ export function DeckTestPanel() {
               </select>
             </label>
             <label className="block text-sm">
-              <span className="text-muted">Gegner</span>
+              <span className="text-muted">{t('Gegner')}</span>
               <select
                 className="mt-1 w-full rounded-md border border-white/10 bg-bg px-2 py-2 font-mono text-sm"
                 value={b?.key ?? ''}
@@ -125,10 +124,10 @@ export function DeckTestPanel() {
             disabled={busy || !a || !b}
             className="mt-3 rounded-md bg-accent px-4 py-2 font-mono text-sm text-on-accent disabled:opacity-50"
           >
-            {busy ? 'läuft …' : 'Testen'}
+            {busy ? t('läuft …') : t('Testen')}
           </button>
           {hiddenOwn > 0 && (
-            <p className="mt-2 text-xs text-muted">{hiddenOwn} eigene(s) Deck(s) ausgeblendet (nicht regel-legal).</p>
+            <p className="mt-2 text-xs text-muted">{t('{n} eigene(s) Deck(s) ausgeblendet (nicht regel-legal).', { n: hiddenOwn })}</p>
           )}
 
           {run && <Result run={run} showLog={showLog} onToggleLog={() => setShowLog((s) => !s)} />}
@@ -141,44 +140,45 @@ export function DeckTestPanel() {
 function Result({ run, showLog, onToggleLog }: { run: RunResult; showLog: boolean; onToggleLog: () => void }) {
   const { result: r, sample, aLabel, bLabel } = run;
   const pct = r.winPct;
-  const verdict = pct >= 55 ? 'begünstigt' : pct <= 45 ? 'benachteiligt' : 'ausgeglichen';
+  const verdict = pct >= 55 ? t('begünstigt') : pct <= 45 ? t('benachteiligt') : t('ausgeglichen');
   return (
     <div className="mt-4 rounded-md border border-white/10 bg-bg p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-sm text-text">{aLabel} <span className="text-muted">vs</span> {bLabel}</span>
-        <span className="font-mono text-xs text-muted">{r.games} Spiele · Ø {r.avgTurns.toFixed(1)} Züge</span>
+        <span className="font-mono text-sm text-text">{aLabel} <span className="text-muted">{t('vs')}</span> {bLabel}</span>
+        <span className="font-mono text-xs text-muted">{t('{n} Spiele · Ø {turns} Züge', { n: r.games, turns: r.avgTurns.toFixed(1) })}</span>
       </div>
 
       <div className="mt-2">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-2xl text-accent">{pct.toFixed(1)}%</span>
-          <span className="text-xs text-muted">±{r.ci.toFixed(1)} · Matchup {verdict}</span>
+          <span className="text-xs text-muted">{t('±{ci} · Matchup {verdict}', { ci: r.ci.toFixed(1), verdict })}</span>
         </div>
         {/* Siegquoten-Balken */}
         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-white/10">
           <div className="h-full bg-accent" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
         </div>
         <p className="mt-1 font-mono text-xs text-muted">
-          {r.winsA} Siege · {r.winsB} Niederlagen{r.draws ? ` · ${r.draws} Remis` : ''}
+          {t('{w} Siege · {l} Niederlagen', { w: r.winsA, l: r.winsB })}
+          {r.draws ? t(' · {n} Remis', { n: r.draws }) : ''}
         </p>
       </div>
 
       <button onClick={onToggleLog} className="mt-3 rounded-md border border-white/10 px-3 py-1.5 font-mono text-xs text-muted hover:text-text">
-        {showLog ? 'Beispielspiel ausblenden' : 'Beispielspiel zeigen'}
+        {showLog ? t('Beispielspiel ausblenden') : t('Beispielspiel zeigen')}
       </button>
       {showLog && (
         <div className="mt-2">
           <p className="font-mono text-xs text-text">
-            Ausgang: {sample.winner ? (sample.winner === 'a' ? aLabel : bLabel) : 'Remis'} — {sample.reason} ·
-            Gigs {sample.finalGigs.a}:{sample.finalGigs.b} · {sample.turns} Züge
+            {t('Ausgang:')} {sample.winner ? (sample.winner === 'a' ? aLabel : bLabel) : t('Remis')} — {sample.reason}{' '}
+            {t('· Gigs {a}:{b} · {n} Züge', { a: sample.finalGigs.a, b: sample.finalGigs.b, n: sample.turns })}
           </p>
           <pre className="mt-1 max-h-56 overflow-auto rounded bg-black/30 p-2 font-mono text-[11px] leading-snug text-muted">
-{sample.log.join('\n') || '(kein Log)'}
+{sample.log.join('\n') || t('(kein Log)')}
           </pre>
         </div>
       )}
       <p className="mt-2 text-[11px] text-muted">
-        Modell-Grenzen: Gear, {'{Defeated}'}/Reaktionen und Würfel sind abstrahiert; Legends zählen nur als Eddie-Basis.
+        {t('Modell-Grenzen: Gear, {Defeated}/Reaktionen und Würfel sind abstrahiert; Legends zählen nur als Eddie-Basis.', { Defeated: '{Defeated}' })}
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { feedbackAdded, getVibration, initFeedbackPrefs, setVibration } from '../native/feedback';
+import { t } from '../i18n';
 
 /** Einstellung unter „Mehr": Vibration beim Scannen (Karte im Korb, Knöpfe im Scanner). */
 export function FeedbackPanel() {
@@ -20,10 +21,9 @@ export function FeedbackPanel() {
     <section className="rounded-lg bg-surface p-4">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="font-mono text-lg">Vibration beim Scannen</h2>
+          <h2 className="font-mono text-lg">{t('Vibration beim Scannen')}</h2>
           <p className="text-xs text-muted">
-            Kurzes Vibrieren, wenn eine Karte in den Scan-Korb geht, und ein leichtes Tippen
-            bei den Scanner-Knöpfen.
+            {t('Kurzes Vibrieren, wenn eine Karte in den Scan-Korb geht, und ein leichtes Tippen bei den Scanner-Knöpfen.')}
           </p>
         </div>
         <button
@@ -34,7 +34,7 @@ export function FeedbackPanel() {
             on ? 'bg-accent text-on-accent' : 'border border-white/10 text-muted hover:border-accent'
           }`}
         >
-          {on ? 'An' : 'Aus'}
+          {on ? t('An') : t('Aus')}
         </button>
       </div>
     </section>

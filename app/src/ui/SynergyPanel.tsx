@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { catalog, cardIndex } from '../data/catalog';
 import { featureDB, hasFeatures } from '../data/features';
 import { useCardImages } from '../data/cardImages';
-import { curatedCombos } from '../data/combos';
-import { useCorpus } from '../data/deckCorpus';
+import { comboText, curatedCombos } from '../data/combos';
+import { sourcesLabel, useCorpus } from '../data/deckCorpus';
 import { pageUrlById } from '../data/printingLinks';
 import { searchCards } from '../domain/search';
 import { topSynergies, topCombos } from '../domain/synergy';
@@ -11,6 +11,8 @@ import { coPlayPartners } from '../domain/coplay';
 import { CardImage } from './CardImage';
 import { SynergyInfo } from './SynergyInfo';
 import type { Color } from '../domain/types';
+import { t, tn } from '../i18n';
+import { Rich } from './Rich';
 
 /**
  * Synergie-Ansicht pro Karte (PLAN.md § 12, Variante A). Wähle eine Karte,
@@ -40,7 +42,7 @@ export function SynergyPanel() {
   const combos = useMemo(() => (hasFeatures ? topCombos(featureDB, cardIndex, 12) : []), []);
 
   // Empirische Synergie (§ 12 C): was tatsächlich zusammen gespielt wird.
-  const { corpus, n, ingested, ownTotal, ownLegal } = useCorpus();
+  const { corpus, n, ingested, ingestedSources, ownTotal, ownLegal } = useCorpus();
   const empirical = useMemo(
     () => (selectedId ? coPlayPartners(selectedId, corpus, cardIndex, { limit: 8 }) : []),
     [selectedId, corpus],
@@ -50,7 +52,7 @@ export function SynergyPanel() {
   if (!hasFeatures) {
     return (
       <section className="rounded-lg bg-surface p-4 text-sm text-muted">
-        Keine Synergie-Daten geladen. Erzeuge sie mit
+        {t('Keine Synergie-Daten geladen. Erzeuge sie mit')}
         <code className="mx-1 text-text">python pipeline/bootstrap_features.py</code>.
       </section>
     );
@@ -59,10 +61,9 @@ export function SynergyPanel() {
   return (
     <section className="space-y-4">
       <div className="rounded-lg bg-surface p-4">
-        <h2 className="mb-1 font-mono text-lg">Synergie</h2>
+        <h2 className="mb-1 font-mono text-lg">{t('Synergie')}</h2>
         <p className="mb-3 text-xs text-muted">
-          Vorhergesagte Synergie — aus Kartentext abgeleitet, <b>keine Statistik</b>.
-          Wähle eine Karte (Name oder Nummer).
+          <Rich text={t('Vorhergesagte Synergie — aus Kartentext abgeleitet, **keine Statistik**. Wähle eine Karte (Name oder Nummer).')} />
         </p>
 
         <div className="mb-3">
@@ -72,7 +73,7 @@ export function SynergyPanel() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Karte suchen…"
+          placeholder={t('Karte suchen…')}
           className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-text outline-none focus:border-accent"
         />
 
@@ -102,14 +103,14 @@ export function SynergyPanel() {
       {/* Kuratierte, benannte Combos (handverlesen, mit Erklärung). */}
       {!selected && curatedCombos.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
-          <h3 className="mb-1 font-mono text-sm">Benannte Combos</h3>
+          <h3 className="mb-1 font-mono text-sm">{t('Benannte Combos')}</h3>
           <p className="mb-3 text-xs text-muted">
-            Handverlesene Kartenpakete mit Erklärung. Tippe eine Karte für ihre Partner.
+            {t('Handverlesene Kartenpakete mit Erklärung. Tippe eine Karte für ihre Partner.')}
           </p>
           <ol className="space-y-3">
             {curatedCombos.map((c) => (
               <li key={c.name} className="rounded-md bg-bg/60 p-2">
-                <div className="mb-1 font-mono text-sm text-accent">{c.name}</div>
+                <div className="mb-1 font-mono text-sm text-accent">{comboText(c).name}</div>
                 <div className="mb-1 flex flex-wrap gap-2">
                   {c.cards.map((card) => (
                     <button
@@ -123,7 +124,7 @@ export function SynergyPanel() {
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted">{c.why}</p>
+                <p className="text-xs text-muted">{comboText(c).why}</p>
               </li>
             ))}
           </ol>
@@ -133,10 +134,9 @@ export function SynergyPanel() {
       {/* Standardansicht: die stärksten Combos im Set (bis eine Karte gewählt wird). */}
       {!selected && combos.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
-          <h3 className="mb-1 font-mono text-sm">Weitere Combos (automatisch)</h3>
+          <h3 className="mb-1 font-mono text-sm">{t('Weitere Combos (automatisch)')}</h3>
           <p className="mb-3 text-xs text-muted">
-            Stärkste vorhergesagte Karten-Paare aus dem ganzen Set (RAM-spielbar). Tippe
-            eine Karte für ihre Partner.
+            {t('Stärkste vorhergesagte Karten-Paare aus dem ganzen Set (RAM-spielbar). Tippe eine Karte für ihre Partner.')}
           </p>
           <ol className="space-y-2">
             {combos.map((c) => {
@@ -183,7 +183,7 @@ export function SynergyPanel() {
             onClick={() => setSelectedId(null)}
             className="mb-3 inline-flex items-center gap-1 rounded-md border border-white/10 px-2.5 py-1.5 font-mono text-xs text-muted hover:border-accent hover:text-accent"
           >
-            ← Zurück zu den Combos
+            {t('← Zurück zu den Combos')}
           </button>
           <div className="mb-4 flex gap-4">
             <CardImage card={selected} src={images.get(selected.id)} className="h-44 w-32" />
@@ -207,15 +207,15 @@ export function SynergyPanel() {
                   rel="noreferrer"
                   className="mt-2 inline-block font-mono text-xs text-muted hover:text-accent"
                 >
-                  auf cyberpunktcg.com ansehen ↗
+                  {t('auf cyberpunktcg.com ansehen ↗')}
                 </a>
               )}
             </div>
           </div>
 
-          <h3 className="mt-4 mb-2 font-mono text-sm">Beste vorhergesagte Partner</h3>
+          <h3 className="mt-4 mb-2 font-mono text-sm">{t('Beste vorhergesagte Partner')}</h3>
           {partners.length === 0 ? (
-            <p className="text-sm text-muted">Keine klaren Synergien im Kartentext erkannt.</p>
+            <p className="text-sm text-muted">{t('Keine klaren Synergien im Kartentext erkannt.')}</p>
           ) : (
             <ol className="space-y-2">
               {partners.map((p) => {
@@ -238,9 +238,9 @@ export function SynergyPanel() {
                         {empiricalIds.has(p.card.id) && (
                           <span
                             className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] text-emerald-300"
-                            title="Wird laut deinen Decks auch tatsächlich zusammen gespielt"
+                            title={t('Wird laut deinen Decks auch tatsächlich zusammen gespielt')}
                           >
-                            ✓ empirisch
+                            {t('✓ empirisch')}
                           </span>
                         )}
                         <span className="ml-auto font-mono text-xs text-accent">
@@ -265,19 +265,21 @@ export function SynergyPanel() {
           )}
 
           {/* Empirische Synergie (§ 12 C): Beobachtung aus Decks, keine Vorhersage. */}
-          <h3 className="mt-5 mb-1 font-mono text-sm">Zusammen gespielt</h3>
+          <h3 className="mt-5 mb-1 font-mono text-sm">{t('Zusammen gespielt')}</h3>
           <p className="mb-2 text-xs text-muted">
-            Beobachtet in <b>{n}</b> legalen Deck{n === 1 ? '' : 's'}
-            {ingested > 0 ? ` (${ingested} aus dem Ingest + Starter + deine)` : ' (Starter + deine)'} —
-            reine Statistik, keine Vorhersage.
+            <Rich text={tn(n, 'Beobachtet in **{n}** legalen Deck', 'Beobachtet in **{n}** legalen Decks')} />{' '}
+            {ingested > 0
+              ? t('({sources} + Starter + deine)', { sources: sourcesLabel(ingestedSources) })
+              : t('(Starter + deine)')}{' '}
+            {t('— reine Statistik, keine Vorhersage.')}
           </p>
           {empirical.length === 0 ? (
             <p className="rounded-md bg-bg/60 p-2 text-xs text-muted">
-              Noch zu wenig Daten für diese Karte.{' '}
+              {t('Noch zu wenig Daten für diese Karte.')}{' '}
               {ownTotal > 0
-                ? `Du hast ${ownLegal}/${ownTotal} eigene legale Decks. `
-                : 'Bislang zählen nur die 2 Starter. '}
-              Die Statistik wächst mit jedem gespeicherten oder importierten Deck (Tab „Deck").
+                ? t('Du hast {a}/{b} eigene legale Decks.', { a: ownLegal, b: ownTotal })
+                : t('Bislang zählen nur die 2 Starter.')}{' '}
+              {t('Die Statistik wächst mit jedem gespeicherten oder importierten Deck (Tab „Deck").')}
             </p>
           ) : (
             <ol className="space-y-2">
@@ -295,18 +297,18 @@ export function SynergyPanel() {
                       </button>
                       {e.card.type === 'LEGEND' && (
                         <span className="rounded bg-white/5 px-1 py-0.5 font-mono text-[10px] text-muted">
-                          Legend
+                          {t('Legend')}
                         </span>
                       )}
                       <span
                         className="ml-auto font-mono text-xs text-accent"
-                        title="Lift: wie viel häufiger als der Zufall zusammen gespielt"
+                        title={t('Lift: wie viel häufiger als der Zufall zusammen gespielt')}
                       >
                         ×{e.lift.toFixed(1)}
                       </span>
                     </div>
                     <div className="mt-1 font-mono text-[10px] text-muted">
-                      in {e.coCount} von {n} Decks zusammen
+                      {t('in {a} von {n} Decks zusammen', { a: e.coCount, n })}
                     </div>
                   </div>
                 </li>

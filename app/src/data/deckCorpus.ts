@@ -6,14 +6,18 @@ import { rulesetV1Loaded } from '../rules/ruleset';
 import { starters } from '../domain/starters';
 import {
   buildCorpus,
+  countTrios,
   dedupeDecks,
-  legalCorpusDecks,
   mergeCorpora,
+  sumCounts,
+  toCorpusDeck,
   type Corpus,
 } from '../domain/coplay';
+import { validate } from '../rules/validate';
 import { loadIngestedCorpus, type IngestedCorpus } from './coplayCorpus';
 import type { ValidatableDeck } from '../rules/validate';
 import type { DeckDraft } from '../domain/deckDraft';
+import { t } from '../i18n';
 
 /**
  * Baut das Deck-Korpus für die empirische Synergie (PLAN.md § 12 C).
@@ -30,6 +34,10 @@ export interface CorpusInfo {
   n: number;
   /** Decks aus der Ingest-Pipeline. */
   ingested: number;
+  /** …davon je Quelle (meta / community / eigene). */
+  ingestedSources: Record<string, number>;
+  /** Legend-Trios (Ingest + Starter + eigene legale Decks) → Zahl der Decks. */
+  trios: ReadonlyMap<string, number>;
   /** Wie viele eigene Decks es insgesamt gibt. */
   ownTotal: number;
   /** Wie viele davon legal (= zählen mit). */
@@ -44,12 +52,25 @@ const starterDecks: ValidatableDeck[] = starters.map((s) => ({
   cards: Object.entries(s.cards).map(([cardId, count]) => ({ cardId, count })),
 }));
 
+/** „8 Meta + 812 Community + 3 eigene Listen" — Herkunft des Ingest-Korpus. */
+export function sourcesLabel(sources: Record<string, number>): string {
+  // `unbekannt` = altes coplay.json (ingest-v1) ohne Quellenangabe.
+  const names: Record<string, string> = { meta: 'Meta', community: 'Community', eigene: t('eigene Listen'), unbekannt: 'Ingest' };
+  const order = ['meta', 'community', 'eigene', 'unbekannt'];
+  const rank = (k: string) => (order.includes(k) ? order.indexOf(k) : order.length);
+  return Object.entries(sources)
+    .filter(([, v]) => v > 0)
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([k, v]) => `${v} ${names[k] ?? k}`)
+    .join(' + ');
+}
+
 export function useCorpus(): CorpusInfo {
   const own = useLiveQuery(() => listDecks(), [], [] as DeckDraft[]);
-  // Das Ingest-Korpus (`coplay.json`, ~155 KB) wird lazy in einem eigenen Chunk
+  // Das Ingest-Korpus (`coplay.json`, ~107 KB) wird lazy in einem eigenen Chunk
   // geladen — anfangs leer (Vorschläge laufen sofort aus Startern + eigenen Decks),
   // nach dem Laden fließt die Meta-Empirie dazu.
-  const [ingested, setIngested] = useState<IngestedCorpus>({ corpus: null, count: 0 });
+  const [ingested, setIngested] = useState<IngestedCorpus>({ corpus: null, count: 0, sources: {}, trios: new Map() });
   useEffect(() => {
     let alive = true;
     void loadIngestedCorpus().then((r) => {
@@ -61,15 +82,18 @@ export function useCorpus(): CorpusInfo {
   }, []);
 
   return useMemo(() => {
-    const starterLegal = legalCorpusDecks(starterDecks, rulesetV1Loaded, cardIndex);
-    const ownLegalDecks = legalCorpusDecks(own, rulesetV1Loaded, cardIndex);
-    const liveDecks = dedupeDecks([...starterLegal, ...ownLegalDecks]);
+    const legal = (d: ValidatableDeck) => validate(d, rulesetV1Loaded, cardIndex).ok;
+    const starterLegal = starterDecks.filter(legal);
+    const ownLegalDecks = own.filter(legal);
+    const liveDecks = dedupeDecks([...starterLegal, ...ownLegalDecks].map(toCorpusDeck));
     const live = buildCorpus(liveDecks);
     const corpus = ingested.corpus ? mergeCorpora(ingested.corpus, live) : live;
     return {
       corpus,
       n: corpus.n,
       ingested: ingested.count,
+      ingestedSources: ingested.sources,
+      trios: sumCounts(ingested.trios, countTrios([...starterLegal, ...ownLegalDecks])),
       ownTotal: own.length,
       ownLegal: ownLegalDecks.length,
     };

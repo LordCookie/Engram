@@ -9,6 +9,7 @@ import { db } from '../db/db';
 import { CardImage } from './CardImage';
 import { CardDetail } from './CardDetail';
 import type { Card, CollectionEntry, Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Mechanik-/Tag-Suche (Tab „Synergie"): Karten nach ihren Merkmalen finden
@@ -42,18 +43,17 @@ export function MechanicSearchPanel() {
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h2 className="mb-1 font-mono text-lg">Mechanik-Suche</h2>
+      <h2 className="mb-1 font-mono text-lg">{t('Mechanik-Suche')}</h2>
       <p className="mb-3 text-xs text-muted">
-        Karten nach Effekt/Tag finden (z. B. Gig-Klau, Removal, ARASAKA) — aus den
-        Synergie-Merkmalen, über alle Karten mit Bestand-Markierung.
+        {t('Karten nach Effekt/Tag finden (z. B. Gig-Klau, Removal, ARASAKA) — aus den Synergie-Merkmalen, über alle Karten mit Bestand-Markierung.')}
       </p>
       <select
         value={token}
         onChange={(e) => setToken(e.target.value)}
         className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-sm outline-none focus:border-accent"
-        aria-label="Mechanik wählen"
+        aria-label={t('Mechanik wählen')}
       >
-        <option value="">Mechanik wählen…</option>
+        <option value="">{t('Mechanik wählen…')}</option>
         {mechanics.map((m) => (
           <option key={m} value={m}>
             {prettyMechanic(m)}
@@ -64,7 +64,7 @@ export function MechanicSearchPanel() {
       {token && (
         <div className="mt-3">
           <div className="mb-1 font-mono text-xs text-muted">
-            {cards.length} Karten · {prettyMechanic(token)}
+            {t('{n} Karten · {mechanic}', { n: cards.length, mechanic: prettyMechanic(token) })}
           </div>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             {cards.map((card) => {

@@ -7,6 +7,8 @@ import {
   type ValidationResult,
   type ViolationCode,
 } from './validate';
+import { setLangSync } from '../i18n';
+import { EN } from '../i18n/en';
 
 const ruleset = rulesetV1Loaded;
 
@@ -291,6 +293,21 @@ describe('Validator — Gesamtverhalten', () => {
     );
     for (const v of res.violations) {
       expect(v.message.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('Meldungen folgen der Oberflächensprache (Codes bleiben gleich)', () => {
+    const d = deck({ cards: [{ cardId: greenRam5.id, count: 4 }] });
+    const de = validate(d, ruleset, index);
+    setLangSync('en', EN);
+    try {
+      const en = validate(d, ruleset, index);
+      expect(en.violations.map((v) => v.code)).toEqual(de.violations.map((v) => v.code));
+      const copies = en.violations.find((v) => v.code === 'MAX_COPIES');
+      expect(copies?.message).toBe(`"${greenRam5.name}": 4 copies, at most ${ruleset.maxCopiesPerCard} allowed.`);
+      expect(de.violations.find((v) => v.code === 'MAX_COPIES')?.message).toContain('Kopien');
+    } finally {
+      setLangSync('de');
     }
   });
 });

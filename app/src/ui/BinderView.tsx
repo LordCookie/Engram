@@ -9,6 +9,7 @@ import { binderPages, buildBinder, type BinderSlot } from '../domain/binder';
 import { CardDetail } from './CardDetail';
 import { CardImage } from './CardImage';
 import type { Card, CollectionEntry, Color, WantEntry } from '../domain/types';
+import { t, tk } from '../i18n';
 
 /**
  * Binder-Ansicht (virtuelle Sammelmappe): Knopf ganz unten in der Sammlung, öffnet die
@@ -18,11 +19,11 @@ import type { Card, CollectionEntry, Color, WantEntry } from '../domain/types';
  */
 
 const FILTERS: { id: Color | 'ALL'; label: string; dot?: string }[] = [
-  { id: 'ALL', label: 'Alle' },
-  { id: 'RED', label: 'Rot', dot: 'bg-card-red' },
-  { id: 'GREEN', label: 'Grün', dot: 'bg-card-green' },
-  { id: 'BLUE', label: 'Blau', dot: 'bg-card-blue' },
-  { id: 'YELLOW', label: 'Gelb', dot: 'bg-card-yellow' },
+  { id: 'ALL', label: tk('Alle') },
+  { id: 'RED', label: tk('Rot'), dot: 'bg-card-red' },
+  { id: 'GREEN', label: tk('Grün'), dot: 'bg-card-green' },
+  { id: 'BLUE', label: tk('Blau'), dot: 'bg-card-blue' },
+  { id: 'YELLOW', label: tk('Gelb'), dot: 'bg-card-yellow' },
 ];
 
 export function BinderButton() {
@@ -33,7 +34,7 @@ export function BinderButton() {
         onClick={() => setOpen(true)}
         className="w-full rounded-lg border border-white/10 bg-surface px-4 py-3 font-mono text-sm hover:border-accent"
       >
-        Binder öffnen · Sammelmappe
+        {t('Binder öffnen · Sammelmappe')}
       </button>
       {open && <BinderView onClose={() => setOpen(false)} />}
     </>
@@ -88,11 +89,11 @@ function BinderView({ onClose }: { onClose: () => void }) {
       {/* Kopf: Titel, Fortschritt, Filter, Schließen */}
       <div className="border-b border-white/10 px-3 pb-2 pt-3" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
         <div className="mx-auto flex max-w-xl items-center gap-2">
-          <h2 className="font-mono text-lg">Binder</h2>
+          <h2 className="font-mono text-lg">{t('Binder')}</h2>
           <span className="font-mono text-xs text-muted">
-            <span className="text-accent">{ownedCount}</span>/{slots.length} Karten
+            <span className="text-accent">{ownedCount}</span>/{slots.length} {t('Karten')}
           </span>
-          <button onClick={onClose} aria-label="Binder schließen" className="ml-auto rounded px-2 py-1 text-lg text-muted hover:text-text">
+          <button onClick={onClose} aria-label={t('Binder schließen')} className="ml-auto rounded px-2 py-1 text-lg text-muted hover:text-text">
             ✕
           </button>
         </div>
@@ -107,7 +108,7 @@ function BinderView({ onClose }: { onClose: () => void }) {
               }`}
             >
               {f.dot && <span className={`h-2 w-2 rounded-full ${f.dot}`} />}
-              {f.label}
+              {t(f.label)}
             </button>
           ))}
         </div>
@@ -151,18 +152,18 @@ function BinderView({ onClose }: { onClose: () => void }) {
         <button
           onClick={() => go(-1)}
           disabled={page === 0}
-          aria-label="Vorige Seite"
+          aria-label={t('Vorige Seite')}
           className="rounded-md border border-white/10 px-4 py-2 font-mono text-sm disabled:opacity-30"
         >
           ‹
         </button>
         <span className="min-w-[7rem] text-center font-mono text-sm text-muted">
-          Seite {Math.min(page, pageCount - 1) + 1} / {pageCount}
+          {t('Seite {n} / {m}', { n: Math.min(page, pageCount - 1) + 1, m: pageCount })}
         </span>
         <button
           onClick={() => go(1)}
           disabled={page >= pageCount - 1}
-          aria-label="Nächste Seite"
+          aria-label={t('Nächste Seite')}
           className="rounded-md border border-white/10 px-4 py-2 font-mono text-sm disabled:opacity-30"
         >
           ›
@@ -205,7 +206,7 @@ function Pocket({
           {slot.std + slot.alt}×
         </span>
         {slot.alt > 0 && (
-          <span className="absolute left-1 top-1 rounded bg-accent px-1 font-mono text-[10px] text-on-accent">Alt</span>
+          <span className="absolute left-1 top-1 rounded bg-accent px-1 font-mono text-[10px] text-on-accent">{t('Alt')}</span>
         )}
       </button>
     );
@@ -222,8 +223,8 @@ function Pocket({
       </button>
       <button
         onClick={onWant}
-        aria-label={`${card.name} auf die Want-Liste`}
-        title={wanted ? 'Auf der Want-Liste (antippen: +1)' : 'Auf die Want-Liste'}
+        aria-label={t('{name} auf die Want-Liste', { name: card.name })}
+        title={wanted ? t('Auf der Want-Liste (antippen: +1)') : t('Auf die Want-Liste')}
         className={`absolute right-0.5 top-0.5 rounded px-1.5 py-0.5 text-sm ${wanted ? 'text-accent' : 'text-muted/60 hover:text-accent'}`}
       >
         {wanted ? '★' : '☆'}

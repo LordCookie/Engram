@@ -3,7 +3,9 @@ import combosJson from './combos.json';
 import { cardIndex } from './catalog';
 import { curatedCombos } from './combos';
 
-const raw = (combosJson as { combos: { name: string; cards: string[]; why: string }[] }).combos;
+const raw = (
+  combosJson as { combos: { name: string; cards: string[]; why: string; nameEn?: string; whyEn?: string }[] }
+).combos;
 
 describe('kuratierte Combos', () => {
   it('referenzieren nur existierende Karten', () => {
@@ -19,6 +21,13 @@ describe('kuratierte Combos', () => {
       expect(c.cards.length, c.name).toBeGreaterThanOrEqual(2);
       expect(c.name.length).toBeGreaterThan(0);
       expect(c.why.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('haben auch Name und Erklärung auf Englisch', () => {
+    for (const c of raw) {
+      expect(c.nameEn?.length ?? 0, c.name).toBeGreaterThan(0);
+      expect(c.whyEn?.length ?? 0, c.name).toBeGreaterThan(10);
     }
   });
 

@@ -1,4 +1,5 @@
 import type { Card, CardIndex, CollectionEntry, Printing } from './types';
+import { t, tk } from '../i18n';
 
 /**
  * Sammlung als CSV (für Tabellen/Sheets und zum Weitergeben beim Tauschen).
@@ -9,7 +10,16 @@ function csvCell(s: string): string {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export const CSV_HEADER = ['Anzahl', 'Name', 'Untertitel', 'Farbe', 'Nummer', 'Typ', 'Rarität'];
+/** Spaltenköpfe (in der Oberflächensprache ausgegeben). */
+export const CSV_HEADER = [
+  tk('Anzahl'),
+  tk('Name'),
+  tk('Untertitel'),
+  tk('Farbe'),
+  tk('Nummer'),
+  tk('Typ'),
+  tk('Rarität'),
+];
 
 export function collectionToCsv(
   entries: readonly CollectionEntry[],
@@ -25,7 +35,7 @@ export function collectionToCsv(
     .filter((x): x is { c: Card; qty: number } => x !== undefined)
     .sort((a, b) => a.c.color.localeCompare(b.c.color) || a.c.name.localeCompare(b.c.name));
 
-  const lines = [CSV_HEADER.join(',')];
+  const lines = [CSV_HEADER.map((h) => t(h)).join(',')];
   for (const { c, qty } of rows) {
     lines.push(
       [

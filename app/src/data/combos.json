@@ -4,62 +4,86 @@
     {
       "name": "Value-Pair-Motor",
       "cards": ["peace-offering", "hanako-arasaka-daughter-of-the-emperor", "pepe-najarro-working-doubles"],
-      "why": "Peace Offering setzt einen Gig auf den Wert eines anderen und erzeugt so ein Value-Pair. Hanako zieht zu Rundenbeginn eine Karte je Value-Pair, Pepe verwandelt es in bereite MERC-Legends — ein Motor, der sich selbst befeuert."
+      "why": "Peace Offering setzt einen Gig auf den Wert eines anderen und erzeugt so ein Value-Pair. Hanako zieht zu Rundenbeginn eine Karte je Value-Pair, Pepe verwandelt es in bereite MERC-Legends — ein Motor, der sich selbst befeuert.",
+      "nameEn": "Value-Pair Engine",
+      "whyEn": "Peace Offering sets a Gig to the value of another, creating a value pair. Hanako draws a card per value pair at the start of the round, Pepe turns it into ready MERC Legends — an engine that fuels itself."
     },
     {
       "name": "Braindance-Maschine",
       "cards": ["judy-a-lvarez-braindance-maestro", "peace-offering", "v-streetkid"],
-      "why": "Jedes BRAINDANCE-Programm gibt mit Judy einer Unit +1 Power, und sie gräbt nebenbei nach weiteren Programs. V holt ein verbrauchtes BRAINDANCE-Programm aus dem Trash zurück, damit der Nachschub nie ausgeht."
+      "why": "Jedes BRAINDANCE-Programm gibt mit Judy einer Unit +1 Power, und sie gräbt nebenbei nach weiteren Programs. V holt ein verbrauchtes BRAINDANCE-Programm aus dem Trash zurück, damit der Nachschub nie ausgeht.",
+      "nameEn": "Braindance Machine",
+      "whyEn": "With Judy, every BRAINDANCE program gives a Unit +1 power, and she digs for more programs along the way. V brings a spent BRAINDANCE program back from the trash, so the supply never runs dry."
     },
     {
       "name": "Cyberware-Kreislauf",
       "cards": ["viktor-vektor-sit-down-and-relax", "viktor-vektor-you-might-feel-a-little-pinch", "gorilla-arms"],
-      "why": "Viktor (Sit Down) fischt günstige Gears aus dem Deck, Viktor (Pinch) spielt CYBERWARE gratis aus dem Trash. Auf einer Unit macht Gorilla Arms aus jedem Angriff einen Extra-Klau."
+      "why": "Viktor (Sit Down) fischt günstige Gears aus dem Deck, Viktor (Pinch) spielt CYBERWARE gratis aus dem Trash. Auf einer Unit macht Gorilla Arms aus jedem Angriff einen Extra-Klau.",
+      "nameEn": "Cyberware Loop",
+      "whyEn": "Viktor (Sit Down) fishes cheap Gear out of the deck, Viktor (Pinch) plays CYBERWARE for free from the trash. On a Unit, Gorilla Arms turns every attack into an extra steal."
     },
     {
       "name": "Klau-Kettenreaktion",
       "cards": ["gorilla-arms", "wraith-marauders", "v-roamer-of-the-badlands"],
-      "why": "Alle drei triggern beim Stehlen: Gorilla Arms klaut einen zusätzlichen Gig, Wraith macht eine weitere Unit bereit, V erhöht den frisch geklauten Gig — ein Angriff wird zur Kettenreaktion."
+      "why": "Alle drei triggern beim Stehlen: Gorilla Arms klaut einen zusätzlichen Gig, Wraith macht eine weitere Unit bereit, V erhöht den frisch geklauten Gig — ein Angriff wird zur Kettenreaktion.",
+      "nameEn": "Steal Chain Reaction",
+      "whyEn": "All three trigger on stealing: Gorilla Arms steals an extra Gig, Wraith readies another Unit, V raises the freshly stolen Gig — one attack becomes a chain reaction."
     },
     {
       "name": "ARASAKA-Tribal",
       "cards": ["saburo-arasaka-stubborn-patriarch", "yorinobu-arasaka-embracing-destruction", "minotaur"],
-      "why": "Saburo bufft alle ARASAKA-Units im Angriff, Yorinobu zieht beim ersten ARASAKA-Angriff jeder Runde, und Minotaur räumt als ARASAKA-Unit gegnerische Bedrohungen weg."
+      "why": "Saburo bufft alle ARASAKA-Units im Angriff, Yorinobu zieht beim ersten ARASAKA-Angriff jeder Runde, und Minotaur räumt als ARASAKA-Unit gegnerische Bedrohungen weg.",
+      "nameEn": "ARASAKA Tribal",
+      "whyEn": "Saburo buffs all attacking ARASAKA Units, Yorinobu draws on the first ARASAKA attack each round, and Minotaur, an ARASAKA Unit itself, clears enemy threats."
     },
     {
       "name": "Legenden ins Rampenlicht",
       "cards": ["tyger-s-whisper", "panam-palmer-strength-through-family", "synapse-burnout"],
-      "why": "Tyger's Whisper und Panam rufen Legends gratis ins offene Spiel — dann zahlt sich jede face-up Legend aus: Panam zieht Karten, Synapse gibt Power pro Legend im Kampf."
+      "why": "Tyger's Whisper und Panam rufen Legends gratis ins offene Spiel — dann zahlt sich jede face-up Legend aus: Panam zieht Karten, Synapse gibt Power pro Legend im Kampf.",
+      "nameEn": "Legends in the Spotlight",
+      "whyEn": "Tyger's Whisper and Panam call Legends into open play for free — then every face-up Legend pays off: Panam draws cards, Synapse gives power per Legend in combat."
     },
     {
       "name": "High-Gig-Rampe",
       "cards": ["industrial-assembly", "carnage-at-the-colosseum", "v-roamer-of-the-badlands"],
-      "why": "Industrial Assembly treibt einen Gig auf 8+. Danach wird Carnage pro 8+-Gig billiger und V zieht Karten — hohe Werte werden zur Ressource."
+      "why": "Industrial Assembly treibt einen Gig auf 8+. Danach wird Carnage pro 8+-Gig billiger und V zieht Karten — hohe Werte werden zur Ressource.",
+      "nameEn": "High-Gig Ramp",
+      "whyEn": "Industrial Assembly pushes a Gig to 8+. Afterwards Carnage gets cheaper per 8+ Gig and V draws cards — high values become a resource."
     },
     {
       "name": "Min-Gig-Kontrolle",
       "cards": ["trust-no-one", "three-mouths-one-desire", "pyramid-song"],
-      "why": "Trust No One drückt einen Gig zum niedrigsten. Three Mouths zieht dann extra Karten und Pyramid Song darf beide Effekte nehmen — kleine Werte, große Wirkung."
+      "why": "Trust No One drückt einen Gig zum niedrigsten. Three Mouths zieht dann extra Karten und Pyramid Song darf beide Effekte nehmen — kleine Werte, große Wirkung.",
+      "nameEn": "Min-Gig Control",
+      "whyEn": "Trust No One drops a Gig to the lowest value. Three Mouths then draws extra cards and Pyramid Song may take both effects — small values, big impact."
     },
     {
       "name": "Eddie-Rampe & -Sink",
       "cards": ["delamain-cab", "dying-night-v-s-pistol", "johnny-silverhand-rocking-renegade"],
-      "why": "Delamain und Dying Night machen zusätzliche Eddies bereit; Johnnys teure Fähigkeit lässt eine Unit verbrauchte Rivalen angreifen und wird mit 8+-Gigs noch günstiger — Ramp trifft Payoff."
+      "why": "Delamain und Dying Night machen zusätzliche Eddies bereit; Johnnys teure Fähigkeit lässt eine Unit verbrauchte Rivalen angreifen und wird mit 8+-Gigs noch günstiger — Ramp trifft Payoff.",
+      "nameEn": "Eddie Ramp & Sink",
+      "whyEn": "Delamain and Dying Night ready extra Eddies; Johnny's expensive ability lets a Unit attack spent rivals and gets even cheaper with 8+ Gigs — ramp meets payoff."
     },
     {
       "name": "Der Friedhof arbeitet",
       "cards": ["the-heist", "the-relic-experimental-biochip", "trauma-team-operatives"],
-      "why": "The Heist wirft Karten in den Trash und zieht Gear heraus; The Relic spielt beim Sterben eine teure Unit von dort aus, und Trauma Team wird pro Unit im Trash billiger."
+      "why": "The Heist wirft Karten in den Trash und zieht Gear heraus; The Relic spielt beim Sterben eine teure Unit von dort aus, und Trauma Team wird pro Unit im Trash billiger.",
+      "nameEn": "The Graveyard Works",
+      "whyEn": "The Heist dumps cards into the trash and pulls Gear out; The Relic plays an expensive Unit from there when it dies, and Trauma Team gets cheaper per Unit in the trash."
     },
     {
       "name": "Blocker mit Vorteil",
       "cards": ["goro-takemura-vengeful-bodyguard", "augmented-negotiators", "la-llorona-ghost-of-the-past"],
-      "why": "Goro verteilt Blocker und zieht, wenn eine Unit blockt. Augmented lässt beim Blocken Rivalen abwerfen, La Llorona erhöht dabei einen Gig — Verteidigung, die Vorteil bringt."
+      "why": "Goro verteilt Blocker und zieht, wenn eine Unit blockt. Augmented lässt beim Blocken Rivalen abwerfen, La Llorona erhöht dabei einen Gig — Verteidigung, die Vorteil bringt.",
+      "nameEn": "Blockers with Benefits",
+      "whyEn": "Goro hands out Blocker and draws when a Unit blocks. Augmented makes rivals discard on a block, La Llorona raises a Gig at the same time — defense that pays."
     },
     {
       "name": "Go-Solo-Tempo",
       "cards": ["nocturne-op55-n1", "adam-smasher-ender-of-legends", "arasaka-emergency-radioport"],
-      "why": "Nocturne verbilligt {Go Solo}, sodass Adam Smasher früh als Unit angreift und eine gegnerische Unit vernichtet; Radioport ruft eine Go-Solo-Legend gratis ins Spiel."
+      "why": "Nocturne verbilligt {Go Solo}, sodass Adam Smasher früh als Unit angreift und eine gegnerische Unit vernichtet; Radioport ruft eine Go-Solo-Legend gratis ins Spiel.",
+      "nameEn": "Go-Solo Tempo",
+      "whyEn": "Nocturne makes {Go Solo} cheaper, so Adam Smasher attacks early as a Unit and destroys an enemy Unit; Radioport calls a Go-Solo Legend into play for free."
     }
   ]
 }

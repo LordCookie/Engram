@@ -1,141 +1,90 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Capacitor } from '@capacitor/core';
-import { db, replaceCollection, replaceWants } from '../db/db';
+import { db, getBackupTimes } from '../db/db';
 import { cardIndex, printingIndex } from '../data/catalog';
-import {
-  serializeCollection,
-  parseCollection,
-  CollectionImportError,
-} from '../domain/collectionIo';
+import { CollectionImportError } from '../domain/collectionIo';
 import { collectionToCsv } from '../domain/collectionCsv';
 import type { CollectionEntry, WantEntry } from '../domain/types';
+import type { DeckDraft } from '../domain/deckDraft';
+import { t, tn } from '../i18n';
+import { backupSummary, copyBackup, exportBackup, restoreFromJson, restoreMessage, shareOrDownload, today } from './backup';
 
 /**
- * Backup: Export/Import als JSON (Sammlung + Want-Liste) gegen Datenverlust in
- * IndexedDB (PLAN.md § 5, Aufgabe 7). **Mobil-robust:** Export bevorzugt den
- * nativen Share (Android/iOS öffnen das Share-Sheet → nach Files/Drive sichern),
- * fällt auf Blob-Download zurück und bietet zusätzlich „Kopieren"/„Einfügen" über
- * die Zwischenablage — der Blob-Download alleine ist im nativen WebView unzuverlässig.
- * Import ersetzt (Restore) und fragt vorher nach.
+ * Komplett-Backup (Format v3): Sammlung, Want-Liste, Decks und Einstellungen als
+ * JSON gegen Datenverlust (Browser-Reset, Neuinstallation der App). **Mobil-robust:**
+ * Export über das native Share-Sheet (Android/iOS → Files/Drive), sonst Web-Share
+ * bzw. Download, dazu „Kopieren"/„Einfügen" über die Zwischenablage. Wiederherstellen
+ * ersetzt und fragt vorher nach; ältere Backups (v1/v2) lassen Decks und
+ * Einstellungen stehen. CSV exportiert nur die Sammlung als Tabelle.
  */
 export function CollectionIoPanel() {
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
   const wants = useLiveQuery(() => db.wants.toArray(), [], [] as WantEntry[]);
+  const decks = useLiveQuery(() => db.decks.toArray(), [], [] as DeckDraft[]);
+  const times = useLiveQuery(() => getBackupTimes(), [], null);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const empty = entries.length === 0 && wants.length === 0;
-  const fileName = () => `engram-sammlung-${new Date().toISOString().slice(0, 10)}.json`;
-  const summary = (e: number, w: number) => `${e} Einträge + ${w} Wünsche`;
-
-  /**
-   * Teilt eine Datei (native Share-Sheet bzw. Web-Share) oder lädt sie herunter.
-   * Liefert, was passiert ist — für die Rückmeldung. Der Blob-Download alleine ist
-   * im nativen WebView unzuverlässig, daher nativ die Capacitor-Plugins.
-   */
-  async function shareOrDownload(
-    content: string,
-    name: string,
-    mime: string,
-  ): Promise<'shared' | 'downloaded' | 'canceled'> {
-    if (Capacitor.isNativePlatform()) {
-      const [{ Filesystem, Directory, Encoding }, { Share }] = await Promise.all([
-        import('@capacitor/filesystem'),
-        import('@capacitor/share'),
-      ]);
-      await Filesystem.writeFile({
-        path: name,
-        data: content,
-        directory: Directory.Cache,
-        encoding: Encoding.UTF8,
-      });
-      const { uri } = await Filesystem.getUri({ path: name, directory: Directory.Cache });
-      try {
-        await Share.share({ title: 'engram', url: uri, dialogTitle: name });
-        return 'shared';
-      } catch (e) {
-        if (/cancel/i.test((e as Error)?.message ?? '')) return 'canceled';
-        throw e;
-      }
-    }
-    try {
-      const file = new File([content], name, { type: mime });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'engram' });
-        return 'shared';
-      }
-    } catch (e) {
-      if ((e as Error)?.name === 'AbortError') return 'canceled';
-      // sonst: unten weiter mit Download
-    }
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    return 'downloaded';
-  }
+  const deckCount = decks.filter((d) => d.legendIds.length > 0 || d.cards.length > 0).length;
+  const empty = entries.length === 0 && wants.length === 0 && deckCount === 0;
+  const last = times?.lastBackupAt ?? null;
+  const daysAgo = last === null ? null : Math.floor((Date.now() - last) / 86_400_000);
 
   async function doExport() {
     try {
-      const r = await shareOrDownload(serializeCollection(entries, wants), fileName(), 'application/json');
-      if (r !== 'canceled') {
-        setMsg(`${summary(entries.length, wants.length)} ${r === 'shared' ? 'gesichert (geteilt)' : 'exportiert'}.`);
+      const { result, summary } = await exportBackup();
+      if (result !== 'canceled') {
+        setMsg(result === 'shared' ? t('{what} gesichert (geteilt).', { what: summary }) : t('{what} exportiert.', { what: summary }));
       }
     } catch {
-      setMsg('Export fehlgeschlagen — „Kopieren" geht immer.');
+      setMsg(t('Export fehlgeschlagen — „Kopieren" geht immer.'));
     }
   }
 
   async function doExportCsv() {
-    const name = `engram-sammlung-${new Date().toISOString().slice(0, 10)}.csv`;
     try {
-      const r = await shareOrDownload(collectionToCsv(entries, printingIndex, cardIndex), name, 'text/csv');
+      const r = await shareOrDownload(
+        collectionToCsv(entries, printingIndex, cardIndex),
+        `engram-sammlung-${today()}.csv`,
+        'text/csv',
+      );
       if (r !== 'canceled') {
-        setMsg(`Sammlung als CSV ${r === 'shared' ? 'geteilt' : 'exportiert'} (${entries.length} Zeilen).`);
+        setMsg(
+          r === 'shared'
+            ? t('Sammlung als CSV geteilt ({n} Zeilen).', { n: entries.length })
+            : t('Sammlung als CSV exportiert ({n} Zeilen).', { n: entries.length }),
+        );
       }
     } catch {
-      setMsg('CSV-Export fehlgeschlagen.');
+      setMsg(t('CSV-Export fehlgeschlagen.'));
     }
   }
 
   async function copyJson() {
     try {
-      await navigator.clipboard.writeText(serializeCollection(entries, wants));
-      setMsg(`Backup kopiert (${summary(entries.length, wants.length)}).`);
+      setMsg(t('Backup kopiert ({what}).', { what: await copyBackup() }));
     } catch {
-      setMsg('Kopieren nicht möglich — nutze „Sichern / Teilen".');
+      setMsg(t('Kopieren nicht möglich — nutze „Sichern / Teilen".'));
     }
   }
 
   async function restore(json: string, how: string) {
-    if (
-      !empty &&
-      !window.confirm('Wiederherstellen ersetzt deine aktuelle Sammlung + Want-Liste. Fortfahren?')
-    ) {
+    if (!empty && !window.confirm(t('Wiederherstellen ersetzt deine Sammlung, Want-Liste und Decks. Fortfahren?'))) {
       return;
     }
-    const parsed = parseCollection(json);
-    await replaceCollection(parsed.entries);
-    await replaceWants(parsed.wants);
-    setMsg(`${summary(parsed.entries.length, parsed.wants.length)} ${how} (ersetzt).`);
+    setMsg(restoreMessage(await restoreFromJson(json), how));
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      await restore(await file.text(), 'aus Datei wiederhergestellt');
+      await restore(await file.text(), t('aus Datei wiederhergestellt'));
     } catch (err) {
       setMsg(
         err instanceof CollectionImportError
-          ? `Import fehlgeschlagen: ${err.message}`
-          : 'Import fehlgeschlagen.',
+          ? t('Import fehlgeschlagen: {err}', { err: err.message })
+          : t('Import fehlgeschlagen.'),
       );
     } finally {
       if (fileRef.current) fileRef.current.value = '';
@@ -146,15 +95,15 @@ export function CollectionIoPanel() {
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
-        setMsg('Zwischenablage ist leer.');
+        setMsg(t('Zwischenablage ist leer.'));
         return;
       }
-      await restore(text, 'aus Zwischenablage eingefügt');
+      await restore(text, t('aus Zwischenablage eingefügt'));
     } catch (err) {
       setMsg(
         err instanceof CollectionImportError
-          ? `Import fehlgeschlagen: ${err.message}`
-          : 'Einfügen fehlgeschlagen (Zwischenablage/Format).',
+          ? t('Import fehlgeschlagen: {err}', { err: err.message })
+          : t('Einfügen fehlgeschlagen (Zwischenablage/Format).'),
       );
     }
   }
@@ -162,45 +111,46 @@ export function CollectionIoPanel() {
   const btn = 'rounded-md border border-white/10 px-3 py-2 font-mono text-sm hover:border-accent disabled:opacity-40';
 
   return (
-    <section className="rounded-lg bg-surface p-4">
+    <section id="backup" className="scroll-mt-4 rounded-lg bg-surface p-4">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h2 className="font-mono text-lg">Backup</h2>
-        <span className="font-mono text-xs text-muted">{summary(entries.length, wants.length)}</span>
+        <h2 className="font-mono text-lg">{t('Backup')}</h2>
+        <span className="font-mono text-xs text-muted">{backupSummary({ entries, wants, decks })}</span>
       </div>
-      <p className="mb-3 text-xs text-muted">
-        Sichert Sammlung + Want-Liste als JSON (zum Wiederherstellen). Am Handy: „Sichern / Teilen"
-        legt die Datei über das Share-Menü ab (Files/Drive). „CSV" exportiert die Sammlung als
-        Tabelle (Excel/Sheets, zum Tauschen). „Kopieren"/„Einfügen" gehen über die Zwischenablage.
+      <p className="mb-2 text-xs text-muted">
+        {t(
+          'Sichert alles als JSON: Sammlung, Want-Liste, Decks und Einstellungen (Farbthema, Sprache, Vibration, Erfolge). Am Handy legt „Sichern / Teilen" die Datei über das Share-Menü ab (Files/Drive). „CSV" exportiert nur die Sammlung als Tabelle (Excel/Sheets, zum Tauschen).',
+        )}
+      </p>
+      <p className={`mb-3 font-mono text-xs ${daysAgo === null || daysAgo >= 14 ? 'text-accent' : 'text-muted'}`}>
+        {daysAgo === null
+          ? t('Noch kein Backup auf diesem Gerät.')
+          : daysAgo === 0
+            ? t('Letztes Backup: heute.')
+            : tn(daysAgo, 'Letztes Backup: vor {n} Tag.', 'Letztes Backup: vor {n} Tagen.')}
       </p>
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-24 shrink-0 font-mono text-xs text-muted">Sichern</span>
+          <span className="w-24 shrink-0 font-mono text-xs text-muted">{t('Sichern')}</span>
           <button onClick={() => void doExport()} disabled={empty} className={btn}>
-            Sichern / Teilen
+            {t('Sichern / Teilen')}
           </button>
           <button onClick={() => void copyJson()} disabled={empty} className={btn}>
-            Kopieren
+            {t('Kopieren')}
           </button>
           <button onClick={() => void doExportCsv()} disabled={entries.length === 0} className={btn}>
             CSV
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-24 shrink-0 font-mono text-xs text-muted">Wiederherstellen</span>
+          <span className="w-24 shrink-0 font-mono text-xs text-muted">{t('Wiederherstellen')}</span>
           <button onClick={() => fileRef.current?.click()} className={btn}>
-            Aus Datei
+            {t('Aus Datei')}
           </button>
           <button onClick={() => void pasteRestore()} className={btn}>
-            Aus Zwischenablage
+            {t('Aus Zwischenablage')}
           </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            onChange={onFile}
-            className="hidden"
-          />
+          <input ref={fileRef} type="file" accept="application/json,.json" onChange={onFile} className="hidden" />
         </div>
       </div>
 

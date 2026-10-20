@@ -40,6 +40,7 @@ import { suggestAdditions, deckSynergyStats } from '../domain/deckSynergy';
 import { useCorpus } from '../data/deckCorpus';
 import type { ParsedDeck } from '../domain/deckText';
 import type { Card, CardType, Color } from '../domain/types';
+import { t, tn } from '../i18n';
 
 /**
  * Deckeditor mit Live-Anzeige + Sammlungsmodus (PLAN.md § 5, Aufgabe 2/3).
@@ -98,12 +99,12 @@ export function DeckEditor() {
   const update = (fn: (d: DeckDraft) => DeckDraft) => void saveDeck(fn(draft));
 
   async function duplicateDeck() {
-    const copy = await createDeck(ruleset.version, `${draft.name} (Kopie)`);
+    const copy = await createDeck(ruleset.version, t('{name} (Kopie)', { name: draft.name }));
     await saveDeck({ ...draft, id: copy.id, name: copy.name });
   }
 
   async function importParsed(parsed: ParsedDeck) {
-    const created = await createDeck(ruleset.version, parsed.name || 'Importiertes Deck');
+    const created = await createDeck(ruleset.version, parsed.name || t('Importiertes Deck'));
     await saveDeck({ ...created, legendIds: parsed.legendIds, cards: parsed.cards });
   }
 
@@ -212,7 +213,7 @@ export function DeckEditor() {
   async function missingToWants() {
     if (missing.cards.length === 0) return;
     await wantAtLeast(missing.cards.map((m) => ({ cardId: m.card.id, count: m.need - m.have })));
-    setWantMsg(`${missing.cards.length} Karten auf die Want-Liste`);
+    setWantMsg(t('{n} Karten auf die Want-Liste', { n: missing.cards.length }));
     window.setTimeout(() => setWantMsg(null), 2500);
   }
 
@@ -223,19 +224,19 @@ export function DeckEditor() {
     const gears = stats.typeCounts.GEAR ?? 0;
     if (units === 0) {
       advice.push(
-        'Keine Units im Deck — Units greifen an und stehlen Gigs (die Siegbedingung). Ohne Units kannst du nicht gewinnen.',
+        t('Keine Units im Deck — Units greifen an und stehlen Gigs (die Siegbedingung). Ohne Units kannst du nicht gewinnen.'),
       );
     } else if (units < 12) {
-      advice.push(`Nur ${units} Units — die meisten Decks wollen deutlich mehr, um Druck zu machen.`);
+      advice.push(t('Nur {n} Units — die meisten Decks wollen deutlich mehr, um Druck zu machen.', { n: units }));
     }
     if (gears > 0 && units === 0) {
-      advice.push('Gear lässt sich nur an Units/Legends ausrüsten — ohne Units bleibt es liegen.');
+      advice.push(t('Gear lässt sich nur an Units/Legends ausrüsten — ohne Units bleibt es liegen.'));
     }
     const unusedColors = stats.byColor
       .filter((c) => c.cap > 0 && c.cardCount === 0)
       .map((c) => c.color);
     if (unusedColors.length > 0) {
-      advice.push(`RAM in ${unusedColors.join('/')} ungenutzt — keine Karten dieser Farbe(n) im Deck.`);
+      advice.push(t('RAM in {colors} ungenutzt — keine Karten dieser Farbe(n) im Deck.', { colors: unusedColors.join('/') }));
     }
   }
 
@@ -253,14 +254,14 @@ export function DeckEditor() {
       {/* Kopf: Deck-Verwaltung */}
       <div className="rounded-lg bg-surface p-4">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-mono text-lg">Deckeditor</h2>
+          <h2 className="font-mono text-lg">{t('Deckeditor')}</h2>
           <label className="flex items-center gap-1.5 text-xs text-muted">
             <input
               type="checkbox"
               checked={collectionMode}
               onChange={(e) => setCollectionMode(e.target.checked)}
             />
-            nur was ich besitze
+            {t('nur was ich besitze')}
           </label>
         </div>
 
@@ -289,40 +290,40 @@ export function DeckEditor() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur();
             }}
-            placeholder="Deckname"
-            aria-label="Deckname"
+            placeholder={t('Deckname')}
+            aria-label={t('Deckname')}
             className="min-w-[10rem] flex-1 rounded-md border border-white/10 bg-bg px-2 py-1.5 font-mono text-sm outline-none focus:border-accent"
           />
           <button
             onClick={() => void createDeck(ruleset.version)}
             className="rounded border border-white/10 px-2 py-1.5 font-mono text-xs hover:border-accent"
           >
-            + Neu
+            {t('+ Neu')}
           </button>
           <button
             onClick={() => void duplicateDeck()}
             className="rounded border border-white/10 px-2 py-1.5 font-mono text-xs hover:border-accent"
           >
-            Duplizieren
+            {t('Duplizieren')}
           </button>
           <button
             onClick={() => void deleteDeck(draft.id, ruleset.version)}
             className="rounded border border-white/10 px-2 py-1.5 font-mono text-xs text-muted hover:border-card-red hover:text-card-red"
           >
-            Löschen
+            {t('Löschen')}
           </button>
           <button
             onClick={() => update((d) => emptyDraft(ruleset.version, d.id, d.name))}
             className="rounded border border-white/10 px-2 py-1.5 font-mono text-xs hover:border-accent"
           >
-            Leeren
+            {t('Leeren')}
           </button>
         </div>
 
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Karte hinzufügen (Name oder Nummer)…"
+          placeholder={t('Karte hinzufügen (Name oder Nummer)…')}
           className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-text outline-none focus:border-accent"
         />
 
@@ -332,9 +333,9 @@ export function DeckEditor() {
             value={filterColor}
             onChange={(e) => setFilterColor(e.target.value as Color | 'ALL')}
             className="rounded border border-white/10 bg-bg px-2 py-1 outline-none focus:border-accent"
-            aria-label="Farbe filtern"
+            aria-label={t('Farbe filtern')}
           >
-            <option value="ALL">Farbe: alle</option>
+            <option value="ALL">{t('Farbe: alle')}</option>
             {ruleset.colors.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -345,9 +346,9 @@ export function DeckEditor() {
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as CardType | 'ALL')}
             className="rounded border border-white/10 bg-bg px-2 py-1 outline-none focus:border-accent"
-            aria-label="Typ filtern"
+            aria-label={t('Typ filtern')}
           >
-            <option value="ALL">Typ: alle</option>
+            <option value="ALL">{t('Typ: alle')}</option>
             {(['LEGEND', ...typeOrder] as CardType[]).map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -360,7 +361,7 @@ export function DeckEditor() {
               checked={onlyLegal}
               onChange={(e) => setOnlyLegal(e.target.checked)}
             />
-            nur legal spielbar
+            {t('nur legal spielbar')}
           </label>
           {anyFilter && (
             <button
@@ -372,7 +373,7 @@ export function DeckEditor() {
               }}
               className="text-muted underline decoration-dotted hover:text-accent"
             >
-              Filter zurücksetzen
+              {t('Filter zurücksetzen')}
             </button>
           )}
         </div>
@@ -380,7 +381,7 @@ export function DeckEditor() {
         {(query || anyFilter) && (
           <ul className="mt-2 max-h-64 divide-y divide-white/5 overflow-auto rounded-md border border-white/5">
             {results.length === 0 && (
-              <li className="px-3 py-2 text-sm text-muted">Keine Treffer.</li>
+              <li className="px-3 py-2 text-sm text-muted">{t('Keine Treffer.')}</li>
             )}
             {results.map((card) => (
               <li
@@ -395,7 +396,7 @@ export function DeckEditor() {
                 <span className="ml-auto font-mono text-xs text-muted">
                   {card.type === 'LEGEND' ? 'LEGEND' : card.type}
                   {typeof card.ram === 'number' ? ` · RAM ${card.ram}` : ''}
-                  {(owned.get(card.id) ?? 0) > 0 ? ` · ${owned.get(card.id)}× im Besitz` : ''}
+                  {(owned.get(card.id) ?? 0) > 0 ? t(' · {n}× im Besitz', { n: owned.get(card.id) ?? 0 }) : ''}
                 </span>
               </li>
             ))}
@@ -406,10 +407,10 @@ export function DeckEditor() {
       {/* Legends */}
       <div className="rounded-lg bg-surface p-4">
         <h3 className="mb-2 font-mono text-sm">
-          Legends <span className="text-muted">({legends.length}/{ruleset.legendCount})</span>
+          {t('Legends')} <span className="text-muted">({legends.length}/{ruleset.legendCount})</span>
         </h3>
         {legends.length === 0 ? (
-          <p className="text-sm text-muted">Noch keine Legends gewählt.</p>
+          <p className="text-sm text-muted">{t('Noch keine Legends gewählt.')}</p>
         ) : (
           <ul className="space-y-1">
             {legends.map((l) => (
@@ -417,7 +418,7 @@ export function DeckEditor() {
                 <span className={`h-2 w-2 rounded-full ${colorDot[l.color]}`} />
                 {l.name} <span className="text-muted">{l.subtitle}</span>
                 <span className="text-xs text-muted">
-                  {typeof l.ram === 'number' ? `RAM ${l.ram}` : 'kein RAM'}
+                  {typeof l.ram === 'number' ? `RAM ${l.ram}` : t('kein RAM')}
                 </span>
                 <button
                   onClick={() => update((d) => removeLegend(d, l.id))}
@@ -434,11 +435,11 @@ export function DeckEditor() {
       {/* Synergie beim Bauen: Bewertung + Vorschläge (§ 12) */}
       <div className="rounded-lg bg-surface p-4">
         <div className="mb-2 flex items-baseline justify-between">
-          <h3 className="font-mono text-sm">Synergie</h3>
+          <h3 className="font-mono text-sm">{t('Synergie')}</h3>
           {hasFeatures && synStats.cardCount > 0 && (
-            <span className="font-mono text-xs" title="Wie viele Deckkarten mit deinen Legends synergieren · Ø = Schnitt pro Karte">
+            <span className="font-mono text-xs" title={t('Wie viele Deckkarten mit deinen Legends synergieren · Ø = Schnitt pro Karte')}>
               <span className={RATING(synStats.avg).cls}>
-                {synStats.synergyCount}/{synStats.cardCount} Karten
+                {synStats.synergyCount}/{synStats.cardCount} {t('Karten')}
               </span>
               <span className="text-muted"> · Ø {synStats.avg.toFixed(1)}</span>
             </span>
@@ -448,20 +449,22 @@ export function DeckEditor() {
           <SynergyInfo />
         </div>
         {!hasFeatures ? (
-          <p className="text-xs text-muted">Keine Synergie-Daten geladen.</p>
+          <p className="text-xs text-muted">{t('Keine Synergie-Daten geladen.')}</p>
         ) : draft.legendIds.length === 0 ? (
           <p className="text-sm text-muted">
-            Wähle Legends — dann schlage ich hier passende, RAM-legale Karten vor.
+            {t('Wähle Legends — dann schlage ich hier passende, RAM-legale Karten vor.')}
           </p>
         ) : suggestions.length === 0 ? (
           <p className="text-sm text-muted">
-            Keine klaren Vorschläge{collectionMode ? ' aus deinem Bestand' : ''}.
+            {collectionMode ? t('Keine klaren Vorschläge aus deinem Bestand.') : t('Keine klaren Vorschläge.')}
           </p>
         ) : (
           <>
             <p className="mb-2 text-xs text-muted">
-              Passt zu deinen Legends{collectionMode ? ' (nur Bestand)' : ''} — zum Einbauen tippen
-              {ingested > 0 ? '; ✓ Meta = laut echten Meta-Decks zusammen gespielt' : ''}:
+              {collectionMode
+                ? t('Passt zu deinen Legends (nur Bestand) — zum Einbauen tippen')
+                : t('Passt zu deinen Legends — zum Einbauen tippen')}
+              {ingested > 0 ? t('; ✓ N Decks = in echten Decks (Meta + Community) mit diesen Legends gespielt') : ''}:
             </p>
             <ul className="space-y-1">
               {suggestions.map((s) => {
@@ -472,7 +475,7 @@ export function DeckEditor() {
                     <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[s.card.color]}`} />
                     <button
                       onClick={() => update((d) => incCard(d, s.card.id, 1))}
-                      title="Ins Deck aufnehmen (+1)"
+                      title={t('Ins Deck aufnehmen (+1)')}
                       className="rounded bg-accent/20 px-1.5 text-accent hover:bg-accent/40"
                     >
                       +
@@ -491,9 +494,9 @@ export function DeckEditor() {
                     {s.empirical ? (
                       <span
                         className="rounded bg-card-green/15 px-1 py-0.5 text-[10px] text-card-green"
-                        title={`Laut ${s.empirical} Deck(s) im Korpus mit deinen Legends zusammen gespielt`}
+                        title={t('Laut {n} Deck(s) im Korpus mit deinen Legends zusammen gespielt', { n: s.empirical })}
                       >
-                        ✓ Meta {s.empirical}
+                        {tn(s.empirical, '✓ {n} Deck', '✓ {n} Decks')}
                       </span>
                     ) : null}
                     <span className="ml-auto text-xs text-accent">{s.score.toFixed(1)}</span>
@@ -504,10 +507,10 @@ export function DeckEditor() {
             {stats.deckSize < ruleset.deckMin && (
               <button
                 onClick={fillToMin}
-                title="Deck mit den besten Vorschlägen auf die Mindestgröße auffüllen"
+                title={t('Deck mit den besten Vorschlägen auf die Mindestgröße auffüllen')}
                 className="mt-3 rounded-md border border-accent/40 px-3 py-1.5 font-mono text-xs text-accent hover:bg-accent/10"
               >
-                Auf {ruleset.deckMin} auffüllen ({stats.deckSize}/{ruleset.deckMin})
+                {t('Auf {min} auffüllen ({n}/{min})', { min: ruleset.deckMin, n: stats.deckSize })}
               </button>
             )}
           </>
@@ -517,9 +520,9 @@ export function DeckEditor() {
       {/* Swap-Analyse */}
       {draft.legendIds.length === ruleset.legendCount && swaps.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
-          <h3 className="mb-1 font-mono text-sm">Swap-Analyse</h3>
+          <h3 className="mb-1 font-mono text-sm">{t('Swap-Analyse')}</h3>
           <p className="mb-3 text-xs text-muted">
-            Eine Legend tauschen ⇒ freigeschaltete / verlorene Karten aus deinem Bestand.
+            {t('Eine Legend tauschen ⇒ freigeschaltete / verlorene Karten aus deinem Bestand.')}
           </p>
           <ul className="space-y-2">
             {swaps.slice(0, 5).map((s, i) => (
@@ -538,9 +541,9 @@ export function DeckEditor() {
                   </span>
                 </div>
                 <div className="mt-1 text-xs">
-                  <span className="text-card-green">+{s.unlocked.length}</span> frei
+                  <span className="text-card-green">+{s.unlocked.length}</span> {t('frei')}
                   {' · '}
-                  <span className="text-card-red">−{s.lost.length}</span> verloren
+                  <span className="text-card-red">−{s.lost.length}</span> {t('verloren')}
                   {s.unlocked.length > 0 && (
                     <span className="text-muted">
                       {' · '}
@@ -558,9 +561,9 @@ export function DeckEditor() {
       {/* Live-Statistiken */}
       <div className="rounded-lg bg-surface p-4">
         <div className="mb-3 flex items-baseline justify-between">
-          <h3 className="font-mono text-sm">Statistik</h3>
+          <h3 className="font-mono text-sm">{t('Statistik')}</h3>
           <span className={`font-mono text-sm ${sizeOk ? 'text-card-green' : 'text-card-red'}`}>
-            Deck {stats.deckSize} / {ruleset.deckMin}–{ruleset.deckMax}
+            {t('Deck')} {stats.deckSize} / {ruleset.deckMin}–{ruleset.deckMax}
           </span>
         </div>
 
@@ -572,10 +575,10 @@ export function DeckEditor() {
               <div key={c.color} className="rounded bg-bg/60 p-2 font-mono text-xs">
                 <span className={colorText[c.color]}>{c.color}</span>
                 <div className="text-muted">
-                  Cap {c.cap} · {c.cardCount} Karten
+                  {t('Cap')} {c.cap} · {c.cardCount} {t('Karten')}
                 </div>
                 <div className={over ? 'text-card-red' : 'text-muted'}>
-                  max RAM {c.maxRam}
+                  {t('max RAM')} {c.maxRam}
                   {over ? ' ⚠' : ''}
                 </div>
               </div>
@@ -586,7 +589,7 @@ export function DeckEditor() {
         {/* Cost-Kurve: Balken als direkte Kinder einer fix hohen Zeile, damit die
             Prozent-Höhe auflöst; Achsenlabels in einer eigenen Zeile darunter. */}
         <div className="mb-3">
-          <div className="mb-1 font-mono text-xs text-muted">Eddie-Kurve (Cost)</div>
+          <div className="mb-1 font-mono text-xs text-muted">{t('Eddie-Kurve (Cost)')}</div>
           <div className="flex items-end gap-1" style={{ height: 60 }}>
             {stats.costCurve.map((b) => (
               <div
@@ -620,7 +623,7 @@ export function DeckEditor() {
         {/* Rarität-Budget: teure Raritäten (Rare+) im Akzent = schwerer zu beschaffen. */}
         {rarityBudget.length > 0 && (
           <div className="mt-3 border-t border-white/5 pt-3">
-            <div className="mb-1 font-mono text-xs text-muted">Rarität-Budget (Kopien)</div>
+            <div className="mb-1 font-mono text-xs text-muted">{t('Rarität-Budget (Kopien)')}</div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs">
               {rarityBudget.map((r) => (
                 <span key={r.rarity} className={isCostlyRarity(r.rarity) ? 'text-accent' : 'text-muted'}>
@@ -641,12 +644,12 @@ export function DeckEditor() {
             return (
               <div className="mt-3 border-t border-white/5 pt-3">
                 <div className="mb-1 font-mono text-xs text-muted">
-                  Zieh-Chance (≥1) · Deck {stats.deckSize}
+                  {t('Zieh-Chance (≥1) · Deck')} {stats.deckSize}
                 </div>
                 <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-0.5 font-mono text-xs">
-                  <span className="text-muted">Kopien</span>
-                  <span className="text-muted">Starthand ({hand})</span>
-                  <span className="text-muted">Zug 3 ({turn3})</span>
+                  <span className="text-muted">{t('Kopien')}</span>
+                  <span className="text-muted">{t('Starthand ({n})', { n: hand })}</span>
+                  <span className="text-muted">{t('Zug 3 ({n})', { n: turn3 })}</span>
                   {[1, 2, 3].map((c) => (
                     <Fragment key={c}>
                       <span className="text-accent">{c}×</span>
@@ -663,11 +666,11 @@ export function DeckEditor() {
       {/* Validierung */}
       <div className="rounded-lg bg-surface p-4">
         <h3 className="mb-2 font-mono text-sm">
-          Validierung{' '}
+          {t('Validierung')}{' '}
           {validation.ok ? (
-            <span className="text-card-green">✓ legal</span>
+            <span className="text-card-green">{t('✓ legal')}</span>
           ) : (
-            <span className="text-card-red">{validation.violations.length} Problem(e)</span>
+            <span className="text-card-red">{t('{n} Problem(e)', { n: validation.violations.length })}</span>
           )}
         </h3>
         {!validation.ok && (
@@ -683,7 +686,7 @@ export function DeckEditor() {
       {advice.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
           <h3 className="mb-2 font-mono text-sm">
-            Empfehlungen <span className="text-card-red">{advice.length}</span>
+            {t('Empfehlungen')} <span className="text-card-red">{advice.length}</span>
           </h3>
           <ul className="space-y-1 text-sm text-muted">
             {advice.map((a, i) => (
@@ -695,9 +698,9 @@ export function DeckEditor() {
 
       {/* Deckliste */}
       <div className="rounded-lg bg-surface p-4">
-        <h3 className="mb-2 font-mono text-sm">Deck</h3>
+        <h3 className="mb-2 font-mono text-sm">{t('Deck')}</h3>
         {deckCards.length === 0 ? (
-          <p className="text-sm text-muted">Leer. Suche oben Karten und füge sie hinzu.</p>
+          <p className="text-sm text-muted">{t('Leer. Suche oben Karten und füge sie hinzu.')}</p>
         ) : (
           <ul className="space-y-1">
             {deckCards.map(({ card, count }) => {
@@ -732,13 +735,14 @@ export function DeckEditor() {
                   <span className="ml-auto flex items-center gap-2">
                     {collectionMode && (
                       <span className={`text-xs ${missing ? 'text-card-red' : 'text-muted'}`}>
-                        {count}/{have} im Besitz{missing ? ' — fehlt' : ''}
+                        {count}/{have} {t('im Besitz')}
+                        {missing ? t(' — fehlt') : ''}
                       </span>
                     )}
                     <button
                       onClick={() => update((d) => setCard(d, card.id, 0))}
-                      title="Karte ganz aus dem Deck entfernen"
-                      aria-label={`${card.name} aus dem Deck entfernen`}
+                      title={t('Karte ganz aus dem Deck entfernen')}
+                      aria-label={t('{name} aus dem Deck entfernen', { name: card.name })}
                       className="text-muted hover:text-card-red"
                     >
                       ✕
@@ -755,21 +759,20 @@ export function DeckEditor() {
       {missing.cards.length > 0 && (
         <div className="rounded-lg bg-surface p-4">
           <div className="mb-2 flex items-baseline justify-between gap-2">
-            <h3 className="font-mono text-sm">Fehlende Karten</h3>
+            <h3 className="font-mono text-sm">{t('Fehlende Karten')}</h3>
             <div className="flex items-baseline gap-3">
               <button
                 onClick={() => void missingToWants()}
-                title="Alle fehlenden Karten auf die Want-Liste setzen"
+                title={t('Alle fehlenden Karten auf die Want-Liste setzen')}
                 className="rounded border border-white/10 px-2 py-0.5 font-mono text-xs text-accent hover:border-accent"
               >
-                ☆ → Want-Liste
+                {t('☆ → Want-Liste')}
               </button>
-              <span className="font-mono text-xs text-card-red">{missing.totalMissing} fehlen</span>
+              <span className="font-mono text-xs text-card-red">{t('{n} fehlen', { n: missing.totalMissing })}</span>
             </div>
           </div>
           <p className="mb-2 text-xs text-muted">
-            Diese Karten brauchst du für das Deck noch — Anzahl im Deck vs. Bestand.
-            Legends stehen oben.
+            {t('Diese Karten brauchst du für das Deck noch — Anzahl im Deck vs. Bestand. Legends stehen oben.')}
           </p>
           {wantMsg && <p className="mb-2 text-xs text-card-green">✓ {wantMsg}</p>}
           <ul className="space-y-1">
@@ -785,7 +788,7 @@ export function DeckEditor() {
                 </button>
                 {isLegend && (
                   <span className="shrink-0 rounded bg-accent/15 px-1 text-[10px] uppercase tracking-wide text-accent">
-                    Legend
+                    {t('Legend')}
                   </span>
                 )}
                 <span className="ml-auto shrink-0 text-xs text-muted">

@@ -11,6 +11,7 @@ import { featureDB, hasFeatures } from '../data/features';
 import { useCorpus } from '../data/deckCorpus';
 import { db } from '../db/db';
 import type { CollectionEntry, Color } from '../domain/types';
+import { t, tn } from '../i18n';
 
 /**
  * Legend-Solver auf dem echten Bestand (PLAN.md § 5, Aufgabe 4). Bewertung
@@ -53,48 +54,48 @@ export function SolverPanel() {
   }, [entries, weight, blend, effectiveSource, corpus]);
 
   const sourceLabel =
-    effectiveSource === 'empirical' ? 'Co-Play' : effectiveSource === 'combined' ? 'Kombi' : 'Synergie';
+    effectiveSource === 'empirical' ? 'Co-Play' : effectiveSource === 'combined' ? t('Kombi') : t('Synergie');
   const usesCorpus = effectiveSource === 'empirical' || effectiveSource === 'combined';
 
   return (
     <section className="rounded-lg bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-mono text-lg">Legend-Solver</h2>
+        <h2 className="font-mono text-lg">{t('Legend-Solver')}</h2>
         <div className="flex flex-wrap items-center gap-4">
           {/* Synergie-Quelle: Vorhersage (Kartentext) ↔ Empirisch (echte Decks) */}
           <div className="flex overflow-hidden rounded-md border border-white/10 font-mono text-xs">
             <button
               onClick={() => setSource('predicted')}
               disabled={!hasFeatures}
-              title="Vorhergesagt aus dem Kartentext"
+              title={t('Vorhergesagt aus dem Kartentext')}
               className={`px-2 py-1 disabled:opacity-40 ${
                 effectiveSource === 'predicted' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
-              Vorhersage
+              {t('Vorhersage')}
             </button>
             <button
               onClick={() => setSource('empirical')}
-              title="Beobachtet aus echten Decks"
+              title={t('Beobachtet aus echten Decks')}
               className={`border-l border-white/10 px-2 py-1 ${
                 effectiveSource === 'empirical' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
-              Empirisch
+              {t('Empirisch')}
             </button>
             <button
               onClick={() => setSource('combined')}
-              title="Vorhersage + Empirisch, 50/50 normalisiert"
+              title={t('Vorhersage + Empirisch, 50/50 normalisiert')}
               className={`border-l border-white/10 px-2 py-1 ${
                 effectiveSource === 'combined' ? 'bg-accent text-on-accent' : 'text-muted hover:bg-white/5'
               }`}
             >
-              Kombiniert
+              {t('Kombiniert')}
             </button>
           </div>
           {/* Gewicht Menge ↔ Synergie/Co-Play */}
           <div className="flex items-center gap-2 font-mono text-xs text-muted">
-            <span>Menge</span>
+            <span>{t('Menge')}</span>
             <input
               type="range"
               min={0}
@@ -102,7 +103,7 @@ export function SolverPanel() {
               step={0.1}
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
-              aria-label="Gewichtung Menge bis Synergie"
+              aria-label={t('Gewichtung Menge bis Synergie')}
               className="w-28 accent-accent"
             />
             <span>{sourceLabel}</span>
@@ -113,7 +114,7 @@ export function SolverPanel() {
       {/* Blend-Regler nur im Kombi-Modus: Vorhersage ↔ Empirisch */}
       {effectiveSource === 'combined' && (
         <div className="mb-2 flex items-center justify-end gap-2 font-mono text-xs text-muted">
-          <span>Vorhersage</span>
+          <span>{t('Vorhersage')}</span>
           <input
             type="range"
             min={0}
@@ -121,10 +122,10 @@ export function SolverPanel() {
             step={0.05}
             value={1 - blend}
             onChange={(e) => setBlend(1 - Number(e.target.value))}
-            aria-label="Mischung Vorhersage bis Empirisch"
+            aria-label={t('Mischung Vorhersage bis Empirisch')}
             className="w-32 accent-accent"
           />
-          <span>Empirisch</span>
+          <span>{t('Empirisch')}</span>
           <span className="ml-1 text-accent">
             {Math.round(blend * 100)}/{Math.round((1 - blend) * 100)}
           </span>
@@ -133,53 +134,54 @@ export function SolverPanel() {
 
       {solution.legendCount < 3 ? (
         <p className="text-sm text-muted">
-          Du besitzt {solution.legendCount} Legend
-          {solution.legendCount === 1 ? '' : 's'}. Ab 3 verschiedenen Legends
-          schlage ich dir hier die Triples vor, die deinen Bestand maximal
-          ausschöpfen.
+          {tn(
+            solution.legendCount,
+            'Du besitzt {n} Legend. Ab 3 verschiedenen Legends schlage ich dir hier die Triples vor, die deinen Bestand maximal ausschöpfen.',
+            'Du besitzt {n} Legends. Ab 3 verschiedenen Legends schlage ich dir hier die Triples vor, die deinen Bestand maximal ausschöpfen.',
+          )}
         </p>
       ) : (
         <>
           <p className="mb-3 text-sm text-muted">
-            Beste Triples aus deinem Bestand ({solution.combinationCount} Kombinationen)
-            — sortiert nach{' '}
+            {t('Beste Triples aus deinem Bestand ({n} Kombinationen) — sortiert nach', { n: solution.combinationCount })}{' '}
             {weight === 0
-              ? 'freigeschalteter Kartenmenge'
-              : `Menge + ${sourceLabel} (Gewicht ${weight.toFixed(1)})`}
+              ? t('freigeschalteter Kartenmenge')
+              : t('Menge + {source} (Gewicht {w})', { source: sourceLabel, w: weight.toFixed(1) })}
             {weight > 0 &&
               effectiveSource === 'combined' &&
-              ` — Vorhersage + Empirisch, ${Math.round(blend * 100)}/${Math.round(
-                (1 - blend) * 100,
-              )} normalisiert`}
+              t(' — Vorhersage + Empirisch, {a}/{b} normalisiert', {
+                a: Math.round(blend * 100),
+                b: Math.round((1 - blend) * 100),
+              })}
             .
             {usesCorpus && weight > 0 && (
               <>
                 {' '}
                 <span className="text-muted">
-                  Basis: {corpusN} legale Deck{corpusN === 1 ? '' : 's'}
-                  {corpusN <= 2 ? ' (nur Starter — wächst mit deinen Decks)' : ''}.
+                  {tn(corpusN, 'Basis: {n} legales Deck', 'Basis: {n} legale Decks')}
+                  {corpusN <= 2 ? t(' (nur Starter — wächst mit deinen Decks)') : ''}.
                 </span>
               </>
             )}
           </p>
           <ol className="space-y-3">
-            {solution.triples.map((t, i) => (
-              <li key={t.legendIds.join(',')} className="rounded-md bg-bg/60 p-3">
+            {solution.triples.map((tr, i) => (
+              <li key={tr.legendIds.join(',')} className="rounded-md bg-bg/60 p-3">
                 <div className="flex items-baseline justify-between">
                   <span className="font-mono">
                     <span className="text-muted">#{i + 1}</span>{' '}
-                    {t.legends.map((l) => l.name).join(' · ')}
+                    {tr.legends.map((l) => l.name).join(' · ')}
                   </span>
                   <span className="font-mono text-accent">
-                    {t.distinctPlayable} Karten · Score {Math.round(t.score)}
+                    {t('{n} Karten · Score {s}', { n: tr.distinctPlayable, s: Math.round(tr.score) })}
                   </span>
                 </div>
                 <div className="mt-2 flex gap-4 font-mono text-sm">
-                  {(Object.keys(t.caps) as Color[])
-                    .filter((c) => t.caps[c] > 0)
+                  {(Object.keys(tr.caps) as Color[])
+                    .filter((c) => tr.caps[c] > 0)
                     .map((c) => (
                       <span key={c} className={colorClass[c]}>
-                        {c} {t.caps[c]}
+                        {c} {tr.caps[c]}
                       </span>
                     ))}
                 </div>

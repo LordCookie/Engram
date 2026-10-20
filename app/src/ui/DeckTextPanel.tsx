@@ -4,6 +4,7 @@ import { deckToText, parseDeckText, type ParsedDeck } from '../domain/deckText';
 import { decodeDeckQr } from '../domain/deckQr';
 import type { DeckDraft } from '../domain/deckDraft';
 import { DeckQrDialog, QrScanOverlay } from './DeckQr';
+import { t } from '../i18n';
 
 /**
  * Deck teilen: per QR-Code (Gerät zu Gerät, offline) oder als Text-Export/Import
@@ -39,15 +40,15 @@ export function DeckTextPanel({
     await onImport(parsed);
     const n = parsed.cards.reduce((s, c) => s + c.count, 0);
     setMsg(
-      `Importiert: ${parsed.legendIds.length} Legends, ${n} Karten${
-        parsed.unresolved.length ? ` · ${parsed.unresolved.length} Zeilen nicht erkannt` : ''
-      }.`,
+      t('Importiert: {l} Legends, {n} Karten', { l: parsed.legendIds.length, n }) +
+        (parsed.unresolved.length ? t(' · {n} Zeilen nicht erkannt', { n: parsed.unresolved.length }) : '') +
+        '.',
     );
   }
 
-  async function doImport(t: string) {
-    if (!t.trim()) return;
-    await importParsed(parseDeckText(t, catalog, cardIndex));
+  async function doImport(txt: string) {
+    if (!txt.trim()) return;
+    await importParsed(parseDeckText(txt, catalog, cardIndex));
     setPaste('');
   }
 
@@ -66,27 +67,27 @@ export function DeckTextPanel({
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h3 className="mb-2 font-mono text-sm">Deck teilen</h3>
+      <h3 className="mb-2 font-mono text-sm">{t('Deck teilen')}</h3>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           onClick={() => setShowQr(true)}
           className="rounded bg-accent px-3 py-1.5 font-mono text-xs text-on-accent"
         >
-          Als QR-Code zeigen
+          {t('Als QR-Code zeigen')}
         </button>
         <button
           onClick={() => setScanQr(true)}
           className="rounded border border-white/10 px-3 py-1.5 font-mono text-xs hover:border-accent"
         >
-          QR-Code scannen
+          {t('QR-Code scannen')}
         </button>
-        <span className="text-xs text-muted">Deck von Handy zu Handy — ohne Internet.</span>
+        <span className="text-xs text-muted">{t('Deck von Handy zu Handy — ohne Internet.')}</span>
       </div>
       {showQr && <DeckQrDialog deck={draft} onClose={() => setShowQr(false)} />}
       {scanQr && <QrScanOverlay onResult={onQr} onClose={() => setScanQr(false)} />}
 
-      <h4 className="mb-2 font-mono text-xs text-muted">Als Text (Export / Import)</h4>
+      <h4 className="mb-2 font-mono text-xs text-muted">{t('Als Text (Export / Import)')}</h4>
 
       <div className="mb-4">
         <textarea
@@ -100,9 +101,9 @@ export function DeckTextPanel({
             onClick={download}
             className="rounded border border-white/10 px-2 py-1 font-mono text-xs hover:border-accent"
           >
-            Als .txt herunterladen
+            {t('Als .txt herunterladen')}
           </button>
-          <span className="text-xs text-muted">Format wie MTG (eine Zeile je Karte).</span>
+          <span className="text-xs text-muted">{t('Format wie MTG (eine Zeile je Karte).')}</span>
         </div>
       </div>
 
@@ -111,7 +112,7 @@ export function DeckTextPanel({
           value={paste}
           onChange={(e) => setPaste(e.target.value)}
           rows={4}
-          placeholder={'Deckliste einfügen, z. B.\n3 Delamain Cab\n1 V: Corporate Exile'}
+          placeholder={t('Deckliste einfügen, z. B.') + '\n3 Delamain Cab\n1 V: Corporate Exile'}
           className="w-full resize-y rounded-md border border-white/10 bg-bg p-2 font-mono text-xs text-text outline-none focus:border-accent"
         />
         <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -119,13 +120,13 @@ export function DeckTextPanel({
             onClick={() => void doImport(paste)}
             className="rounded border border-white/10 px-2 py-1 font-mono text-xs hover:border-accent"
           >
-            In neues Deck importieren
+            {t('In neues Deck importieren')}
           </button>
           <button
             onClick={() => fileRef.current?.click()}
             className="rounded border border-white/10 px-2 py-1 font-mono text-xs hover:border-accent"
           >
-            .txt-Datei laden
+            {t('.txt-Datei laden')}
           </button>
           <input
             ref={fileRef}

@@ -6,9 +6,24 @@ Regel-Check), und aggregiert das Ko-Vorkommen der Karten zu
 Dexie gebauten eigenen Decks zusammen (`mergeCorpora`) — so wächst die empirische
 Synergie mit der Zahl der ingesteten Decks (der EDHREC-Gedanke, lokal).
 
-Deckformat (eine Datei je Deck), slug-basiert:
-    { "legends": ["slug", "slug", "slug"], "cards": { "slug": anzahl, ... } }
+Deckformat (eine Datei je Deck oder eine Liste von Decks), slug-basiert:
+    { "legends": ["slug", "slug", "slug"], "cards": { "slug": anzahl, ... }, "source": "…" }
 `cards` sind die Deckkarten OHNE Legends.
+
+Quellen (für die getrennte Ausweisung in der App, Ehrlichkeit § 12):
+  - `meta`      — Meta-Decks von cyberpunkmeta.org (`sim/pull_meta.ts`)
+  - `community` — öffentliche Decks der offiziellen Deckbuilder-Seite
+                  (`pipeline/fetch_community_decks.py`, Feld `source: netdeck-community`)
+  - `eigene`    — alles andere in `pipeline/decklists/` (z. B. `sim/import_decklists.ts`)
+Exakt gleiche Listen zählen nur einmal (auch über Quellen hinweg).
+
+Ausgabe `ingest-v2` (kompakt, der Chunk bleibt auch bei ~1.000 Decks klein):
+    { "version": "ingest-v2", "n": …, "sources": {"meta": …, …},
+      "cards": [slug, …], "df": [anzahl je Karte], "pairs": [[i, j, anzahl], …],
+      "trios": [[i, j, k, anzahl], …] }
+`pairs` nur i < j und erst ab `min_co` gemeinsamen Decks (Einzelfälle sind bei
+großem n Rauschen). `trios` = Legend-Trios der Decks (i < j < k, ungefiltert) für den
+Legend-Explorer der App. Die App liest v1 (df/co als Maps) und v2 (mit oder ohne trios).
 
 Nur Standardbibliothek. Ehrlichkeit (§ 12): reine Beobachtung; die App kennzeichnet
 das als Statistik. Es werden nur Karten-Slugs + Zahlen aggregiert, kein Regeltext.
@@ -35,9 +50,10 @@ OUT = DATA_DIR / "coplay.json"
 
 def load_deck_files() -> list[dict]:
     """Decks aus `pipeline/decklists/` UND den gezogenen Meta-Decks in
-    `sim/meta-decks/` (beide gitignored/optional; gleiches slug-Format)."""
+    `sim/meta-decks/` (beide gitignored/optional; gleiches slug-Format). Jedes Deck
+    bekommt `_origin` = `meta` (aus sim/meta-decks) bzw. `decklists`."""
     decks: list[dict] = []
-    for d in (DECKS_DIR, META_DIR):
+    for d, origin in ((DECKS_DIR, "decklists"), (META_DIR, "meta")):
         if not d.exists():
             continue
         for p in sorted(d.glob("*.json")):
@@ -49,11 +65,61 @@ def load_deck_files() -> list[dict]:
                 print(f"  übersprungen (kein JSON): {p.name} — {e}")
                 continue
             # Eine Datei kann ein Deck oder eine Liste von Decks enthalten.
-            if isinstance(data, list):
-                decks.extend(x for x in data if isinstance(x, dict))
-            elif isinstance(data, dict):
-                decks.append(data)
+            items = data if isinstance(data, list) else [data]
+            decks.extend({**x, "_origin": origin} for x in items if isinstance(x, dict))
     return decks
+
+
+def source_of(deck: dict) -> str:
+    """Quelle für die Ausweisung: meta / community / eigene."""
+    if deck.get("_origin") == "meta":
+        return "meta"
+    if "community" in str(deck.get("source", "")):
+        return "community"
+    return "eigene"
+
+
+def deck_signature(deck: dict) -> str:
+    """Kartenmenge (Legends + Deckkarten) als Schlüssel für exakte Duplikate."""
+    ids = sorted({*deck.get("legends", []), *(deck.get("cards", {}) or {}).keys()})
+    return "|".join(ids)
+
+
+def aggregate(decks: list[dict], min_co: int = 1) -> dict[str, Any]:
+    """Legale, deduplizierte Decks → kompaktes `ingest-v2`-Korpus."""
+    df: dict[str, int] = {}
+    co: dict[tuple[str, str], int] = {}
+    trio: dict[tuple[str, ...], int] = {}
+    sources: dict[str, int] = {}
+    for deck in decks:
+        ids = sorted({*deck.get("legends", []), *(deck.get("cards", {}) or {}).keys()})
+        src = source_of(deck)
+        sources[src] = sources.get(src, 0) + 1
+        for i in ids:
+            df[i] = df.get(i, 0) + 1
+        for a, b in combinations(ids, 2):
+            co[(a, b)] = co.get((a, b), 0) + 1
+        legends = tuple(sorted(set(deck.get("legends", []))))
+        if len(legends) == 3:  # Legend-Trio des Decks (für den Legend-Explorer)
+            trio[legends] = trio.get(legends, 0) + 1
+    cards = sorted(df)
+    idx = {c: i for i, c in enumerate(cards)}
+    pairs = sorted(
+        ([idx[a], idx[b], cnt] for (a, b), cnt in co.items() if cnt >= min_co),
+        key=lambda p: (p[0], p[1]),
+    )
+    trios = sorted(([*(idx[x] for x in t), cnt] for t, cnt in trio.items()), key=lambda t: t[:3])
+    return {
+        "version": "ingest-v2",
+        "generatedBy": "ingest_decks.py",
+        "n": len(decks),
+        "sources": dict(sorted(sources.items())),
+        "minCo": min_co,
+        "cards": cards,
+        "df": [df[c] for c in cards],
+        "pairs": pairs,
+        "trios": trios,
+    }
 
 
 def is_legal(deck: dict, cards: dict[str, dict], rs: dict) -> bool:
@@ -101,44 +167,37 @@ def main() -> None:
     rs = json.loads(RULESET.read_text(encoding="utf-8"))
 
     raw = load_deck_files()
-    df: dict[str, int] = {}
-    co: dict[str, dict[str, int]] = {}
-    n_legal = 0
-    n_illegal = 0
-
+    legal: list[dict] = []
+    seen: set[str] = set()
+    n_illegal = n_dupes = 0
     for deck in raw:
         if not is_legal(deck, cards, rs):
             n_illegal += 1
             continue
-        n_legal += 1
-        ids = sorted({*deck.get("legends", []), *(deck.get("cards", {}) or {}).keys()})
-        for i in ids:
-            df[i] = df.get(i, 0) + 1
-        for a, b in combinations(ids, 2):
-            co.setdefault(a, {})[b] = co.get(a, {}).get(b, 0) + 1
-            co.setdefault(b, {})[a] = co.get(b, {}).get(a, 0) + 1
+        sig = deck_signature(deck)
+        if sig in seen:
+            n_dupes += 1
+            continue
+        seen.add(sig)
+        legal.append(deck)
 
-    out: dict[str, Any] = {
-        "version": "ingest-v1",
-        "generatedBy": "ingest_decks.py",
-        "n": n_legal,
-        "df": df,
-        "co": co,
-    }
-    OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Ab ~100 Decks sind Paare, die nur einmal zusammen vorkommen, Rauschen → weglassen.
+    out = aggregate(legal, min_co=2 if len(legal) >= 100 else 1)
+    OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
-    print(f"{len(raw)} Decklisten gelesen -> {n_legal} legal, {n_illegal} verworfen")
-    print(f"  {len(df)} Karten, {sum(len(r) for r in co.values()) // 2} Kartenpaare -> {OUT}")
-    if n_legal:
-        pairs = sorted(
-            ((cnt, a, b) for a, row in co.items() for b, cnt in row.items() if a < b),
-            reverse=True,
-        )[:8]
+    print(
+        f"{len(raw)} Decklisten gelesen -> {len(legal)} legal + eindeutig "
+        f"({n_illegal} illegal, {n_dupes} Duplikate verworfen)"
+    )
+    print(f"  Quellen: {out['sources']}")
+    print(f"  {len(out['cards'])} Karten, {len(out['pairs'])} Kartenpaare (ab {out['minCo']}×) -> {OUT}")
+    print(f"  Dateigröße: {OUT.stat().st_size / 1024:.0f} KB")
+    if legal:
+        top = sorted(out["pairs"], key=lambda p: -p[2])[:8]
         print("  häufigste Paare:")
-        for cnt, a, b in pairs:
-            na = cards.get(a, {}).get("name", a)
-            nb = cards.get(b, {}).get("name", b)
-            print(f"    {cnt:3d}  {na} + {nb}")
+        for i, j, cnt in top:
+            a, b = out["cards"][i], out["cards"][j]
+            print(f"    {cnt:4d}  {cards.get(a, {}).get('name', a)} + {cards.get(b, {}).get('name', b)}")
     else:
         print(f"  (noch keine legalen Decks — lege Decklisten in {DECKS_DIR}/ ab)")
 

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { logoIconSvg, svgDataUrl } from '../domain/logoShape';
+import { tk } from '../i18n';
 
 /**
  * Farbthemen (Auswahl unter „Mehr"). Die Tokens leben in `index.css`
@@ -24,11 +25,11 @@ export interface ThemeInfo {
 }
 
 export const THEMES: readonly ThemeInfo[] = [
-  { id: 'default', label: 'Standard', swatch: ['#F7D51D', '#0B0F14'], icon: { fg: '#F7D51D', bg: '#0B0F14' }, bg: '#0B0F14' },
+  { id: 'default', label: tk('Standard'), swatch: ['#F7D51D', '#0B0F14'], icon: { fg: '#F7D51D', bg: '#0B0F14' }, bg: '#0B0F14' },
   // Violett-Akzent auf fast Schwarz wäre als Icon zu kontrastarm → Pfirsich auf Violett (Designer-Paar).
-  { id: 'violet', label: 'Violett', swatch: ['#6A00F4', '#FFD6A5'], icon: { fg: '#FFD6A5', bg: '#6A00F4' }, bg: '#140A1F' },
-  { id: 'synth', label: 'Synthwave', swatch: ['#FF4696', '#1E1033'], icon: { fg: '#FF4696', bg: '#1E1033' }, bg: '#1E1033' },
-  { id: 'lime', label: 'Lime', swatch: ['#B6FF2E', '#23262F'], icon: { fg: '#B6FF2E', bg: '#23262F' }, bg: '#23262F' },
+  { id: 'violet', label: tk('Violett'), swatch: ['#6A00F4', '#FFD6A5'], icon: { fg: '#FFD6A5', bg: '#6A00F4' }, bg: '#140A1F' },
+  { id: 'synth', label: tk('Synthwave'), swatch: ['#FF4696', '#1E1033'], icon: { fg: '#FF4696', bg: '#1E1033' }, bg: '#1E1033' },
+  { id: 'lime', label: tk('Lime'), swatch: ['#B6FF2E', '#23262F'], icon: { fg: '#B6FF2E', bg: '#23262F' }, bg: '#23262F' },
 ];
 
 export function isThemeName(v: unknown): v is ThemeName {

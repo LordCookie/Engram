@@ -108,13 +108,105 @@ export function buildCorpus(decks: readonly CorpusDeck[]): Corpus {
   return { n: decks.length, df, co };
 }
 
-function bump(co: Map<string, Map<string, number>>, a: string, b: string): void {
+/** Ingest-Korpus (`coplay.json`) samt Herkunft der Decks (meta/community/eigene). */
+export interface IngestCorpus {
+  corpus: Corpus | null;
+  /** Decks je Quelle; bei alten Dateien (v1) nur `{ unbekannt: n }`. */
+  sources: Record<string, number>;
+  /** Legend-Trios → Zahl der Decks (Schlüssel `trioKey`); leer, wenn die Datei keine hat. */
+  trios: Map<string, number>;
+}
+
+/** Schlüssel eines Legend-Trios: sortierte IDs, mit „|" verbunden. */
+export function trioKey(ids: readonly string[]): string {
+  return [...ids].sort().join('|');
+}
+
+/** Legend-Trios einer Deckmenge zählen (nur Decks mit genau 3 verschiedenen Legends). */
+export function countTrios(decks: readonly { legendIds: readonly string[] }[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const d of decks) {
+    const ids = [...new Set(d.legendIds)];
+    if (ids.length !== 3) continue;
+    const k = trioKey(ids);
+    out.set(k, (out.get(k) ?? 0) + 1);
+  }
+  return out;
+}
+
+/** Zwei Zähltabellen addieren. */
+export function sumCounts(a: ReadonlyMap<string, number>, b: ReadonlyMap<string, number>): Map<string, number> {
+  const out = new Map(a);
+  for (const [k, v] of b) out.set(k, (out.get(k) ?? 0) + v);
+  return out;
+}
+
+/**
+ * Liest `coplay.json` aus der Ingest-Pipeline: `ingest-v2` (kompakt: `cards`,
+ * `df` als Liste, `pairs` [i, j, anzahl] mit i < j, optional `trios` [i, j, k, anzahl]
+ * = Legend-Trios) oder das alte `ingest-v1`
+ * (df/co als Objekte). Unbrauchbares → leeres Korpus.
+ */
+export function corpusFromIngest(raw: unknown): IngestCorpus {
+  const empty: IngestCorpus = { corpus: null, sources: {}, trios: new Map() };
+  if (!raw || typeof raw !== 'object') return empty;
+  const r = raw as Record<string, unknown>;
+  const n = typeof r.n === 'number' ? r.n : 0;
+  if (n <= 0) return empty;
+  const df = new Map<string, number>();
+  const co = new Map<string, Map<string, number>>();
+  const trios = new Map<string, number>();
+
+  if (Array.isArray(r.cards) && Array.isArray(r.df) && Array.isArray(r.pairs)) {
+    const cards = r.cards as unknown[];
+    cards.forEach((c, i) => {
+      const v = (r.df as unknown[])[i];
+      if (typeof c === 'string' && typeof v === 'number') df.set(c, v);
+    });
+    for (const p of r.pairs as unknown[]) {
+      if (!Array.isArray(p) || p.length !== 3) continue;
+      const [i, j, v] = p as unknown[];
+      const a = cards[i as number];
+      const b = cards[j as number];
+      if (typeof a !== 'string' || typeof b !== 'string' || typeof v !== 'number') continue;
+      // symmetrisch füllen wie buildCorpus
+      bump(co, a, b, v);
+      bump(co, b, a, v);
+    }
+    for (const t of Array.isArray(r.trios) ? (r.trios as unknown[]) : []) {
+      if (!Array.isArray(t) || t.length !== 4) continue;
+      const ids = (t as unknown[]).slice(0, 3).map((i) => cards[i as number]);
+      const v = (t as unknown[])[3];
+      if (ids.every((x): x is string => typeof x === 'string') && typeof v === 'number') trios.set(trioKey(ids), v);
+    }
+  } else {
+    for (const [k, v] of Object.entries((r.df as Record<string, unknown>) ?? {})) {
+      if (typeof v === 'number') df.set(k, v);
+    }
+    for (const [a, row] of Object.entries((r.co as Record<string, unknown>) ?? {})) {
+      if (!row || typeof row !== 'object') continue;
+      const m = new Map<string, number>();
+      for (const [b, v] of Object.entries(row as Record<string, unknown>)) if (typeof v === 'number') m.set(b, v);
+      co.set(a, m);
+    }
+  }
+
+  const sources: Record<string, number> = {};
+  if (r.sources && typeof r.sources === 'object') {
+    for (const [k, v] of Object.entries(r.sources as Record<string, unknown>)) if (typeof v === 'number') sources[k] = v;
+  } else {
+    sources.unbekannt = n;
+  }
+  return { corpus: { n, df, co }, sources, trios };
+}
+
+function bump(co: Map<string, Map<string, number>>, a: string, b: string, by = 1): void {
   let row = co.get(a);
   if (!row) {
     row = new Map<string, number>();
     co.set(a, row);
   }
-  row.set(b, (row.get(b) ?? 0) + 1);
+  row.set(b, (row.get(b) ?? 0) + by);
 }
 
 export interface CoPlayPartner {

@@ -9,6 +9,7 @@ import { useCardImages } from '../data/cardImages';
 import { CardImage } from './CardImage';
 import { Collapsible } from './Collapsible';
 import type { Card, CollectionEntry, Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Tausch-/Dubletten-Liste: Karten über einem vollen Playset (Legends 1, sonst
@@ -34,14 +35,14 @@ export function TradeListPanel() {
 
   return (
     <Collapsible
-      title="Tausch-Liste"
-      right={rows.length > 0 ? `${total} zu viel · ${rows.length} Karten` : 'keine'}
+      title={t('Tausch-Liste')}
+      right={rows.length > 0 ? t('{n} zu viel · {m} Karten', { n: total, m: rows.length }) : t('keine')}
     >
       <p className="mb-2 text-xs text-muted">
-        Karten über einem vollen Playset (Legends 1, sonst {maxCopies}) — die kannst du tauschen.
+        {t('Karten über einem vollen Playset (Legends 1, sonst {n}) — die kannst du tauschen.', { n: maxCopies })}
       </p>
       {rows.length === 0 ? (
-        <p className="text-xs text-muted">Keine Dubletten — nichts über dem Playset.</p>
+        <p className="text-xs text-muted">{t('Keine Dubletten — nichts über dem Playset.')}</p>
       ) : (
         <ul className="space-y-1">
           {rows.map(({ card, owned: qty, surplus }) => (
@@ -50,7 +51,7 @@ export function TradeListPanel() {
               <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
               <span className="truncate">{card.name}</span>
               <span className="ml-auto shrink-0 text-xs text-muted">
-                {qty}× · <span className="text-card-green">+{surplus} übrig</span>
+                {qty}× · <span className="text-card-green">{t('+{n} übrig', { n: surplus })}</span>
               </span>
             </li>
           ))}

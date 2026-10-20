@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { starters, starterEntries, starterSize } from '../domain/starters';
 import { addCounts } from '../db/db';
+import { t } from '../i18n';
 
 /**
  * Starter-Quickadd (PLAN.md § 5, Aufgabe 7): ein Klick trägt ein komplettes
@@ -16,14 +17,14 @@ export function StarterQuickadd() {
       starterEntries(deck).map((e) => ({ printingId: e.cardId, count: e.count })),
       `starter:${deck.id}`,
     );
-    setMsg(`${starterSize(deck)} Karten von „${deck.name}" eingetragen.`);
+    setMsg(t('{n} Karten von „{name}" eingetragen.', { n: starterSize(deck), name: deck.name }));
   }
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h2 className="mb-1 font-mono text-lg">Starter-Quickadd</h2>
+      <h2 className="mb-1 font-mono text-lg">{t('Starter-Quickadd')}</h2>
       <p className="mb-3 text-xs text-muted">
-        Ein Klick trägt ein komplettes Starter-Deck ein (Legends + Karten).
+        {t('Ein Klick trägt ein komplettes Starter-Deck ein (Legends + Karten).')}
       </p>
       <div className="flex flex-wrap gap-3">
         {starters.map((deck) => (

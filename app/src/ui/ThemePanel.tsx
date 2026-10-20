@@ -4,6 +4,7 @@ import { db, getIconFollowsThemePref, setIconFollowsThemePref, setThemePref } fr
 import { hasIconSwitch, setAppIcon } from '../native/engramIcon';
 import { Logo } from './Logo';
 import { THEMES, applyTheme, isThemeName, type ThemeName } from './theme';
+import { t } from '../i18n';
 
 /**
  * Farbthema-Auswahl (unter „Mehr"). Wechselt sofort den Look (inkl. Logo, Favicon,
@@ -24,7 +25,7 @@ export function ThemePanel() {
 
   async function changeIcon(theme: ThemeName) {
     const pending = await setAppIcon(theme);
-    setIconMsg(pending ? 'Das App-Icon wechselt, sobald du die App verlässt.' : null);
+    setIconMsg(pending ? t('Das App-Icon wechselt, sobald du die App verlässt.') : null);
   }
 
   function pick(id: ThemeName) {
@@ -42,17 +43,17 @@ export function ThemePanel() {
 
   return (
     <section className="rounded-lg bg-surface p-4">
-      <h2 className="mb-1 font-mono text-lg">Farbthema</h2>
+      <h2 className="mb-1 font-mono text-lg">{t('Farbthema')}</h2>
       <p className="mb-3 text-xs text-muted">
-        Wechselt den Look, auch das Logo. Kartenfarben (Fraktionen) bleiben gleich.
+        {t('Wechselt den Look, auch das Logo. Kartenfarben (Fraktionen) bleiben gleich.')}
       </p>
       <div className="flex flex-wrap gap-2">
-        {THEMES.map((t) => {
-          const active = current === t.id;
+        {THEMES.map((th) => {
+          const active = current === th.id;
           return (
             <button
-              key={t.id}
-              onClick={() => pick(t.id)}
+              key={th.id}
+              onClick={() => pick(th.id)}
               aria-pressed={active}
               className={`flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-sm ${
                 active ? 'border-accent text-text' : 'border-white/10 text-muted hover:border-accent'
@@ -60,11 +61,11 @@ export function ThemePanel() {
             >
               <span
                 className="flex h-6 w-6 items-center justify-center rounded"
-                style={{ background: t.icon.bg, color: t.icon.fg }}
+                style={{ background: th.icon.bg, color: th.icon.fg }}
               >
                 <Logo className="h-5 w-4" />
               </span>
-              {t.label}
+              {t(th.label)}
               {active && <span className="text-accent">✓</span>}
             </button>
           );
@@ -75,11 +76,9 @@ export function ThemePanel() {
         <div className="mt-4 border-t border-white/10 pt-3">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-sm">App-Icon passt sich an</div>
+              <div className="font-mono text-sm">{t('App-Icon passt sich an')}</div>
               <p className="text-xs text-muted">
-                Das Icon auf dem Startbildschirm bekommt die Farbe des Themes. Es wechselt beim
-                Verlassen der App; je nach Launcher musst du es danach neu aus der App-Übersicht
-                auf den Startbildschirm ziehen.
+                {t('Das Icon auf dem Startbildschirm bekommt die Farbe des Themes. Es wechselt beim Verlassen der App; je nach Launcher musst du es danach neu aus der App-Übersicht auf den Startbildschirm ziehen.')}
               </p>
             </div>
             <button
@@ -90,7 +89,7 @@ export function ThemePanel() {
                 iconFollows ? 'bg-accent text-on-accent' : 'border border-white/10 text-muted hover:border-accent'
               }`}
             >
-              {iconFollows ? 'An' : 'Aus'}
+              {iconFollows ? t('An') : t('Aus')}
             </button>
           </div>
           {iconMsg && <p className="mt-2 font-mono text-[11px] text-accent">{iconMsg}</p>}

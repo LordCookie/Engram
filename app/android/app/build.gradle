@@ -1,6 +1,11 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+// Version aus app/src/version.ts (APP_VERSION) — eine Quelle für Web-App, Update-Hinweis
+// und APK. versionCode = Major*10000 + Minor*100 + Patch (0.2.0 → 200), steigt also mit.
+def appVersion = (file('../../src/version.ts').text =~ /APP_VERSION = '(\d+\.\d+\.\d+)'/)[0][1]
+def appVersionParts = appVersion.tokenize('.').collect { it as int }
+
 android {
     namespace "com.lordcookie.engram"
     compileSdk rootProject.ext.compileSdkVersion
@@ -8,8 +13,8 @@ android {
         applicationId "com.lordcookie.engram"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionParts[0] * 10000 + appVersionParts[1] * 100 + appVersionParts[2]
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // ML Kit bringt native Bibliotheken je CPU-Architektur mit; x86 braucht nur
         // der Emulator → nur ARM ausliefern, spart mehrere MB APK.

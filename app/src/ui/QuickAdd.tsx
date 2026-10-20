@@ -1,14 +1,16 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { catalog, cardIndex } from '../data/catalog';
+import { altPrintingId, baseCardId, catalog, cardIndex, hasAltArt, isAltPrintingId } from '../data/catalog';
 import { searchCards } from '../domain/search';
 import { db, addToCollection, addWant } from '../db/db';
 import type { Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Schnellerfassung (PLAN.md § 5, Aufgabe 5) — die wichtigste UI des Projekts.
  * Feld fokussiert, tippen, Pfeiltasten, Enter setzt +1, Feld leert sich, Fokus
  * bleibt. Strg+Z macht rückgängig. Ziel: ein Booster in unter 30 Sekunden.
+ * Alt-Arts: „+Alt" je Treffer (nur bei Karten mit Alt-Art) oder Umschalt+Enter.
  */
 
 const colorDot: Record<Color, string> = {
@@ -42,12 +44,13 @@ export function QuickAdd() {
     0,
   );
 
-  async function addByIndex(idx: number) {
+  async function addByIndex(idx: number, alt = false) {
     const card = results[idx];
     if (!card) return;
-    await addToCollection(card.id, 1, 'schnellerfassung');
-    setUndoStack((s) => [...s, card.id]);
-    setLastAdded(card.id);
+    const printingId = alt && hasAltArt(card.id) ? altPrintingId(card.id) : card.id;
+    await addToCollection(printingId, 1, 'schnellerfassung');
+    setUndoStack((s) => [...s, printingId]);
+    setLastAdded(printingId);
     setQuery('');
     setSelected(0);
     inputRef.current?.focus();
@@ -80,26 +83,27 @@ export function QuickAdd() {
       setSelected((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      void addByIndex(Math.min(selected, results.length - 1));
+      void addByIndex(Math.min(selected, results.length - 1), e.shiftKey);
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       void undo();
     }
   }
 
-  const lastCard = lastAdded ? cardIndex.get(lastAdded) : undefined;
+  const lastCard = lastAdded ? cardIndex.get(baseCardId(lastAdded)) : undefined;
 
   return (
     <section className="rounded-lg bg-surface p-4">
       <div className="mb-1 flex items-baseline justify-between">
-        <h2 className="font-mono text-lg">Schnellerfassung</h2>
+        <h2 className="font-mono text-lg">{t('Schnellerfassung')}</h2>
         <span className="font-mono text-sm text-muted">
-          Bestand: <span className="text-accent">{total}</span> Karten
+          {t('Bestand:')} <span className="text-accent">{total}</span> {t('Karten')}
         </span>
       </div>
       <p className="mb-3 text-xs text-muted">
-        Tippen · <kbd>↑</kbd>/<kbd>↓</kbd> wählen · <kbd>Enter</kbd> +1 ·{' '}
-        <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig ({undoStack.length})
+        {t('Tippen ·')} <kbd>↑</kbd>/<kbd>↓</kbd> {t('wählen ·')} <kbd>Enter</kbd> +1 ·{' '}
+        <kbd>{t('Strg')}</kbd>+<kbd>Z</kbd> {t('rückgängig ({n})', { n: undoStack.length })} ·{' '}
+        <kbd>⇧</kbd>+<kbd>Enter</kbd> {t('= Alt-Art')}
       </p>
 
       <input
@@ -111,21 +115,24 @@ export function QuickAdd() {
           setSelected(0);
         }}
         onKeyDown={onKeyDown}
-        placeholder="Kartenname…"
+        placeholder={t('Kartenname…')}
         className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-text outline-none focus:border-accent"
       />
 
       {lastCard && (
         <p className="mt-2 text-sm">
-          <span className="text-muted">Zuletzt:</span>{' '}
+          <span className="text-muted">{t('Zuletzt:')}</span>{' '}
           <span className={`inline-block h-2 w-2 rounded-full ${colorDot[lastCard.color]}`} />{' '}
           {lastCard.name}{' '}
+          {lastAdded && isAltPrintingId(lastAdded) && (
+            <span className="rounded bg-accent/20 px-1 font-mono text-[10px] text-accent">{t('Alt')}</span>
+          )}{' '}
           <span className="text-muted">
-            {lastQty > 0 ? `— jetzt ${lastQty}× im Bestand` : '— entfernt'}
+            {lastQty > 0 ? t('— jetzt {n}× im Bestand', { n: lastQty }) : t('— entfernt')}
           </span>
         </p>
       )}
-      {wantNote && <p className="mt-2 text-sm text-accent">☆ {wantNote} — auf der Want-Liste</p>}
+      {wantNote && <p className="mt-2 text-sm text-accent">☆ {wantNote} {t('— auf der Want-Liste')}</p>}
 
       {results.length > 0 && (
         <ul className="mt-3 divide-y divide-white/5 overflow-hidden rounded-md border border-white/5">
@@ -145,13 +152,26 @@ export function QuickAdd() {
                 {card.type}
                 {typeof card.ram === 'number' ? ` · RAM ${card.ram}` : ''}
               </span>
+              {hasAltArt(card.id) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void addByIndex(i, true);
+                  }}
+                  title={t('Alt-Art hinzufügen')}
+                  aria-label={t('{name} als Alt-Art hinzufügen', { name: card.name })}
+                  className="shrink-0 rounded border border-accent/40 px-1.5 py-0.5 font-mono text-[11px] text-accent hover:bg-accent/10"
+                >
+                  {t('+Alt')}
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   addToWants(card.id, card.name);
                 }}
-                title="Auf die Want-Liste (statt in die Sammlung)"
-                aria-label={`${card.name} auf die Want-Liste`}
+                title={t('Auf die Want-Liste (statt in die Sammlung)')}
+                aria-label={t('{name} auf die Want-Liste', { name: card.name })}
                 className="shrink-0 rounded px-1 text-accent hover:bg-white/10"
               >
                 ☆

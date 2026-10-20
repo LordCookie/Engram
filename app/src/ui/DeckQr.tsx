@@ -4,6 +4,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { encodeDeckQr, isDeckQr, type QrDeck } from '../domain/deckQr';
 import { EngramCamera, hasNativeCamera, reticleOf } from '../native/engramCamera';
 import { feedbackAdded } from '../native/feedback';
+import { t } from '../i18n';
 
 /**
  * Deck per QR-Code teilen (offline, Gerät zu Gerät):
@@ -33,7 +34,7 @@ export function DeckQrDialog({ deck, onClose }: { deck: QrDeck; onClose: () => v
         for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) path += `M${c} ${r}h1v1h-1z`;
         if (alive) setCells({ n, path });
       } catch {
-        if (alive) setError('Deck ist zu groß für einen QR-Code.');
+        if (alive) setError(t('Deck ist zu groß für einen QR-Code.'));
       }
     })();
     return () => {
@@ -47,7 +48,7 @@ export function DeckQrDialog({ deck, onClose }: { deck: QrDeck; onClose: () => v
       <div className="w-full max-w-sm rounded-2xl bg-surface p-4 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="mb-1 font-mono text-lg">{deck.name || 'Deck'}</div>
         <div className="mb-3 font-mono text-xs text-muted">
-          {deck.legendIds.length} Legends · {total} Karten
+          {t('{l} Legends · {n} Karten', { l: deck.legendIds.length, n: total })}
         </div>
         <div className="mx-auto aspect-square w-full max-w-[20rem] rounded-lg bg-white p-1">
           {cells ? (
@@ -58,15 +59,15 @@ export function DeckQrDialog({ deck, onClose }: { deck: QrDeck; onClose: () => v
             </svg>
           ) : (
             <div className="flex h-full items-center justify-center font-mono text-xs text-black/60">
-              {error ?? 'Erzeuge QR-Code…'}
+              {error ?? t('Erzeuge QR-Code…')}
             </div>
           )}
         </div>
         <p className="mt-3 text-xs text-muted">
-          Auf dem anderen Gerät: engram → Deck → „QR-Code scannen". Funktioniert ohne Internet.
+          {t('Auf dem anderen Gerät: engram → Deck → „QR-Code scannen". Funktioniert ohne Internet.')}
         </p>
         <button onClick={onClose} className="mt-3 rounded-md border border-white/10 px-4 py-1.5 font-mono text-sm hover:border-accent">
-          Schließen
+          {t('Schließen')}
         </button>
       </div>
     </div>,
@@ -145,7 +146,7 @@ export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) 
   const accept = (text: string | null) => {
     if (!text || doneRef.current) return;
     if (!isDeckQr(text)) {
-      setHint('Kein engram-Deck-QR — bitte einen Deck-Code aus engram scannen.');
+      setHint(t('Kein engram-Deck-QR — bitte einen Deck-Code aus engram scannen.'));
       return;
     }
     doneRef.current = true;
@@ -214,7 +215,7 @@ export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) 
           }, 300);
         }
       } catch (e) {
-        if (alive) setError(e instanceof Error ? e.message : 'Kamera nicht verfügbar');
+        if (alive) setError(e instanceof Error ? e.message : t('Kamera nicht verfügbar'));
       }
     })();
 
@@ -235,10 +236,10 @@ export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) 
     <div className={`fixed inset-0 z-50 text-text ${native ? '' : 'bg-black'}`}>
       {!native && <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />}
       <div className="absolute inset-x-0 top-0 flex h-14 items-center gap-2 bg-bg/90 px-3">
-        <button onClick={onClose} aria-label="QR-Scanner schließen" className="rounded px-2 py-1 text-lg">
+        <button onClick={onClose} aria-label={t('QR-Scanner schließen')} className="rounded px-2 py-1 text-lg">
           ✕
         </button>
-        <span className="font-mono text-xs text-muted">Deck-QR scannen</span>
+        <span className="font-mono text-xs text-muted">{t('Deck-QR scannen')}</span>
       </div>
       <div className="absolute inset-x-0 bottom-24 top-14 flex items-center justify-center">
         <div
@@ -249,10 +250,10 @@ export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) 
       </div>
       <div className="absolute inset-x-0 bottom-0 h-24 bg-bg/95 px-4 py-3 text-center font-mono text-xs">
         {error ? (
-          <span className="text-card-red">Kamera nicht verfügbar: {error}</span>
+          <span className="text-card-red">{t('Kamera nicht verfügbar:')} {error}</span>
         ) : (
           <span className={hint ? 'text-accent' : 'text-muted'}>
-            {hint ?? 'QR-Code eines engram-Decks in den Rahmen halten.'}
+            {hint ?? t('QR-Code eines engram-Decks in den Rahmen halten.')}
           </span>
         )}
       </div>

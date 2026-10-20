@@ -6,6 +6,7 @@ import { useCardImages } from '../data/cardImages';
 import { topSynergies } from '../domain/synergy';
 import { CardImage } from './CardImage';
 import type { Card, Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Kartendetail als Overlay (wiederverwendbar): großes Bild, Regeltext, Werte,
@@ -75,7 +76,7 @@ export function CardDetail({
           </div>
           <button
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={t('Schließen')}
             className="rounded px-2 py-1 text-muted hover:text-text"
           >
             ✕
@@ -95,16 +96,16 @@ export function CardDetail({
             </div>
             {typeof owned === 'number' && (
               <div className={owned > 0 ? 'text-accent' : 'text-muted'}>
-                {owned > 0 ? `${owned}× im Bestand` : 'nicht im Bestand'}
+                {owned > 0 ? t('{n}× im Bestand', { n: owned }) : t('nicht im Bestand')}
               </div>
             )}
             {onAltChange && hasAltArt(card.id) && (
               <div className="flex items-center gap-2">
-                <span className="text-muted">Alt-Art:</span>
+                <span className="text-muted">{t('Alt-Art:')}</span>
                 <button
                   onClick={() => onAltChange(-1)}
                   disabled={(altOwned ?? 0) <= 0}
-                  aria-label="Eine Alt-Art weniger"
+                  aria-label={t('Eine Alt-Art weniger')}
                   className="rounded px-2 py-0.5 text-muted hover:bg-white/10 hover:text-text disabled:opacity-30"
                 >
                   −
@@ -112,7 +113,7 @@ export function CardDetail({
                 <span className="w-8 text-center text-accent">{altOwned ?? 0}×</span>
                 <button
                   onClick={() => onAltChange(1)}
-                  aria-label="Eine Alt-Art mehr"
+                  aria-label={t('Eine Alt-Art mehr')}
                   className="rounded px-2 py-0.5 text-muted hover:bg-white/10 hover:text-accent"
                 >
                   +
@@ -135,7 +136,7 @@ export function CardDetail({
                 rel="noreferrer"
                 className="inline-block text-xs text-muted hover:text-accent"
               >
-                auf cyberpunktcg.com ansehen ↗
+                {t('auf cyberpunktcg.com ansehen ↗')}
               </a>
             )}
           </div>
@@ -149,7 +150,7 @@ export function CardDetail({
 
         {partners.length > 0 && (
           <div className="mt-4">
-            <h3 className="mb-2 font-mono text-sm">Beste Synergie-Partner</h3>
+            <h3 className="mb-2 font-mono text-sm">{t('Beste Synergie-Partner')}</h3>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {partners.map((p) => (
                 <button

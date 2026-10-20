@@ -9,6 +9,7 @@ import { useCardImages } from '../data/cardImages';
 import { CardImage } from './CardImage';
 import { Collapsible } from './Collapsible';
 import type { CollectionEntry, Color } from '../domain/types';
+import { t } from '../i18n';
 
 /**
  * Want-Liste (Wunschliste): was du noch besorgen willst. Befüllbar hier per
@@ -39,14 +40,14 @@ export function WantListPanel() {
 
   return (
     <Collapsible
-      title="Want-Liste"
-      right={wants.length > 0 ? `${still} zu holen · ${wants.length} Karten` : 'leer'}
+      title={t('Want-Liste')}
+      right={wants.length > 0 ? t('{n} zu holen · {m} Karten', { n: still, m: wants.length }) : t('leer')}
     >
       {/* Suche zum Hinzufügen */}
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Karte suchen und ☆ auf die Want-Liste…"
+        placeholder={t('Karte suchen und ☆ auf die Want-Liste…')}
         className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-accent"
       />
       {results.length > 0 && (
@@ -71,8 +72,7 @@ export function WantListPanel() {
 
       {wants.length === 0 ? (
         <p className="mt-3 text-xs text-muted">
-          Noch nichts gewünscht. Karten hier suchen, beim Erfassen ☆ tippen oder im Deck
-          „Fehlende → Want-Liste".
+          {t('Noch nichts gewünscht. Karten hier suchen, beim Erfassen ☆ tippen oder im Deck „Fehlende → Want-Liste".')}
         </p>
       ) : (
         <ul className="mt-3 space-y-1">
@@ -82,7 +82,7 @@ export function WantListPanel() {
               <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
               <button
                 onClick={() => void addWant(card.id, -1)}
-                title="Wunschmenge −1"
+                title={t('Wunschmenge −1')}
                 className="text-muted hover:text-text"
               >
                 −
@@ -90,7 +90,7 @@ export function WantListPanel() {
               <span className="w-8 text-center text-accent">{want}×</span>
               <button
                 onClick={() => void addWant(card.id, 1)}
-                title="Wunschmenge +1"
+                title={t('Wunschmenge +1')}
                 className="text-muted hover:text-text"
               >
                 +
@@ -98,7 +98,7 @@ export function WantListPanel() {
               <span className="truncate">{card.name}</span>
               <span className="ml-auto flex items-center gap-2 shrink-0 text-xs">
                 {st === 0 ? (
-                  <span className="text-card-green">✓ im Bestand</span>
+                  <span className="text-card-green">{t('✓ im Bestand')}</span>
                 ) : (
                   <span className="text-muted">
                     {have}/{want} · <span className="text-card-red">−{st}</span>
@@ -106,8 +106,8 @@ export function WantListPanel() {
                 )}
                 <button
                   onClick={() => void removeWant(card.id)}
-                  title="Von der Want-Liste entfernen"
-                  aria-label={`${card.name} von der Want-Liste entfernen`}
+                  title={t('Von der Want-Liste entfernen')}
+                  aria-label={t('{name} von der Want-Liste entfernen', { name: card.name })}
                   className="text-muted hover:text-card-red"
                 >
                   ✕

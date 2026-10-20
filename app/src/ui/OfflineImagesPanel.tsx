@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { loadCardImages } from '../data/cardImages';
+import { t } from '../i18n';
 
 /**
  * Lädt einmalig alle Kartenbilder, damit der Service-Worker sie cacht und die
@@ -53,19 +54,19 @@ export function OfflineImagesPanel() {
   return (
     <section className="rounded-lg bg-surface p-4">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h2 className="font-mono text-lg">Bilder offline</h2>
+        <h2 className="font-mono text-lg">{t('Bilder offline')}</h2>
         <button
           onClick={() => void preload()}
           disabled={busy}
           className="rounded border border-white/10 px-2 py-1 font-mono text-xs hover:border-accent disabled:opacity-40"
         >
-          {busy ? `Lädt… ${total ? Math.round((done / total) * 100) : 0}%` : 'Alle Bilder offline laden'}
+          {busy
+            ? t('Lädt… {p}%', { p: total ? Math.round((done / total) * 100) : 0 })
+            : t('Alle Bilder offline laden')}
         </button>
       </div>
       <p className="text-xs text-muted">
-        Lädt einmalig alle Kartenbilder in den lokalen Cache — danach sind die
-        Karten auch ohne Internet ansehbar. Nichts wird gehostet, nur lokal
-        zwischengespeichert (§ 8).
+        {t('Lädt einmalig alle Kartenbilder in den lokalen Cache — danach sind die Karten auch ohne Internet ansehbar. Nichts wird gehostet, nur lokal zwischengespeichert (§ 8).')}
       </p>
       {busy && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -77,8 +78,8 @@ export function OfflineImagesPanel() {
       )}
       {finished && (
         <p className="mt-2 font-mono text-xs text-muted">
-          {done - failed}/{total} Bilder im Cache
-          {failed > 0 ? ` · ${failed} fehlgeschlagen (später „nochmal laden“)` : ' · fertig ✓'}
+          {t('{n}/{total} Bilder im Cache', { n: done - failed, total })}
+          {failed > 0 ? t(' · {n} fehlgeschlagen (später „nochmal laden“)', { n: failed }) : t(' · fertig ✓')}
         </p>
       )}
     </section>
