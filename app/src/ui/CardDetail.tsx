@@ -8,6 +8,7 @@ import { CardImage } from './CardImage';
 import type { Card, Color } from '../domain/types';
 import { t } from '../i18n';
 import { useBackClose } from './backButton';
+import { Icon } from './Icon';
 
 /**
  * Kartendetail als Overlay (wiederverwendbar): großes Bild, Regeltext, Werte,
@@ -81,7 +82,7 @@ export function CardDetail({
             aria-label={t('Schließen')}
             className="rounded px-2 py-1 text-muted hover:text-text"
           >
-            ✕
+            <Icon name="close" className="h-5 w-5" />
           </button>
         </div>
 
@@ -138,7 +139,7 @@ export function CardDetail({
                 rel="noreferrer"
                 className="inline-block text-xs text-muted hover:text-accent"
               >
-                {t('auf cyberpunktcg.com ansehen ↗')}
+                {t('auf cyberpunktcg.com ansehen')} <Icon name="external" className="h-3.5 w-3.5" />
               </a>
             )}
           </div>

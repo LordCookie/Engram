@@ -25,6 +25,7 @@ import { DeckTestPanel } from './ui/DeckTestPanel';
 import { SynergyPanel } from './ui/SynergyPanel';
 import { MechanicSearchPanel } from './ui/MechanicSearchPanel';
 import { LegendExplorer } from './ui/LegendExplorer';
+import { MetaDecksPanel } from './ui/MetaDecksPanel';
 import { Welcome, type WelcomeTarget } from './ui/Welcome';
 import { UpdateBanner } from './ui/UpdateBanner';
 import { BackupReminder } from './ui/BackupReminder';
@@ -49,8 +50,17 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'mehr', label: tk('Mehr') },
 ];
 
+// Unterreiter im Bereich Synergie.
+type SynTab = 'meta' | 'legends' | 'karten';
+const synTabs: { id: SynTab; label: string }[] = [
+  { id: 'meta', label: tk('Meta-Decks') },
+  { id: 'legends', label: tk('Legends') },
+  { id: 'karten', label: tk('Karten') },
+];
+
 export default function App() {
   const [tab, setTab] = useState<Tab>('sammlung');
+  const [synTab, setSynTab] = useState<SynTab>('meta'); // bleibt beim Tab-Wechsel erhalten
   const [collectionCollapsed, setCollectionCollapsed] = useState(false);
   const [booting, setBooting] = useState(true); // Boot-Animation einmal pro App-Start
   const endBoot = useCallback(() => setBooting(false), []);
@@ -134,9 +144,29 @@ export default function App() {
         {tab === 'deck' && <DeckEditor />}
         {tab === 'synergie' && (
           <>
-            <LegendExplorer onOpenDeck={() => setTab('deck')} />
-            <MechanicSearchPanel />
-            <SynergyPanel />
+            <div role="tablist" className="flex gap-1 rounded-xl bg-surface p-1">
+              {synTabs.map((st) => (
+                <button
+                  key={st.id}
+                  role="tab"
+                  aria-selected={synTab === st.id}
+                  onClick={() => setSynTab(st.id)}
+                  className={`flex-1 rounded-md px-2 py-2 font-mono text-sm capitalize transition-colors ${
+                    synTab === st.id ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'
+                  }`}
+                >
+                  {t(st.label)}
+                </button>
+              ))}
+            </div>
+            {synTab === 'meta' && <MetaDecksPanel onOpenDeck={() => setTab('deck')} />}
+            {synTab === 'legends' && <LegendExplorer onOpenDeck={() => setTab('deck')} />}
+            {synTab === 'karten' && (
+              <>
+                <MechanicSearchPanel />
+                <SynergyPanel />
+              </>
+            )}
           </>
         )}
         {tab === 'mehr' && (

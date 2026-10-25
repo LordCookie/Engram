@@ -125,6 +125,10 @@ combinations. engram provides:
 - A **Legend Solver** that computes valid Legend trios from *only the cards you own* and ranks
   them by how much of your collection they unlock.
 - **Swap analysis** — see how changing one Legend unlocks or locks out parts of your pool.
+- **Meta decks:** five strong, publicly discussed decklists with a short write-up each — why
+  they're considered strong, the game plan, the weak spot and the source — plus what you're
+  missing, one tap to copy the list as your own deck and one to put the missing cards on your
+  want list.
 - **Legend explorer:** for any Legend, what real decks play with it — partner Legends, the most
   popular trios (one tap creates a deck from a trio) and the typical cards with their play rate.
 - **EDHREC-style synergy scoring** in three flavors, selectable in the solver and shown while
@@ -250,7 +254,7 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
 - **Deck testing & playtest:** ✅ Live (under **More**). The v2 combat model runs client-side to
   compare two legal decks (rough model, labelled), alongside a **manual practice-turn sandbox**
   (real zones, you move the cards, no forced rule engine).
-- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3.
+- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3. **Meta decks, own icons:** ✅ v0.3.1.
 
 ### What's next
 

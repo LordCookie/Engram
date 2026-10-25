@@ -41,6 +41,8 @@ import { useCorpus } from '../data/deckCorpus';
 import type { ParsedDeck } from '../domain/deckText';
 import type { Card, CardType, Color } from '../domain/types';
 import { t, tn } from '../i18n';
+import { Icon } from './Icon';
+import { Checkbox } from './Checkbox';
 
 /**
  * Deckeditor mit Live-Anzeige + Sammlungsmodus (PLAN.md § 5, Aufgabe 2/3).
@@ -255,14 +257,9 @@ export function DeckEditor() {
       <div className="rounded-lg bg-surface p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-mono text-lg">{t('Deckeditor')}</h2>
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            <input
-              type="checkbox"
-              checked={collectionMode}
-              onChange={(e) => setCollectionMode(e.target.checked)}
-            />
+          <Checkbox checked={collectionMode} onChange={setCollectionMode} className="text-xs text-muted">
             {t('nur was ich besitze')}
-          </label>
+          </Checkbox>
         </div>
 
         {/* Deck-Leiste: benannte Decks wählen/anlegen/umbenennen/löschen */}
@@ -355,14 +352,9 @@ export function DeckEditor() {
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-1 text-muted">
-            <input
-              type="checkbox"
-              checked={onlyLegal}
-              onChange={(e) => setOnlyLegal(e.target.checked)}
-            />
+          <Checkbox checked={onlyLegal} onChange={setOnlyLegal} className="text-muted">
             {t('nur legal spielbar')}
-          </label>
+          </Checkbox>
           {anyFilter && (
             <button
               onClick={() => {
@@ -424,7 +416,7 @@ export function DeckEditor() {
                   onClick={() => update((d) => removeLegend(d, l.id))}
                   className="ml-auto text-muted hover:text-card-red"
                 >
-                  ✕
+                  <Icon name="close" className="h-4 w-4" />
                 </button>
               </li>
             ))}
@@ -464,7 +456,7 @@ export function DeckEditor() {
               {collectionMode
                 ? t('Passt zu deinen Legends (nur Bestand) — zum Einbauen tippen')
                 : t('Passt zu deinen Legends — zum Einbauen tippen')}
-              {ingested > 0 ? t('; ✓ N Decks = in echten Decks (Meta + Community) mit diesen Legends gespielt') : ''}:
+              {ingested > 0 ? t('; Haken mit Zahl = so viele echte Decks (Meta + Community) spielen die Karte mit diesen Legends') : ''}:
             </p>
             <ul className="space-y-1">
               {suggestions.map((s) => {
@@ -496,7 +488,8 @@ export function DeckEditor() {
                         className="rounded bg-card-green/15 px-1 py-0.5 text-[10px] text-card-green"
                         title={t('Laut {n} Deck(s) im Korpus mit deinen Legends zusammen gespielt', { n: s.empirical })}
                       >
-                        {tn(s.empirical, '✓ {n} Deck', '✓ {n} Decks')}
+                        <Icon name="check" className="h-3 w-3" />
+                        {tn(s.empirical, '{n} Deck', '{n} Decks')}
                       </span>
                     ) : null}
                     <span className="ml-auto text-xs text-accent">{s.score.toFixed(1)}</span>
@@ -579,7 +572,7 @@ export function DeckEditor() {
                 </div>
                 <div className={over ? 'text-card-red' : 'text-muted'}>
                   {t('max RAM')} {c.maxRam}
-                  {over ? ' ⚠' : ''}
+                  {over && <Icon name="warning" className="ml-1 h-3.5 w-3.5" />}
                 </div>
               </div>
             );
@@ -668,7 +661,7 @@ export function DeckEditor() {
         <h3 className="mb-2 font-mono text-sm">
           {t('Validierung')}{' '}
           {validation.ok ? (
-            <span className="text-card-green">{t('✓ legal')}</span>
+            <span className="inline-flex items-center gap-1 text-card-green"><Icon name="check" className="h-3.5 w-3.5" />{t('legal')}</span>
           ) : (
             <span className="text-card-red">{t('{n} Problem(e)', { n: validation.violations.length })}</span>
           )}
@@ -690,7 +683,7 @@ export function DeckEditor() {
           </h3>
           <ul className="space-y-1 text-sm text-muted">
             {advice.map((a, i) => (
-              <li key={i}>⚠ {a}</li>
+              <li key={i} className="flex gap-1.5"><Icon name="warning" className="mt-0.5 h-3.5 w-3.5 text-accent" />{a}</li>
             ))}
           </ul>
         </div>
@@ -730,7 +723,7 @@ export function DeckEditor() {
                     className={`truncate text-left hover:text-accent ${ramOver ? 'text-card-red' : ''}`}
                   >
                     {card.name}
-                    {ramOver ? ' ⚠RAM' : ''}
+                    {ramOver && <span className="ml-1 inline-flex items-center gap-0.5"><Icon name="warning" className="h-3.5 w-3.5" />RAM</span>}
                   </button>
                   <span className="ml-auto flex items-center gap-2">
                     {collectionMode && (
@@ -745,7 +738,7 @@ export function DeckEditor() {
                       aria-label={t('{name} aus dem Deck entfernen', { name: card.name })}
                       className="text-muted hover:text-card-red"
                     >
-                      ✕
+                      <Icon name="close" className="h-4 w-4" />
                     </button>
                   </span>
                 </li>
@@ -766,7 +759,7 @@ export function DeckEditor() {
                 title={t('Alle fehlenden Karten auf die Want-Liste setzen')}
                 className="rounded border border-white/10 px-2 py-0.5 font-mono text-xs text-accent hover:border-accent"
               >
-                {t('☆ → Want-Liste')}
+                <Icon name="star" className="h-3.5 w-3.5" /> {t('→ Want-Liste')}
               </button>
               <span className="font-mono text-xs text-card-red">{t('{n} fehlen', { n: missing.totalMissing })}</span>
             </div>
@@ -774,7 +767,7 @@ export function DeckEditor() {
           <p className="mb-2 text-xs text-muted">
             {t('Diese Karten brauchst du für das Deck noch — Anzahl im Deck vs. Bestand. Legends stehen oben.')}
           </p>
-          {wantMsg && <p className="mb-2 text-xs text-card-green">✓ {wantMsg}</p>}
+          {wantMsg && <p className="mb-2 flex items-center gap-1 text-xs text-card-green"><Icon name="check" className="h-3.5 w-3.5" />{wantMsg}</p>}
           <ul className="space-y-1">
             {missing.cards.map(({ card, need, have, isLegend }) => (
               <li key={card.id} className="flex items-center gap-2 font-mono text-sm">

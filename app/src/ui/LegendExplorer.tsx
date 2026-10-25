@@ -11,6 +11,7 @@ import { fmtNum, t, tn } from '../i18n';
 import { rulesetV1Loaded } from '../rules/ruleset';
 import { CardDetail } from './CardDetail';
 import { CardImage } from './CardImage';
+import { Icon } from './Icon';
 
 /**
  * Legend-Explorer (Tab „Synergie"): Was spielen echte Decks mit einer Legend? Aus dem
@@ -100,7 +101,11 @@ export function LegendExplorer({ onOpenDeck }: { onOpenDeck: () => void }) {
                       <span className="block h-full bg-accent" style={{ width: `${(s.decks / max) * 100}%` }} />
                     </span>
                     <span className="w-14 shrink-0 text-right font-mono text-xs text-muted">{pct(s.share)}</span>
-                    {has(s.id) && <span className="shrink-0 text-xs text-card-green" title={t('In deiner Sammlung')}>✓</span>}
+                    {has(s.id) && (
+                      <span title={t('In deiner Sammlung')} className="text-card-green">
+                        <Icon name="check" className="h-4 w-4" />
+                      </span>
+                    )}
                   </button>
                 </li>
               );
@@ -111,7 +116,8 @@ export function LegendExplorer({ onOpenDeck }: { onOpenDeck: () => void }) {
               onClick={() => setShowAll((v) => !v)}
               className="mt-2 font-mono text-xs text-muted hover:text-accent"
             >
-              {showAll ? t('▴ weniger') : t('▾ alle {n} Legends', { n: popularity.length })}
+              <Icon name={showAll ? 'chevronUp' : 'chevronDown'} className="h-3.5 w-3.5" />{' '}
+              {showAll ? t('weniger') : t('alle {n} Legends', { n: popularity.length })}
             </button>
           )}
         </>
@@ -185,7 +191,7 @@ function LegendProfile({
         onClick={onBack}
         className="mb-3 rounded-md border border-white/10 px-2.5 py-1.5 font-mono text-xs text-muted hover:border-accent hover:text-accent"
       >
-        {t('← Alle Legends')}
+        <Icon name="back" className="h-3.5 w-3.5" /> {t('Alle Legends')}
       </button>
       <div className="flex gap-3">
         <button onClick={() => onDetail(legend)} className="shrink-0">
@@ -198,7 +204,11 @@ function LegendProfile({
             {tn(stats.decks, 'in {n} Deck ({p})', 'in {n} Decks ({p})', { p: pct(stats.share) })}
           </div>
           <div className={`mt-1 font-mono text-xs ${has(legend.id) ? 'text-card-green' : 'text-muted'}`}>
-            {has(legend.id) ? t('✓ in deiner Sammlung') : t('fehlt dir noch')}
+            {has(legend.id) ? (
+              <span className="inline-flex items-center gap-1"><Icon name="check" className="h-3.5 w-3.5" />{t('in deiner Sammlung')}</span>
+            ) : (
+              t('fehlt dir noch')
+            )}
           </div>
         </div>
       </div>
@@ -221,7 +231,7 @@ function LegendProfile({
                     <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[c.color]}`} />
                     <span className="min-w-0 flex-1 truncate font-mono text-sm">{legendLabel(c.id)}</span>
                     <span className="shrink-0 font-mono text-xs text-muted">{pct(p.share)}</span>
-                    {has(p.id) && <span className="shrink-0 text-xs text-card-green">✓</span>}
+                    {has(p.id) && <Icon name="check" className="h-4 w-4 text-card-green" />}
                   </button>
                 </li>
               );

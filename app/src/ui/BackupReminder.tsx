@@ -4,6 +4,7 @@ import { db, getBackupTimes, snoozeBackupReminder } from '../db/db';
 import { backupReminder } from '../domain/backupReminder';
 import { t, tn } from '../i18n';
 import { exportBackup } from './backup';
+import { Icon } from './Icon';
 
 /**
  * Dezente Erinnerung oben in der App, wenn länger nicht gesichert wurde und sich
@@ -39,7 +40,8 @@ export function BackupReminder() {
 
   if (done) {
     return (
-      <div className="rounded-md border border-card-green/40 bg-card-green/10 px-3 py-2 font-mono text-sm text-card-green">
+      <div className="flex items-center gap-2 rounded-md border border-card-green/40 bg-card-green/10 px-3 py-2 font-mono text-sm text-card-green">
+        <Icon name="check" />
         {done}
       </div>
     );
@@ -50,7 +52,7 @@ export function BackupReminder() {
     setBusy(true);
     try {
       const { result, summary } = await exportBackup();
-      if (result !== 'canceled') setDone(t('✓ Gesichert: {what}', { what: summary }));
+      if (result !== 'canceled') setDone(t('Gesichert: {what}', { what: summary }));
     } catch {
       /* Fehler zeigt das Backup-Panel unter „Mehr" ausführlicher */
     } finally {

@@ -15,6 +15,7 @@ import { CardImage } from './CardImage';
 import { CardDetail } from './CardDetail';
 import type { Card, CardType, CollectionEntry, Color } from '../domain/types';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Sammlungsansicht (PLAN.md § 5, Aufgabe 6): Fortschritt „x von y" je Farbe plus
@@ -112,10 +113,11 @@ export function CollectionView({
             <button
               onClick={onToggleCollapsed}
               aria-expanded={!collapsed}
-              className="rounded px-1.5 font-mono text-xs text-muted hover:text-accent"
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded px-1.5 font-mono text-xs text-muted hover:text-accent"
               title={collapsed ? t('Sammlung ausklappen') : t('Sammlung einklappen (schneller zum Solver)')}
             >
-              {collapsed ? t('▸ ausklappen') : t('▾ einklappen')}
+              <Icon name={collapsed ? 'chevronRight' : 'chevronDown'} className="h-3.5 w-3.5" />
+              {collapsed ? t('ausklappen') : t('einklappen')}
             </button>
           )}
         </div>
@@ -292,7 +294,7 @@ export function CollectionView({
                     title={t('Ganz entfernen (inkl. Alt-Art)')}
                     className="rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                   >
-                    ✕
+                    <Icon name="close" className="h-4 w-4" />
                   </button>
                 </li>
               ))}

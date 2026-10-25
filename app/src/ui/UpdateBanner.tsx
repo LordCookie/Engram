@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { APP_VERSION } from '../version';
 import { isNewer, pickLatestRelease, type ReleaseInfo } from '../domain/semver';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Prüft beim Start das neueste GitHub-Release und zeigt einen dezenten Hinweis,
@@ -54,7 +55,7 @@ export function UpdateBanner() {
         aria-label={t('Hinweis schließen')}
         className="ml-auto rounded px-2 text-muted hover:text-text"
       >
-        ✕
+        <Icon name="close" className="h-5 w-5" />
       </button>
     </div>
   );

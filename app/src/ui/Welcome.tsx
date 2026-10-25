@@ -3,6 +3,7 @@ import { addCounts, db, dismissWelcome, getWelcomeDismissed } from '../db/db';
 import { starterEntries, starters } from '../domain/starters';
 import { t } from '../i18n';
 import { Logo } from './Logo';
+import { Icon } from './Icon';
 
 /**
  * Einstieg beim ersten Start: Solange Sammlung, Want-Liste und Decks leer sind (und die
@@ -37,7 +38,7 @@ export function Welcome({ onGo }: { onGo: (target: WelcomeTarget) => void }) {
           aria-label={t('Willkommen ausblenden')}
           className="shrink-0 rounded px-2 py-1 text-muted hover:text-text"
         >
-          ✕
+          <Icon name="close" className="h-5 w-5" />
         </button>
       </div>
 

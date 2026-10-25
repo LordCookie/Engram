@@ -5,6 +5,7 @@ import { searchCards } from '../domain/search';
 import { db, addToCollection, addWant } from '../db/db';
 import type { Color } from '../domain/types';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Schnellerfassung (PLAN.md § 5, Aufgabe 5) — die wichtigste UI des Projekts.
@@ -136,7 +137,12 @@ export function QuickAdd() {
           </span>
         </p>
       )}
-      {wantNote && <p className="mt-2 text-sm text-accent">☆ {wantNote} {t('— auf der Want-Liste')}</p>}
+      {wantNote && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-accent">
+          <Icon name="star" className="h-4 w-4" />
+          {wantNote} {t('— auf der Want-Liste')}
+        </p>
+      )}
 
       {results.length > 0 && (
         <ul className="mt-3 divide-y divide-white/5 overflow-hidden rounded-md border border-white/5">
@@ -178,7 +184,7 @@ export function QuickAdd() {
                 aria-label={t('{name} auf die Want-Liste', { name: card.name })}
                 className="shrink-0 rounded px-1 text-accent hover:bg-white/10"
               >
-                ☆
+                <Icon name="star" className="h-4 w-4" />
               </button>
             </li>
           ))}

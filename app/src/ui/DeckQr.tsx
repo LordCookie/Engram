@@ -6,6 +6,7 @@ import { EngramCamera, hasNativeCamera, reticleOf } from '../native/engramCamera
 import { feedbackAdded } from '../native/feedback';
 import { t } from '../i18n';
 import { useBackClose } from './backButton';
+import { Icon } from './Icon';
 
 /**
  * Deck per QR-Code teilen (offline, Gerät zu Gerät):
@@ -240,7 +241,7 @@ export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) 
       {!native && <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />}
       <div className="absolute inset-x-0 top-0 flex h-14 items-center gap-2 bg-bg/90 px-3">
         <button onClick={onClose} aria-label={t('QR-Scanner schließen')} className="rounded px-2 py-1 text-lg">
-          ✕
+          <Icon name="close" className="h-5 w-5" />
         </button>
         <span className="font-mono text-xs text-muted">{t('Deck-QR scannen')}</span>
       </div>

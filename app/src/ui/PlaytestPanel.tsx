@@ -30,6 +30,7 @@ import {
   type Zone,
 } from '../domain/playtest';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Simulationsmodus (Roadmap „Playtest / Proberunden"). Manuelles Playtest wie
@@ -189,7 +190,7 @@ export function PlaytestPanel() {
                 >
                   <span className="truncate">{p.label}</span>
                   <span className="ml-2 shrink-0 text-xs text-muted">
-                    {t('{n} Karten · ▶ spielen', { n: deckCardTotal(p.deck) })}
+                    {t('{n} Karten · spielen', { n: deckCardTotal(p.deck) })} <Icon name="play" className="h-3 w-3" />
                   </span>
                 </button>
               </li>
@@ -242,7 +243,10 @@ export function PlaytestPanel() {
       <div className="rounded-lg bg-surface p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="truncate font-mono text-base">🎮 {s.deckName}</h2>
+            <h2 className="flex items-center gap-2 truncate font-mono text-base">
+              <Icon name="gamepad" className="h-5 w-5 text-accent" />
+              {s.deckName}
+            </h2>
             <p className="text-xs text-muted">{t('Manuelles Playtest · Zug {n}', { n: s.turn })}</p>
           </div>
           <button
@@ -266,14 +270,15 @@ export function PlaytestPanel() {
             }
             className="rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs hover:border-accent"
           >
-            {t('⟳ Neues Spiel')}
+            <Icon name="restart" className="h-3.5 w-3.5" /> {t('Neues Spiel')}
           </button>
           <button
             onClick={() => patch((x) => mulligan(x, RULES))}
             disabled={!canMulligan}
             className="rounded border border-white/10 px-2.5 py-1.5 font-mono text-xs hover:border-accent disabled:opacity-40"
           >
-            {t('Mulligan')}{canMulligan ? '' : ' ✓'}
+            {t('Mulligan')}
+            {!canMulligan && <Icon name="check" className="ml-1 h-3.5 w-3.5" />}
           </button>
           <button
             onClick={() => patch((x) => draw(x, 1))}
@@ -285,7 +290,7 @@ export function PlaytestPanel() {
             onClick={() => patch((x) => nextTurn(x, RULES))}
             className="rounded border border-accent bg-accent/20 px-2.5 py-1.5 font-mono text-xs text-accent hover:bg-accent/30"
           >
-            {t('▶ Nächster Zug')}
+            <Icon name="play" className="h-3 w-3" /> {t('Nächster Zug')}
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted">
@@ -326,7 +331,8 @@ export function PlaytestPanel() {
 
       {won && (
         <div className="rounded-lg bg-card-green/20 p-3 text-center font-mono text-sm text-card-green">
-          🎉 {t('{n} Gigs — mit so vielen Gigs würdest du deinen Zug als Sieg beginnen.', { n: s.gigs })}
+          <Icon name="trophy" className="mr-1.5 h-4 w-4" />
+          {t('{n} Gigs — mit so vielen Gigs würdest du deinen Zug als Sieg beginnen.', { n: s.gigs })}
         </div>
       )}
 
@@ -418,7 +424,7 @@ export function PlaytestPanel() {
             {t('Trash')} <span className="text-muted">({s.trash.length})</span>
             {drag && <span className="ml-2 text-[11px] text-muted">{t('· hierher ziehen')}</span>}
           </span>
-          <span className="text-muted">{showTrash ? '▾' : '▸'}</span>
+          <Icon name={showTrash ? 'chevronDown' : 'chevronRight'} className="h-4 w-4 text-muted" />
         </button>
         {showTrash && s.trash.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">

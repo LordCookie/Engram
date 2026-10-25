@@ -27,6 +27,7 @@ import type { Card, Color } from '../domain/types';
 import { t, tn } from '../i18n';
 
 import { Rich } from './Rich';
+import { Icon } from './Icon';
 /**
  * Kartenscanner (PLAN.md § 6; Aufbau aus ScryGlass, scanner-v2-plan.md). Ein Knopf öffnet
  * den Vollbild-Scanner (`ScanOverlay`), der die Karte an BILD und NAME erkennt:
@@ -1039,7 +1040,10 @@ export function ScannerPanel() {
                   <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
                   <span className="font-mono text-sm">{card.name}</span>
                   {card.subtitle && <span className="text-xs text-muted">{card.subtitle}</span>}
-                  <span className="ml-auto font-mono text-xs text-accent">{t('＋ Korb')}</span>
+                  <span className="ml-auto inline-flex items-center gap-0.5 font-mono text-xs text-accent">
+                    <Icon name="plus" className="h-3.5 w-3.5" />
+                    {t('Korb')}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -1094,7 +1098,8 @@ export function ScannerPanel() {
 
           {added > 0 && basket.length === 0 && (
             <p className="mb-2 text-sm text-card-green">
-              {tn(added, '{n} Karte in die Sammlung übernommen ✓', '{n} Karten in die Sammlung übernommen ✓')}
+              {tn(added, '{n} Karte in die Sammlung übernommen', '{n} Karten in die Sammlung übernommen')}{' '}
+              <Icon name="check" className="h-4 w-4" />
             </p>
           )}
 
@@ -1152,7 +1157,7 @@ export function ScannerPanel() {
                           aria-label={t('{name} aus dem Korb entfernen', { name: card.name })}
                           className="ml-auto rounded px-2 py-1 text-muted hover:bg-white/10 hover:text-card-red"
                         >
-                          ✕
+                          <Icon name="close" className="h-4 w-4" />
                         </button>
                       </div>
                       {correcting && (

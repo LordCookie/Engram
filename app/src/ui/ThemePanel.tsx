@@ -5,6 +5,7 @@ import { hasIconSwitch, setAppIcon } from '../native/engramIcon';
 import { Logo } from './Logo';
 import { THEMES, applyTheme, isThemeName, type ThemeName } from './theme';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Farbthema-Auswahl (unter „Mehr"). Wechselt sofort den Look (inkl. Logo, Favicon,
@@ -66,7 +67,7 @@ export function ThemePanel() {
                 <Logo className="h-5 w-4" />
               </span>
               {t(th.label)}
-              {active && <span className="text-accent">✓</span>}
+              {active && <Icon name="check" className="h-4 w-4 text-accent" />}
             </button>
           );
         })}

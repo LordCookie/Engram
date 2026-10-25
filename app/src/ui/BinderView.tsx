@@ -11,6 +11,7 @@ import { CardImage } from './CardImage';
 import type { Card, CollectionEntry, Color, WantEntry } from '../domain/types';
 import { t, tk } from '../i18n';
 import { useBackClose } from './backButton';
+import { Icon } from './Icon';
 
 /**
  * Binder-Ansicht (virtuelle Sammelmappe): Knopf ganz unten in der Sammlung, öffnet die
@@ -96,7 +97,7 @@ function BinderView({ onClose }: { onClose: () => void }) {
             <span className="text-accent">{ownedCount}</span>/{slots.length} {t('Karten')}
           </span>
           <button onClick={onClose} aria-label={t('Binder schließen')} className="ml-auto rounded px-2 py-1 text-lg text-muted hover:text-text">
-            ✕
+            <Icon name="close" className="h-5 w-5" />
           </button>
         </div>
         <div className="mx-auto mt-2 flex max-w-xl flex-wrap gap-1.5">
@@ -157,7 +158,7 @@ function BinderView({ onClose }: { onClose: () => void }) {
           aria-label={t('Vorige Seite')}
           className="rounded-md border border-white/10 px-4 py-2 font-mono text-sm disabled:opacity-30"
         >
-          ‹
+          <Icon name="chevronLeft" className="h-4 w-4" />
         </button>
         <span className="min-w-[7rem] text-center font-mono text-sm text-muted">
           {t('Seite {n} / {m}', { n: Math.min(page, pageCount - 1) + 1, m: pageCount })}
@@ -168,7 +169,7 @@ function BinderView({ onClose }: { onClose: () => void }) {
           aria-label={t('Nächste Seite')}
           className="rounded-md border border-white/10 px-4 py-2 font-mono text-sm disabled:opacity-30"
         >
-          ›
+          <Icon name="chevronRight" className="h-4 w-4" />
         </button>
       </div>
 
@@ -229,7 +230,7 @@ function Pocket({
         title={wanted ? t('Auf der Want-Liste (antippen: +1)') : t('Auf die Want-Liste')}
         className={`absolute right-0.5 top-0.5 rounded px-1.5 py-0.5 text-sm ${wanted ? 'text-accent' : 'text-muted/60 hover:text-accent'}`}
       >
-        {wanted ? '★' : '☆'}
+        <Icon name={wanted ? 'starFilled' : 'star'} className="h-4 w-4" />
       </button>
     </div>
   );

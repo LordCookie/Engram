@@ -1296,3 +1296,24 @@ Bewegung und Theme-Motive. Gewählt wurden **Glow, Platinen und Bewegung**, dazu
 **Startanimation für den Scanner** (Blende, Ecken rasten ein, Scan-Strahl). Das Labor ist danach
 wieder entfernt worden. Alle Effekte hängen nur an den Theme-Tokens, passen also zu jedem
 Farbthema, und respektieren „Bewegung reduzieren".
+
+## 2026-10-25 — v0.3.1: Meta-Decks-Reiter, einklappbare Combos, eigene Icons
+
+**Meta-Decks als eigener Unterreiter in „Synergie".** Die Recherche zu starken Decks (fünf
+Listen aus Deck-Guides, RipperDeck-Statistik und einem Podcast) gehört in die App, nicht nur auf
+eine externe Seite. „Synergie" hat dafür drei Unterreiter: Meta-Decks, Legends, Karten. Die
+Listen sind fremde Deckdaten und bleiben deshalb wie `coplay.json` gitignored; nur das
+Werkzeug `sim/build_meta_decks.ts` ist im Repo. Es prüft jede Liste mit `parseDeckText` und
+`validate` und bricht ab, statt eine fehlerhafte Liste auszuliefern. Die Einordnung ist in
+eigenen Worten (DE/EN), mit Quelle und Datum. Eine Reihung nach unserem Kampf-Modell wurde
+bewusst nicht gezeigt: Das Modell setzt die Starter vor BBG Control, das wäre irreführend.
+
+**Combos einklappbar.** „Benannte Combos" und „Weitere Combos" waren lang und schoben die
+Kartensuche aus dem Blick. Beide nutzen jetzt `Collapsible` (Standard zu, Zustand bleibt beim
+Ansehen einer Karte erhalten).
+
+**Eigene Icons statt Unicode-Zeichen und Emojis.** ✕ ✓ ☆ ▸ ↗ 🔦 🎮 und Co. sahen je nach
+Gerät und Schrift anders aus (Emojis bunt, manche Zeichen fehlen in der Mono-Schrift). Ein
+kleines Icon-Set (`ui/Icon.tsx`) in der Formsprache der Navigations-Icons ersetzt sie, ebenso
+eine eigene Checkbox und der Pfeil der `<details>`-Abschnitte. Die Symbole stehen dadurch nicht
+mehr in den übersetzbaren Texten; die englischen Schlüssel wurden mitgezogen.

@@ -1,5 +1,6 @@
 import { LANGS, t, type Lang } from '../i18n';
 import { changeLang, useLang } from './lang';
+import { Icon } from './Icon';
 
 const NAMES: Record<Lang, string> = { de: 'Deutsch', en: 'English' };
 
@@ -24,7 +25,7 @@ export function LanguagePanel() {
             }`}
           >
             {NAMES[l]}
-            {lang === l && <span className="ml-2 text-accent">✓</span>}
+            {lang === l && <Icon name="check" className="ml-2 h-4 w-4 text-accent" />}
           </button>
         ))}
       </div>

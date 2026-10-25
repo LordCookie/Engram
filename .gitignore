@@ -42,6 +42,9 @@ sim/out/
 sim/meta-decks/
 # Eingespeiste eigene Deck-Textlisten (Korpus-Futter, Dev-Tool import_decklists.ts).
 sim/deck-import/
+# Meta-Decks (Synergie → Meta-Decks): fremde Decklisten + Quelle (sim/build_meta_decks.ts) → nur lokal.
+sim/meta-decks-src.json
+app/src/data/metaDecks.json
 
 # Python
 __pycache__/

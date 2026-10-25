@@ -234,7 +234,27 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   „Mehr". Korb-Animation im Scanner.
 - **Combos** (§ 12): `domain/synergy.ts` `topCombos` (automatisch, stärkste Paare) +
   **kuratierte benannte Combos** (`data/combos.json`, committed, eigene Erklärungen §8)
-  in der Synergie-Ansicht („Benannte Combos" + „Weitere Combos (automatisch)").
+  in der Synergie-Ansicht („Benannte Combos" + „Weitere Combos (automatisch)"), seit v0.3.1
+  beide **einklappbar** (`Collapsible` mit `small` + gesteuertem `open`, Zustand im
+  `SynergyPanel` → bleibt beim Ansehen einer Karte erhalten; Standard zu).
+- **Synergie-Unterreiter (v0.3.1)** (`App.tsx`, Zustand `synTab` in `App`): **Meta-Decks ·
+  Legends · Karten** (Karten = Mechanik-Suche + Kartensynergie + Combos).
+- **Meta-Decks (v0.3.1)** (`domain/metaDecks.ts` rein/getestet, `data/metaDecks.ts`,
+  `ui/MetaDecksPanel.tsx`): 5 starke Decks aus öffentlichen Deck-Guides/Meta-Statistiken
+  (BBG Control, YYR Gear-Tempo, RRY Smasher-Midrange, Mono-Blau Judy, River's Closet; Stand
+  25.10.2026) mit eigener Einordnung DE/EN (warum stark, Spielplan, Schwachstelle, Sideboard,
+  Quelle), Deckliste nach Typ mit Bestand, „Als Deck übernehmen" (neues Deck → Deckeditor) und
+  „N fehlende → Want-Liste". Daten: Quelle `sim/meta-decks-src.json` (Deck-Textformat + Texte)
+  → **`cd sim && npm run build-meta-decks`** (`build_meta_decks.ts`: `parseDeckText` +
+  `validate`, bricht bei unauflösbarer Zeile/illegalem Deck ab) → `app/src/data/metaDecks.json`.
+  Beide **gitignored** (fremde Decklisten, § 8); die App lädt optional per `import.meta.glob`
+  (fehlt die Datei: Hinweis statt Liste). Ehrlich beschriftet: Online-Quoten ≠ Turnier.
+- **Eigene Icons statt Unicode/Emoji (v0.3.1)**: `ui/Icon.tsx` (Linien-Icons 24×24,
+  currentColor, gleiche Formsprache wie `NavIcon`; close/check/star/chevrons/external/warning/
+  play/plus/flashlight/gamepad/trophy/restart …) ersetzt ✕ ✓ ☆ ★ ▸ ▾ ↗ ⚠ ▶ ⟳ 🔦 🎮 🎉 ＋ in der
+  ganzen UI; `ui/Checkbox.tsx` (`role="checkbox"`, Akzentfarbe) statt nativer Häkchen-Boxen;
+  `<details>`-Pfeile per CSS-Maske (`index.css`). Symbole stehen nicht mehr in den `t()`-Texten.
+  Bleiben dürfen typografische Pfeile im Fließtext (→) und Tastenhinweise (↑ ↓ ⇧).
 - **Ingest-Pipeline** (§ 12 C, Phase 4a — Mechanismus steht, quellen-agnostisch):
   `pipeline/ingest_decks.py` (stdlib-only) liest slug-basierte Decklisten aus
   `pipeline/decklists/*.json`, verwirft illegale (Python-Port der vier § 1-Regeln,
@@ -497,7 +517,7 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   Android-`versionName`/`versionCode` liest `app/android/app/build.gradle` daraus (0.2.0 → 200). Abfrage über
   die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
   `releases/latest` die überspringt (sonst 404).
-- 305 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 310 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -521,6 +541,11 @@ python pipeline/test_ingest_decks.py
 python pipeline/test_fetch_cards.py
 # bootstrap_features.py = Heuristik-Fallback (überschreibt features.json!) — nur ohne kuratierte Quelle nutzen
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
+```
+
+## Dev-Werkzeuge (sim/, Konsole)
+```
+cd sim && npm run build-meta-decks    # Meta-Decks prüfen + bauen: meta-decks-src.json -> app/src/data/metaDecks.json
 ```
 
 ## Nächste Schritte (Roadmap nach v0.3, Reihenfolge = Vorschlag)

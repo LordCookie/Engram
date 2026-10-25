@@ -13,6 +13,7 @@ import { achievementsQuiet } from './achievementsQuiet';
 import { Collapsible } from './Collapsible';
 import { Logo } from './Logo';
 import { t, tn } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Sammler-Erfolge: Liste mit Fortschritt (Sammlung, einklappbar) und eine kurze
@@ -66,7 +67,7 @@ export function AchievementsPanel() {
                 <div className={`truncate font-mono text-sm ${a.unlocked ? 'text-accent' : 'text-text'}`}>{a.title}</div>
                 <div className="truncate text-xs text-muted">{a.description}</div>
               </div>
-              {a.unlocked && <span className="shrink-0 font-mono text-sm text-accent">✓</span>}
+              {a.unlocked && <Icon name="check" className="h-4 w-4 text-accent" />}
             </div>
             {!a.unlocked && a.target > 1 && (
               <div className="mt-2 flex items-center gap-2">

@@ -11,6 +11,7 @@
     "pull-meta": "vite-node --script pull_meta.ts",
     "eval-meta": "vite-node --script eval_meta.ts",
     "import-decklists": "vite-node --script import_decklists.ts",
+    "build-meta-decks": "vite-node --script build_meta_decks.ts",
     "decks": "vite-node --script run.ts decks",
     "battle": "vite-node --script run.ts battle",
     "game": "vite-node --script run.ts game",

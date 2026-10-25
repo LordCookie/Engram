@@ -40,8 +40,8 @@ describe('t / tn / detectLang', () => {
   it('ersetzt Platzhalter und wählt Singular/Plural', () => {
     setLangSync('en', EN);
     expect(t('{n} Karten', { n: 3 })).toBe('3 cards');
-    expect(tn(1, '{n} Karte in die Sammlung übernommen ✓', '{n} Karten in die Sammlung übernommen ✓')).toBe(
-      '1 card added to the collection ✓',
+    expect(tn(1, '{n} Karte in die Sammlung übernommen', '{n} Karten in die Sammlung übernommen')).toBe(
+      '1 card added to the collection',
     );
   });
 

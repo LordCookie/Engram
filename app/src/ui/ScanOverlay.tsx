@@ -5,6 +5,7 @@ import { hapticTap } from '../native/feedback';
 import type { Card } from '../domain/types';
 import { t } from '../i18n';
 import { useBackClose } from './backButton';
+import { Icon } from './Icon';
 
 /**
  * Vollbild-Scanner (Aufbau aus ScryGlass). Hängt per Portal direkt an <body>, der Rest
@@ -155,7 +156,7 @@ export function ScanOverlay(p: Props) {
 
   const closeBtn = (
     <button onClick={withTick(p.onClose)} aria-label={t('Scanner schließen')} className="rounded px-2 py-1 text-lg text-text">
-      ✕
+      <Icon name="close" className="h-5 w-5" />
     </button>
   );
   const title = (
@@ -170,7 +171,7 @@ export function ScanOverlay(p: Props) {
       aria-label={t('Licht')}
       className={`shrink-0 rounded px-2 py-1.5 text-sm ${p.torchOn ? 'bg-accent text-on-accent' : 'bg-surface text-muted'}`}
     >
-      🔦
+      <Icon name="flashlight" className="h-5 w-5" />
     </button>
   );
   const autoBtn = (
@@ -200,7 +201,8 @@ export function ScanOverlay(p: Props) {
   );
   const toast = p.toast && (
     <div className="truncate rounded bg-card-green/15 px-2 py-0.5 font-mono text-xs text-card-green">
-      {t('✓ {name} in den Korb', { name: p.toast })}
+      <Icon name="check" className="mr-1 h-3.5 w-3.5" />
+      {t('{name} in den Korb', { name: p.toast })}
     </div>
   );
   const matchInfo = p.best && (
@@ -227,7 +229,8 @@ export function ScanOverlay(p: Props) {
   );
   const addBtn = (
     <button onClick={p.onAdd} className="shrink-0 rounded bg-accent px-3 py-2 font-mono text-sm text-on-accent">
-      {t('＋ Korb')}
+      <Icon name="plus" className="mr-1 h-4 w-4" />
+      {t('Korb')}
     </button>
   );
   const noMatch = <p className="pt-3 text-center font-mono text-xs text-muted">{t('Noch kein Treffer.')}</p>;

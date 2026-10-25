@@ -10,6 +10,7 @@ import { CardImage } from './CardImage';
 import { Collapsible } from './Collapsible';
 import type { CollectionEntry, Color } from '../domain/types';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Want-Liste (Wunschliste): was du noch besorgen willst. Befüllbar hier per
@@ -47,7 +48,7 @@ export function WantListPanel() {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={t('Karte suchen und ☆ auf die Want-Liste…')}
+        placeholder={t('Karte suchen und auf die Want-Liste setzen…')}
         className="w-full rounded-md border border-white/10 bg-bg px-3 py-2 font-mono text-sm text-text outline-none focus:border-accent"
       />
       {results.length > 0 && (
@@ -64,7 +65,10 @@ export function WantListPanel() {
               <span className={`h-2 w-2 shrink-0 rounded-full ${colorDot[card.color]}`} />
               <span className="truncate">{card.name}</span>
               {card.subtitle && <span className="truncate text-xs text-muted">{card.subtitle}</span>}
-              <span className="ml-auto shrink-0 text-accent">☆ +</span>
+              <span className="ml-auto flex shrink-0 items-center gap-0.5 text-accent">
+                <Icon name="star" className="h-4 w-4" />
+                <Icon name="plus" className="h-3 w-3" />
+              </span>
             </li>
           ))}
         </ul>
@@ -72,7 +76,7 @@ export function WantListPanel() {
 
       {wants.length === 0 ? (
         <p className="mt-3 text-xs text-muted">
-          {t('Noch nichts gewünscht. Karten hier suchen, beim Erfassen ☆ tippen oder im Deck „Fehlende → Want-Liste".')}
+          {t('Noch nichts gewünscht. Karten hier suchen, beim Erfassen den Stern antippen oder im Deck „Fehlende Karten → Want-Liste".')}
         </p>
       ) : (
         <ul className="mt-3 space-y-1">
@@ -98,7 +102,7 @@ export function WantListPanel() {
               <span className="truncate">{card.name}</span>
               <span className="ml-auto flex items-center gap-2 shrink-0 text-xs">
                 {st === 0 ? (
-                  <span className="text-card-green">{t('✓ im Bestand')}</span>
+                  <span className="inline-flex items-center gap-1 text-card-green"><Icon name="check" className="h-3.5 w-3.5" />{t('im Bestand')}</span>
                 ) : (
                   <span className="text-muted">
                     {have}/{want} · <span className="text-card-red">−{st}</span>
@@ -110,7 +114,7 @@ export function WantListPanel() {
                   aria-label={t('{name} von der Want-Liste entfernen', { name: card.name })}
                   className="text-muted hover:text-card-red"
                 >
-                  ✕
+                  <Icon name="close" className="h-4 w-4" />
                 </button>
               </span>
             </li>

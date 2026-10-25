@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { t } from '../i18n';
 import { Rich } from './Rich';
 import { useBackClose } from './backButton';
+import { Icon } from './Icon';
 
 /**
  * Kurze Spielhilfe („How to play"), aufklappbar als Overlay unter „Mehr".
@@ -64,7 +65,7 @@ export function HowToPlay() {
                 aria-label={t('Schließen')}
                 className="rounded px-2 py-1 text-muted hover:text-text"
               >
-                ✕
+                <Icon name="close" className="h-5 w-5" />
               </button>
             </div>
 
@@ -128,7 +129,7 @@ export function HowToPlay() {
               rel="noreferrer"
               className="inline-block font-mono text-sm text-accent hover:underline"
             >
-              {t('Vollständige Regeln auf cyberpunktcg.com ↗')}
+              {t('Vollständige Regeln auf cyberpunktcg.com')} <Icon name="external" className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>

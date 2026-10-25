@@ -13,6 +13,8 @@ import { SynergyInfo } from './SynergyInfo';
 import type { Color } from '../domain/types';
 import { t, tn } from '../i18n';
 import { Rich } from './Rich';
+import { Icon } from './Icon';
+import { Collapsible } from './Collapsible';
 
 /**
  * Synergie-Ansicht pro Karte (PLAN.md § 12, Variante A). Wähle eine Karte,
@@ -31,6 +33,9 @@ const colorDot: Record<Color, string> = {
 export function SynergyPanel() {
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Combos einklappbar; der Zustand bleibt, wenn man kurz eine Karte ansieht.
+  const [namedOpen, setNamedOpen] = useState(false);
+  const [autoOpen, setAutoOpen] = useState(false);
 
   const results = useMemo(() => searchCards(catalog, query, { limit: 8 }), [query]);
   const selected = selectedId ? cardIndex.get(selectedId) : undefined;
@@ -102,8 +107,13 @@ export function SynergyPanel() {
 
       {/* Kuratierte, benannte Combos (handverlesen, mit Erklärung). */}
       {!selected && curatedCombos.length > 0 && (
-        <div className="rounded-lg bg-surface p-4">
-          <h3 className="mb-1 font-mono text-sm">{t('Benannte Combos')}</h3>
+        <Collapsible
+          small
+          title={t('Benannte Combos')}
+          right={tn(curatedCombos.length, '{n} Combo', '{n} Combos')}
+          open={namedOpen}
+          onOpenChange={setNamedOpen}
+        >
           <p className="mb-3 text-xs text-muted">
             {t('Handverlesene Kartenpakete mit Erklärung. Tippe eine Karte für ihre Partner.')}
           </p>
@@ -128,13 +138,18 @@ export function SynergyPanel() {
               </li>
             ))}
           </ol>
-        </div>
+        </Collapsible>
       )}
 
       {/* Standardansicht: die stärksten Combos im Set (bis eine Karte gewählt wird). */}
       {!selected && combos.length > 0 && (
-        <div className="rounded-lg bg-surface p-4">
-          <h3 className="mb-1 font-mono text-sm">{t('Weitere Combos (automatisch)')}</h3>
+        <Collapsible
+          small
+          title={t('Weitere Combos (automatisch)')}
+          right={tn(combos.length, '{n} Paar', '{n} Paare')}
+          open={autoOpen}
+          onOpenChange={setAutoOpen}
+        >
           <p className="mb-3 text-xs text-muted">
             {t('Stärkste vorhergesagte Karten-Paare aus dem ganzen Set (RAM-spielbar). Tippe eine Karte für ihre Partner.')}
           </p>
@@ -174,7 +189,7 @@ export function SynergyPanel() {
               );
             })}
           </ol>
-        </div>
+        </Collapsible>
       )}
 
       {selected && (
@@ -183,7 +198,7 @@ export function SynergyPanel() {
             onClick={() => setSelectedId(null)}
             className="mb-3 inline-flex items-center gap-1 rounded-md border border-white/10 px-2.5 py-1.5 font-mono text-xs text-muted hover:border-accent hover:text-accent"
           >
-            {t('← Zurück zu den Combos')}
+            <Icon name="back" className="h-3.5 w-3.5" /> {t('Zurück zu den Combos')}
           </button>
           <div className="mb-4 flex gap-4">
             <CardImage card={selected} src={images.get(selected.id)} className="h-44 w-32" />
@@ -207,7 +222,7 @@ export function SynergyPanel() {
                   rel="noreferrer"
                   className="mt-2 inline-block font-mono text-xs text-muted hover:text-accent"
                 >
-                  {t('auf cyberpunktcg.com ansehen ↗')}
+                  {t('auf cyberpunktcg.com ansehen')} <Icon name="external" className="h-3.5 w-3.5" />
                 </a>
               )}
             </div>
@@ -240,7 +255,8 @@ export function SynergyPanel() {
                             className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] text-emerald-300"
                             title={t('Wird laut deinen Decks auch tatsächlich zusammen gespielt')}
                           >
-                            {t('✓ empirisch')}
+                            <Icon name="check" className="mr-0.5 h-3 w-3" />
+                            {t('empirisch')}
                           </span>
                         )}
                         <span className="ml-auto font-mono text-xs text-accent">

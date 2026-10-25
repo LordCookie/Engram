@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { loadCardImages } from '../data/cardImages';
 import { t } from '../i18n';
+import { Icon } from './Icon';
 
 /**
  * Lädt einmalig alle Kartenbilder, damit der Service-Worker sie cacht und die
@@ -79,7 +80,13 @@ export function OfflineImagesPanel() {
       {finished && (
         <p className="mt-2 font-mono text-xs text-muted">
           {t('{n}/{total} Bilder im Cache', { n: done - failed, total })}
-          {failed > 0 ? t(' · {n} fehlgeschlagen (später „nochmal laden“)', { n: failed }) : t(' · fertig ✓')}
+          {failed > 0 ? (
+            t(' · {n} fehlgeschlagen (später „nochmal laden“)', { n: failed })
+          ) : (
+            <>
+              {t(' · fertig')} <Icon name="check" className="h-3.5 w-3.5 text-card-green" />
+            </>
+          )}
         </p>
       )}
     </section>
