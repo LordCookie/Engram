@@ -5,6 +5,7 @@ import { encodeDeckQr, isDeckQr, type QrDeck } from '../domain/deckQr';
 import { EngramCamera, hasNativeCamera, reticleOf } from '../native/engramCamera';
 import { feedbackAdded } from '../native/feedback';
 import { t } from '../i18n';
+import { useBackClose } from './backButton';
 
 /**
  * Deck per QR-Code teilen (offline, Gerät zu Gerät):
@@ -16,6 +17,7 @@ import { t } from '../i18n';
 
 /** QR-Code eines Decks als Vollbild-Dialog. */
 export function DeckQrDialog({ deck, onClose }: { deck: QrDeck; onClose: () => void }) {
+  useBackClose(true, onClose);
   const [cells, setCells] = useState<{ n: number; path: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +138,7 @@ function reticleInVideo(video: HTMLVideoElement, el: HTMLElement): { sx: number;
  * QR-Codes werden ignoriert (kurzer Hinweis).
  */
 export function QrScanOverlay({ onResult, onClose }: { onResult: (text: string) => void; onClose: () => void }) {
+  useBackClose(true, onClose);
   const native = hasNativeCamera();
   const reticleRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);

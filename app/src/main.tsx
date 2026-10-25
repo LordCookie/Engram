@@ -2,7 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { initLang } from './ui/lang';
+import { initBackButton } from './ui/backButton';
 import './index.css';
+import './effects.css';
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root-Element #root nicht gefunden');
@@ -15,3 +17,4 @@ void initLang().finally(() =>
     </StrictMode>,
   ),
 );
+void initBackButton(); // Android-Zurück schließt offene Vollbild-Fenster (Scanner, Binder …)

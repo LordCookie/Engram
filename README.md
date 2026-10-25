@@ -100,6 +100,10 @@ the official English printing.
   cards, tap ☆ to put them on your want list).
 - **Share decks by QR code:** show a deck as a QR code, scan it on another phone — offline.
 - **Collector achievements:** badges with progress (first Legend, a color complete, all alt arts …).
+- **Circuit-board look:** the background is one big circuit board in your theme color, buttons glow,
+  content glides in, and the scanner opens with a shutter-and-lock-on animation.
+- **One "Add" tab** for scanning and searching, a larger bottom bar with icons, and the Android back
+  button closes the scanner and other full-screen views instead of leaving the app.
 
 ### 📚 Collection
 
@@ -236,16 +240,35 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
   OCR via a worker pool. **Scanner v2** (image hash + fusion + native ML Kit, alt-art
   detection) replaced the OCR-only scanner after on-phone testing. iOS camera support is
   still open.
-- **Phase 4 — Stats service:** 🔄 In progress. The **local ingest pipeline** is in place
-  (`pipeline/ingest_decks.py` aggregates legal decklists — your own plus pulled meta decks —
-  into a co-play corpus the app merges in); a FastAPI/SQLite service to broaden the signal is
-  the next step.
+- **Phase 4 — Stats:** ✅ Local-first instead of a server. `pipeline/ingest_decks.py` aggregates
+  ~950 legal decklists (meta decks + public community decks from the official deckbuilder) into a
+  co-play corpus with Legend trios that ships with the app — powering empirical synergy and the
+  Legend explorer. A FastAPI service is no longer needed for that.
 - **Phase 5 — Native mobile app:** ✅ Android debug APK available in
   [Releases](https://github.com/LordCookie/Engram/releases) (built from `app/android/` via
   Capacitor). iOS is a later step.
 - **Deck testing & playtest:** ✅ Live (under **More**). The v2 combat model runs client-side to
   compare two legal decks (rough model, labelled), alongside a **manual practice-turn sandbox**
   (real zones, you move the cards, no forced rule engine).
+- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3.
+
+### What's next
+
+1. **Signed release builds** — a proper signing key instead of the debug key, so updates keep
+   working even on a new PC (one-time reinstall, restore from the full backup).
+2. **Scanner calibration with real scan logs** — tune thresholds and name zones on actual phone
+   scans (glare, foils, alt arts, low light).
+3. **Trade matching via QR** — two players show each other a want/trade QR code; the app lists
+   what each can give the other. Offline, built on the deck-QR code.
+4. **Booster mode** — scan a booster card by card, then get a summary (new cards, rarities, alt
+   arts) and running pull statistics.
+5. **Ready for the next set** — carry the set code through set progress, binder and achievements
+   so a second set doesn't need a rebuild of those views.
+6. **Corpus refresh without a new APK** — optionally download a fresh co-play corpus from the
+   latest release instead of waiting for the next app version.
+7. **Faster start** — split the ~600 KB main bundle (deck test, playtest and synergy views load
+   on demand).
+8. **iOS** — Capacitor iOS shell plus a native camera plugin.
 
 ## 📄 License
 

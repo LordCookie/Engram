@@ -39,6 +39,7 @@ export function BootSplash({ onDone }: { onDone: () => void }) {
     <div
       onClick={onDone}
       role="presentation"
+      data-boot
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-bg"
       style={leaving ? { animation: 'bootOut 0.35s ease-in forwards' } : undefined}
     >

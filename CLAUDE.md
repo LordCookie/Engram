@@ -222,8 +222,11 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   spiegelt die slug→URL-Tabelle nach Dexie (`meta`) für den Offline-Fallback.
   `ui/OfflineImagesPanel.tsx` (Tab „Erfassen") lädt alle Bilder einmalig in den
   Cache; `CardImage` fällt bei Ladefehler sauber auf den Platzhalter.
-- **UX-Struktur** (`App.tsx`): 6 Bereiche **Scannen · Erfassen · Sammlung · Deck ·
-  Synergie · ⚙ Mehr**; auf Mobil unten fixierte Nav. Sammlung mit Suche/Filter/
+- **UX-Struktur** (`App.tsx`): 5 Reiter **Sammlung · Deck · Erfassen · Synergie · Mehr**
+  (seit v0.3: Scanner + Schnellerfassung + Starter in EINEM Reiter „Erfassen", Scanner oben;
+  Schnellerfassung fokussiert nur mit Maus/Tastatur, am Handy keine aufspringende Tastatur).
+  Auf Mobil unten fixierte, größere Nav (≥ 3,5 rem hoch) mit Linien-Icons (`ui/NavIcon.tsx`,
+  currentColor → Themefarbe). Sammlung mit Suche/Filter/
   Sortierung; **einklappbar** (Knopf im Kopf, Zustand in `App` gehalten → bleibt beim
   Tab-Wechsel, kein LocalStorage) — eingeklappt zeigt sie nur die Zahlen, damit man
   schnell zum **Legend-Solver** darunter kommt. Wiederverwendbares **Kartendetail**
@@ -472,6 +475,21 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `ui/BackupReminder.tsx` oben in der App): noch nie gesichert → ab 3 Tage alten Daten; sonst nach
   14 Tagen, aber nur wenn sich seitdem etwas geändert hat; „Jetzt sichern" startet direkt das
   Backup, „Später" = 7 Tage Ruhe (Dexie `meta` `lastBackupAt`/`backupSnoozeUntil`).
+- **Android-Zurück-Taste (v0.3)** (`ui/backButton.ts`, Plugin `@capacitor/app`): schließt das
+  oberste offene Vollbild-Fenster (Scanner, QR-Scanner, QR-Anzeige, Binder, Kartendetail,
+  Spielhilfe — je `useBackClose(offen, schließen)`, Stapel: zuletzt geöffnet zuerst); ist keins
+  offen, geht die App in den Hintergrund (`App.minimizeApp`). Nur nativ (`initBackButton` in `main.tsx`).
+- **Effekte (v0.3)** (`src/effects.css`, im Design-Labor gemeinsam ausgewählt): **Neon-Glow**
+  (`.bg-accent`-Knöpfe, Titel, Logo, „Scanner starten" pulsiert per `data-cta`), **Platinen-Linien**
+  (Hintergrund = EINE große Platine: nahtlose 480er-Kachel mit zwei Lagen, Chips U1–U3, Bussen mit
+  45°-Knicken, Vias, Bauteilen, Kupferfeld, Bohrlöchern, Beschriftung — erzeugt von
+  `python docs/design/pcb_background.py`, schreibt die `body::before`-Regel; als Maske in
+  Akzentfarbe; beim Scannen aus, weil das native Kamerabild hinter der WebView liegt;
+  **Eck-Klammern** oben links/unten rechts an jeder Karte; „Strom" läuft über den aktiven Reiter) und **Bewegung** (Inhalte gleiten herein, Knöpfe geben nach, Balken schimmern; der
+  Boot-Bildschirm `data-boot` ist ausgenommen). **Scanner-Startanimation** (`scan-boot` in
+  `ui/ScanOverlay.tsx`, ~1,4 s): Blende öffnet sich, Rahmenecken rasten ein (Vibrations-Tick),
+  Scan-Strahl läuft einmal durch. Alles nur über Theme-Tokens; Animationen aus bei
+  „Bewegung reduzieren". Verworfen: Glitch, Scanlines, Theme-Motive.
 - **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
   GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
   schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
@@ -505,8 +523,18 @@ python pipeline/test_fetch_cards.py
 # extract_features.py  = reproduzierbarer API-Lauf für neue Sets, braucht ANTHROPIC_API_KEY
 ```
 
-Nächste sinnvolle Schritte: **Scanner-Feinschliff** per Scan-Protokoll (Schwellen/
-Namenszonen nachziehen); Korpus regelmäßig auffrischen (`fetch_community_decks.py` +
-`ingest_decks.py`); Release-Signierschlüssel statt Debug-Key; Deck-UX &
-Synergie-Vorschläge im Editor; **iOS-Kamera** (Spike 0.1). (Tipp-zum-Fokussieren im
-Scanner: erledigt.)
+## Nächste Schritte (Roadmap nach v0.3, Reihenfolge = Vorschlag)
+1. **Release-Signierschlüssel** statt Debug-Key (Updates überleben einen PC-Wechsel; einmalig
+   neu installieren, vorher Komplett-Backup). Schlüssel + Passwort verwahrt der Nutzer.
+2. **Scanner-Kalibrierung** mit echten Scan-Protokollen (Schwellen in `FUSE_DEFAULTS`,
+   Namenszonen in `cardText.ts`; Glanz, Foils, Alt-Arts, wenig Licht).
+3. **Tausch-Abgleich per QR** — Want- + Tausch-Liste als QR (wie `deckQr.ts`), das andere
+   Handy zeigt „du kannst mir geben / ich kann dir geben". Offline.
+4. **Booster-Modus** — Booster am Stück scannen, danach Zusammenfassung (neue Karten,
+   Raritäten, Alt-Arts) + Statistik über alle geöffneten Booster.
+5. **Bereit fürs nächste Set** — Set-Code durch Set-Fortschritt, Binder, Erfolge ziehen
+   (heute fest auf die 151 Karten von Set 1).
+6. **Korpus ohne neue APK auffrischen** — optional `coplay.json` aus dem neuesten Release laden.
+7. **Schnellerer Start** — Haupt-Bundle (~600 KB) aufteilen, Deck-Test/Playtest/Synergie lazy.
+8. **iOS** — Capacitor-iOS-Hülle + natives Kamera-Plugin (Spike 0.1).
+Laufend: Korpus auffrischen (`fetch_community_decks.py` + `ingest_decks.py`).

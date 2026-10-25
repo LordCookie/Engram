@@ -13,6 +13,8 @@ import { t } from '../i18n';
  * Alt-Arts: „+Alt" je Treffer (nur bei Karten mit Alt-Art) oder Umschalt+Enter.
  */
 
+const finePointer = typeof matchMedia !== 'undefined' && matchMedia('(pointer: fine)').matches;
+
 const colorDot: Record<Color, string> = {
   RED: 'bg-card-red',
   GREEN: 'bg-card-green',
@@ -108,7 +110,9 @@ export function QuickAdd() {
 
       <input
         ref={inputRef}
-        autoFocus
+        // Nur mit Maus/Tastatur sofort fokussieren — am Handy würde sonst die Tastatur
+        // aufspringen und den Scanner darüber verdecken (gleicher Reiter).
+        autoFocus={finePointer}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);

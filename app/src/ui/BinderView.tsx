@@ -10,6 +10,7 @@ import { CardDetail } from './CardDetail';
 import { CardImage } from './CardImage';
 import type { Card, CollectionEntry, Color, WantEntry } from '../domain/types';
 import { t, tk } from '../i18n';
+import { useBackClose } from './backButton';
 
 /**
  * Binder-Ansicht (virtuelle Sammelmappe): Knopf ganz unten in der Sammlung, öffnet die
@@ -42,6 +43,7 @@ export function BinderButton() {
 }
 
 function BinderView({ onClose }: { onClose: () => void }) {
+  useBackClose(true, onClose);
   const images = useCardImages();
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
   const wants = useLiveQuery(() => db.wants.toArray(), [], [] as WantEntry[]);

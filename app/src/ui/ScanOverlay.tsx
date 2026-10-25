@@ -4,6 +4,7 @@ import { CardImage } from './CardImage';
 import { hapticTap } from '../native/feedback';
 import type { Card } from '../domain/types';
 import { t } from '../i18n';
+import { useBackClose } from './backButton';
 
 /**
  * Vollbild-Scanner (Aufbau aus ScryGlass). Hängt per Portal direkt an <body>, der Rest
@@ -77,17 +78,32 @@ function Corners({ color, pulse }: { color: string; pulse: boolean }) {
   const b = `3px solid ${color}`;
   return (
     <>
-      <span className={`${base} left-0 top-0 rounded-tl-lg`} style={{ borderLeft: b, borderTop: b }} />
-      <span className={`${base} right-0 top-0 rounded-tr-lg`} style={{ borderRight: b, borderTop: b }} />
-      <span className={`${base} bottom-0 left-0 rounded-bl-lg`} style={{ borderLeft: b, borderBottom: b }} />
-      <span className={`${base} bottom-0 right-0 rounded-br-lg`} style={{ borderRight: b, borderBottom: b }} />
+      <span data-corner="tl" className={`${base} left-0 top-0 rounded-tl-lg`} style={{ borderLeft: b, borderTop: b }} />
+      <span data-corner="tr" className={`${base} right-0 top-0 rounded-tr-lg`} style={{ borderRight: b, borderTop: b }} />
+      <span data-corner="bl" className={`${base} bottom-0 left-0 rounded-bl-lg`} style={{ borderLeft: b, borderBottom: b }} />
+      <span data-corner="br" className={`${base} bottom-0 right-0 rounded-br-lg`} style={{ borderRight: b, borderBottom: b }} />
     </>
   );
 }
 
 export function ScanOverlay(p: Props) {
+  useBackClose(true, p.onClose); // Android-Zurück beendet den Scanner
   const [fx, setFx] = useState<{ x: number; y: number; k: number } | null>(null);
   const landscape = useLandscape();
+
+  // Startanimation (effects.css): Blende öffnet sich, Ecken rasten ein (+ Vibrations-Tick),
+  // Scan-Strahl läuft einmal durch. Nicht bei „Bewegung reduzieren".
+  const [booting, setBooting] = useState(() => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    if (!booting) return;
+    const tick = window.setTimeout(hapticTap, 780);
+    const done = window.setTimeout(() => setBooting(false), 1400);
+    return () => {
+      window.clearTimeout(tick);
+      window.clearTimeout(done);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Browser: Esc schließt den Scanner (Ref, damit der Listener nur einmal hängt).
   const closeRef = useRef(p.onClose);
@@ -223,7 +239,7 @@ export function ScanOverlay(p: Props) {
   );
 
   return createPortal(
-    <div className={`fixed inset-0 z-50 text-sm text-text ${p.mode === 'web' ? 'bg-black' : ''}`}>
+    <div className={`fixed inset-0 z-50 text-sm text-text ${p.mode === 'web' ? 'bg-black' : ''} ${booting ? 'scan-boot' : ''}`}>
       {p.mode === 'web' && (
         <video
           ref={p.videoRef}
@@ -242,7 +258,7 @@ export function ScanOverlay(p: Props) {
       >
         <div
           ref={p.reticleRef}
-          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
+          className="scan-reticle pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg"
           style={reticleStyle}
         >
           <div className="absolute inset-0 rounded-lg border border-white/30" />
@@ -255,6 +271,14 @@ export function ScanOverlay(p: Props) {
           </p>
         )}
       </div>
+
+      {/* Startanimation: Blende über dem Kamerabild (unter den Leisten), öffnet sich nach oben/unten. */}
+      {booting && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="scan-shutter" data-side="top" />
+          <div className="scan-shutter" data-side="bottom" />
+        </div>
+      )}
 
       {fx && (
         <span

@@ -147,7 +147,7 @@ export function CollectionView({
 
       {owned.length === 0 ? (
         <p className="text-sm text-muted">
-          {t('Noch nichts erfasst. Nutze „Scannen" oder „Erfassen".')}
+          {t('Noch nichts erfasst. Im Reiter „Erfassen" scannst oder suchst du Karten.')}
         </p>
       ) : (
         <>

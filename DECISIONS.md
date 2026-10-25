@@ -1275,3 +1275,24 @@ während Nachdrucke höchstens 38 Bit abweichen; das trennt sauber. CLIP würde 
 mitbringen. Das lohnt sich erst, wenn das Scan-Protokoll echte Alt-Verwechslungen zeigt (z. B.
 bei Foils oder schräg gehaltenen Karten). Beim Erfassen per Suche gibt es kein Foto, dort
 entscheidet der Nutzer mit „+Alt".
+
+## 2026-10-25 — v0.3: ein Reiter fürs Erfassen, Zurück-Taste, Effekte aus dem Design-Labor
+
+**Scanner und Erfassen in einem Reiter.** Beides beantwortet dieselbe Frage („Karte rein"),
+deshalb gibt es jetzt fünf statt sechs Reiter, und die untere Leiste hat Platz für größere
+Knöpfe mit Icons. Die Schnellerfassung fokussiert ihr Suchfeld nur noch mit Maus/Tastatur, am
+Handy würde sonst die Tastatur den Scanner darüber verdecken.
+
+**Zurück-Taste über `@capacitor/app`.** Ohne eigenen Listener beendet Android die App bei
+„Zurück", auch mitten im Scannen. Jetzt schließt die Taste das oberste Vollbild-Fenster
+(Stapel, damit z. B. erst das Kartendetail im Binder zugeht). Der Weg über die Browser-History
+(`pushState`/`popstate`) wurde verworfen: Ohne das App-Plugin leitet Capacitor die Taste gar
+nicht an die WebView weiter, und das Aufräumen der History-Einträge beim Schließen per ✕ ist
+fehleranfällig.
+
+**Effekte gemeinsam ausgewählt.** Sechs Vorschläge liefen als umschaltbare CSS-Pakete in einem
+Design-Labor (`?lab`, nur Dev-Server): Neon-Glow, Platinen-Linien, Glitch, Scanlines,
+Bewegung und Theme-Motive. Gewählt wurden **Glow, Platinen und Bewegung**, dazu eine
+**Startanimation für den Scanner** (Blende, Ecken rasten ein, Scan-Strahl). Das Labor ist danach
+wieder entfernt worden. Alle Effekte hängen nur an den Theme-Tokens, passen also zu jedem
+Farbthema, und respektieren „Bewegung reduzieren".

@@ -987,6 +987,7 @@ export function ScannerPanel() {
         </p>
         <button
           onClick={startScanner}
+          data-cta
           className="w-full rounded-md bg-accent px-4 py-3 font-mono text-base text-on-accent"
         >
           {t('Scanner starten')}

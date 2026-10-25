@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { t } from '../i18n';
 import { Rich } from './Rich';
+import { useBackClose } from './backButton';
 
 /**
  * Kurze Spielhilfe („How to play"), aufklappbar als Overlay unter „Mehr".
@@ -21,6 +22,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function HowToPlay() {
   const [open, setOpen] = useState(false);
+  useBackClose(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;

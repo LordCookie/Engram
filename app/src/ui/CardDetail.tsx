@@ -7,6 +7,7 @@ import { topSynergies } from '../domain/synergy';
 import { CardImage } from './CardImage';
 import type { Card, Color } from '../domain/types';
 import { t } from '../i18n';
+import { useBackClose } from './backButton';
 
 /**
  * Kartendetail als Overlay (wiederverwendbar): großes Bild, Regeltext, Werte,
@@ -38,6 +39,7 @@ export function CardDetail({
   /** Optional: einen Synergie-Partner anwählen (öffnet dessen Detail). */
   onPick?: (card: Card) => void;
 }) {
+  useBackClose(!!card, onClose);
   const images = useCardImages();
   const partners = useMemo(
     () => (card && hasFeatures ? topSynergies(card.id, featureDB, cardIndex, 6) : []),

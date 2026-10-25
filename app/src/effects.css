@@ -1,0 +1,258 @@
+/*
+ * Effekte (v0.3, im Design-Labor gemeinsam ausgewählt): Neon-Glow, Platinen-Linien,
+ * Bewegung und die Scanner-Startanimation. Alles nutzt nur die Theme-Tokens
+ * (--c-accent, --c-on-accent …) und passt sich so jedem Farbthema an.
+ * Bewegung nur ohne „Bewegung reduzieren" (prefers-reduced-motion).
+ */
+
+/* ---------- Neon-Glow: Akzent leuchtet (Knöpfe, aktiver Reiter, Logo, Titel) ---------- */
+.bg-accent {
+  box-shadow:
+    0 0 0 1px rgb(var(--c-accent) / 0.55),
+    0 0 14px rgb(var(--c-accent) / 0.45),
+    0 0 34px rgb(var(--c-accent) / 0.18);
+}
+h1 {
+  text-shadow:
+    0 0 10px rgb(var(--c-accent) / 0.55),
+    0 0 28px rgb(var(--c-accent) / 0.25);
+}
+header svg {
+  filter: drop-shadow(0 0 6px rgb(var(--c-accent) / 0.65));
+}
+main .rounded-lg.bg-surface {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--c-accent) / 0.12),
+    0 0 0 1px rgb(var(--c-accent) / 0.08);
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* „Scanner starten" pulsiert sanft */
+  [data-cta] {
+    animation: fxGlowPulse 2.6s ease-in-out infinite;
+  }
+}
+@keyframes fxGlowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgb(var(--c-accent) / 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 24px rgb(var(--c-accent) / 0.7),
+      0 0 52px rgb(var(--c-accent) / 0.25);
+  }
+}
+
+/* ---------- Platinen-Linien: Leiterbahnen wie im Logo ---------- */
+/* Hintergrund = eine große Platine (nahtlose 480er-Kachel, erzeugt mit einem Skript: zwei Lagen —
+   Rückseite blass —, Chips U1–U3, Busse mit 45°-Knicken, Durchkontaktierungen, Bauteile,
+   Kupferfeld, Bohrlöcher, Beschriftung). Als Maske → in der Akzentfarbe eingefärbt
+   (eine Data-URL kann keine CSS-Variablen). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: rgb(var(--c-accent) / 0.08);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='480'%20height='480'%20fill='none'%20stroke='%23000'%20stroke-width='1.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20stroke-opacity='0.38'%20d='M84%200%20L84%20480M76%200%20L76%20480M68%200%20L68%20480M60%200%20L60%20480M52%200%20L52%20480M444%200%20L444%20153.3%20L420%20177.3%20L420%20286.7%20L444%20310.7%20L444%20480M436%200%20L436%20150%20L412%20174%20L412%20290%20L436%20314%20L436%20480M428%200%20L428%20146.7%20L404%20170.7%20L404%20293.3%20L428%20317.3%20L428%20480M201.3%20369.3%20L156.6%20414%20L84%20414M195.7%20363.7%20L153.3%20406%20L84%20406M190%20358%20L150%20398%20L84%20398M184.3%20352.3%20L146.7%20390%20L84%20390M178.7%20346.7%20L143.4%20382%20L84%20382'/%3E%3Cpath%20d='M144%2044H150M214%2044H220M144%2052H150M214%2052H220M144%2060H150M214%2060H220M144%2068H150M214%2068H220M144%2076H150M214%2076H220M144%2084H150M214%2084H220M144%2092H150M214%2092H220M144%20100H150M214%20100H220M144%20108H150M214%20108H220M270%20208V214M270%20274V280M278%20208V214M278%20274V280M286%20208V214M286%20274V280M294%20208V214M294%20274V280M302%20208V214M302%20274V280M310%20208V214M310%20274V280M318%20208V214M318%20274V280M326%20208V214M326%20274V280M334%20208V214M334%20274V280M342%20208V214M342%20274V280M0%2060%20L144%2060M0%2068%20L144%2068M0%2076%20L144%2076M0%2084%20L144%2084M0%2092%20L144%2092M220%2060%20L268.6%2060%20L308.6%20100%20L371.4%20100%20L411.4%2060%20L480%2060M220%2068%20L265.3%2068%20L305.3%20108%20L374.7%20108%20L414.7%2068%20L480%2068M220%2076%20L262%2076%20L302%20116%20L378%20116%20L418%2076%20L480%2076M220%2084%20L258.7%2084%20L298.7%20124%20L381.3%20124%20L421.3%2084%20L480%2084M220%2092%20L255.4%2092%20L295.4%20132%20L384.6%20132%20L424.6%2092%20L480%2092M220%20100%20L251.7%20100%20L294%20142.3%20L294%20208M220%20108%20L248.3%20108%20L286%20145.7%20L286%20208M310%20208%20L310%20187%20L349%20148%20L396%20148M318%20208%20L318%20190.3%20L352.3%20156%20L396%20156M326%20208%20L326%20193.7%20L355.7%20164%20L396%20164M334%20208%20L334%20197%20L359%20172%20L396%20172M310%20280%20L310%20324.6%20L260.6%20374%20L196%20374M302%20280%20L302%20321.3%20L257.3%20366%20L196%20366M294%20280%20L294%20318%20L254%20358%20L196%20358M286%20280%20L286%20314.7%20L250.7%20350%20L196%20350M278%20280%20L278%20311.4%20L247.4%20342%20L196%20342M350%20233%20L392%20233M78%20168%20L110%20168%20L126%20152%20L126%20128M78%20186%20L118%20186M78%20204%20L118%20204M212%20300%20L212%20282%20L230%20264%20L256%20264M106%20258H112M152%20258H158M106%20266H112M152%20266H158M106%20274H112M152%20274H158M106%20282H112M152%20282H158M106%20290H112M152%20290H158M106%20258%20L98%20258M106%20266%20L98%20266M106%20274%20L98%20274M106%20282%20L98%20282M106%20290%20L98%20290M158%20258%20L172.7%20258%20L188%20242.7%20L188%20230M158%20266%20L176%20266%20L196%20246%20L196%20230M158%20274%20L179.3%20274%20L204%20249.3%20L204%20230M0%2010%20L480%2010M0%2018%20L480%2018'/%3E%3Crect%20x='150'%20y='36'%20width='64'%20height='80'%20rx='3'/%3E%3Ccircle%20cx='156'%20cy='42'%20r='1.6'/%3E%3Ctext%20x='182'%20y='79.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU1%3C/text%3E%3Crect%20x='262'%20y='214'%20width='88'%20height='60'%20rx='3'/%3E%3Ccircle%20cx='268'%20cy='220'%20r='1.6'/%3E%3Ctext%20x='306'%20y='247.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU2%3C/text%3E%3Ccircle%20cx='399.6'%20cy='148.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='156.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='164.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='172.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='374.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='366.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='358.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='350.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='342.0'%20r='2.6'/%3E%3Crect%20x='392'%20y='226'%20width='26'%20height='14'%20rx='7'/%3E%3Ctext%20x='405'%20y='252'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EY1%3C/text%3E%3Crect%20x='60'%20y='165'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='165'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='163'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='160'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER1%3C/text%3E%3Ccircle%20cx='126.0'%20cy='125.0'%20r='2.6'/%3E%3Crect%20x='60'%20y='183'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='183'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='181'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='178'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER2%3C/text%3E%3Ccircle%20cx='122.0'%20cy='186.0'%20r='2.6'/%3E%3Crect%20x='60'%20y='201'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='201'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='199'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='196'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER3%3C/text%3E%3Ccircle%20cx='122.0'%20cy='204.0'%20r='2.6'/%3E%3Crect%20x='209'%20y='300'%20width='6'%20height='5'%20rx='1'/%3E%3Crect%20x='209'%20y='313'%20width='6'%20height='5'%20rx='1'/%3E%3Crect%20x='207'%20y='298'%20width='10'%20height='22'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='220'%20y='312'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3EC4%3C/text%3E%3Crect%20x='352'%20y='330'%20width='104'%20height='96'%20rx='6'/%3E%3Cpath%20d='M360%20426L352%20418M368%20426L352%20410M376%20426L352%20402M384%20426L352%20394M392%20426L352%20386M400%20426L352%20378M408%20426L352%20370M416%20426L352%20362M424%20426L352%20354M432%20426L352%20346M440%20426L352%20338M448%20426L352%20330M456%20426L360%20330M464%20426L368%20330M472%20426L376%20330M480%20426L384%20330M488%20426L392%20330M496%20426L400%20330M504%20426L408%20330M512%20426L416%20330M520%20426L424%20330M528%20426L432%20330M536%20426L440%20330M544%20426L448%20330'%20stroke-opacity='0.35'%20clip-path='url%28%23cp%29'/%3E%3CclipPath%20id='cp'%3E%3Crect%20x='352'%20y='330'%20width='104'%20height='96'%20rx='6'/%3E%3C/clipPath%3E%3Ccircle%20cx='364.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='390.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='416.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='442.0'%20cy='318.0'%20r='2.6'/%3E%3Crect%20x='112'%20y='250'%20width='40'%20height='48'%20rx='3'/%3E%3Ccircle%20cx='118'%20cy='256'%20r='1.6'/%3E%3Ctext%20x='132'%20y='277.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU3%3C/text%3E%3Ccircle%20cx='95.0'%20cy='258.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='266.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='274.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='282.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='290.0'%20r='2.6'/%3E%3Ccircle%20cx='188.0'%20cy='226.4'%20r='2.6'/%3E%3Ccircle%20cx='196.0'%20cy='226.4'%20r='2.6'/%3E%3Ccircle%20cx='204.0'%20cy='226.4'%20r='2.6'/%3E%3Ctext%20x='404'%20y='344'%20font-size='8'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EGND%3C/text%3E%3Ccircle%20cx='24'%20cy='456'%20r='9'/%3E%3Ccircle%20cx='24'%20cy='456'%20r='4.5'/%3E%3Ccircle%20cx='458'%20cy='454'%20r='9'/%3E%3Ccircle%20cx='458'%20cy='454'%20r='4.5'/%3E%3Ctext%20x='46'%20y='470'%20font-size='8'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3EENGRAM-01%20REV%200.3%3C/text%3E%3Ctext%20x='6'%20y='50'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3E%2B3V3%3C/text%3E%3C/svg%3E")
+    0 0 / 480px 480px repeat;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='480'%20height='480'%20fill='none'%20stroke='%23000'%20stroke-width='1.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20stroke-opacity='0.38'%20d='M84%200%20L84%20480M76%200%20L76%20480M68%200%20L68%20480M60%200%20L60%20480M52%200%20L52%20480M444%200%20L444%20153.3%20L420%20177.3%20L420%20286.7%20L444%20310.7%20L444%20480M436%200%20L436%20150%20L412%20174%20L412%20290%20L436%20314%20L436%20480M428%200%20L428%20146.7%20L404%20170.7%20L404%20293.3%20L428%20317.3%20L428%20480M201.3%20369.3%20L156.6%20414%20L84%20414M195.7%20363.7%20L153.3%20406%20L84%20406M190%20358%20L150%20398%20L84%20398M184.3%20352.3%20L146.7%20390%20L84%20390M178.7%20346.7%20L143.4%20382%20L84%20382'/%3E%3Cpath%20d='M144%2044H150M214%2044H220M144%2052H150M214%2052H220M144%2060H150M214%2060H220M144%2068H150M214%2068H220M144%2076H150M214%2076H220M144%2084H150M214%2084H220M144%2092H150M214%2092H220M144%20100H150M214%20100H220M144%20108H150M214%20108H220M270%20208V214M270%20274V280M278%20208V214M278%20274V280M286%20208V214M286%20274V280M294%20208V214M294%20274V280M302%20208V214M302%20274V280M310%20208V214M310%20274V280M318%20208V214M318%20274V280M326%20208V214M326%20274V280M334%20208V214M334%20274V280M342%20208V214M342%20274V280M0%2060%20L144%2060M0%2068%20L144%2068M0%2076%20L144%2076M0%2084%20L144%2084M0%2092%20L144%2092M220%2060%20L268.6%2060%20L308.6%20100%20L371.4%20100%20L411.4%2060%20L480%2060M220%2068%20L265.3%2068%20L305.3%20108%20L374.7%20108%20L414.7%2068%20L480%2068M220%2076%20L262%2076%20L302%20116%20L378%20116%20L418%2076%20L480%2076M220%2084%20L258.7%2084%20L298.7%20124%20L381.3%20124%20L421.3%2084%20L480%2084M220%2092%20L255.4%2092%20L295.4%20132%20L384.6%20132%20L424.6%2092%20L480%2092M220%20100%20L251.7%20100%20L294%20142.3%20L294%20208M220%20108%20L248.3%20108%20L286%20145.7%20L286%20208M310%20208%20L310%20187%20L349%20148%20L396%20148M318%20208%20L318%20190.3%20L352.3%20156%20L396%20156M326%20208%20L326%20193.7%20L355.7%20164%20L396%20164M334%20208%20L334%20197%20L359%20172%20L396%20172M310%20280%20L310%20324.6%20L260.6%20374%20L196%20374M302%20280%20L302%20321.3%20L257.3%20366%20L196%20366M294%20280%20L294%20318%20L254%20358%20L196%20358M286%20280%20L286%20314.7%20L250.7%20350%20L196%20350M278%20280%20L278%20311.4%20L247.4%20342%20L196%20342M350%20233%20L392%20233M78%20168%20L110%20168%20L126%20152%20L126%20128M78%20186%20L118%20186M78%20204%20L118%20204M212%20300%20L212%20282%20L230%20264%20L256%20264M106%20258H112M152%20258H158M106%20266H112M152%20266H158M106%20274H112M152%20274H158M106%20282H112M152%20282H158M106%20290H112M152%20290H158M106%20258%20L98%20258M106%20266%20L98%20266M106%20274%20L98%20274M106%20282%20L98%20282M106%20290%20L98%20290M158%20258%20L172.7%20258%20L188%20242.7%20L188%20230M158%20266%20L176%20266%20L196%20246%20L196%20230M158%20274%20L179.3%20274%20L204%20249.3%20L204%20230M0%2010%20L480%2010M0%2018%20L480%2018'/%3E%3Crect%20x='150'%20y='36'%20width='64'%20height='80'%20rx='3'/%3E%3Ccircle%20cx='156'%20cy='42'%20r='1.6'/%3E%3Ctext%20x='182'%20y='79.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU1%3C/text%3E%3Crect%20x='262'%20y='214'%20width='88'%20height='60'%20rx='3'/%3E%3Ccircle%20cx='268'%20cy='220'%20r='1.6'/%3E%3Ctext%20x='306'%20y='247.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU2%3C/text%3E%3Ccircle%20cx='399.6'%20cy='148.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='156.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='164.0'%20r='2.6'/%3E%3Ccircle%20cx='399.6'%20cy='172.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='374.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='366.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='358.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='350.0'%20r='2.6'/%3E%3Ccircle%20cx='192.4'%20cy='342.0'%20r='2.6'/%3E%3Crect%20x='392'%20y='226'%20width='26'%20height='14'%20rx='7'/%3E%3Ctext%20x='405'%20y='252'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EY1%3C/text%3E%3Crect%20x='60'%20y='165'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='165'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='163'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='160'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER1%3C/text%3E%3Ccircle%20cx='126.0'%20cy='125.0'%20r='2.6'/%3E%3Crect%20x='60'%20y='183'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='183'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='181'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='178'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER2%3C/text%3E%3Ccircle%20cx='122.0'%20cy='186.0'%20r='2.6'/%3E%3Crect%20x='60'%20y='201'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='73'%20y='201'%20width='5'%20height='6'%20rx='1'/%3E%3Crect%20x='58'%20y='199'%20width='22'%20height='10'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='69'%20y='196'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3ER3%3C/text%3E%3Ccircle%20cx='122.0'%20cy='204.0'%20r='2.6'/%3E%3Crect%20x='209'%20y='300'%20width='6'%20height='5'%20rx='1'/%3E%3Crect%20x='209'%20y='313'%20width='6'%20height='5'%20rx='1'/%3E%3Crect%20x='207'%20y='298'%20width='10'%20height='22'%20rx='2'%20stroke-opacity='0.5'/%3E%3Ctext%20x='220'%20y='312'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3EC4%3C/text%3E%3Crect%20x='352'%20y='330'%20width='104'%20height='96'%20rx='6'/%3E%3Cpath%20d='M360%20426L352%20418M368%20426L352%20410M376%20426L352%20402M384%20426L352%20394M392%20426L352%20386M400%20426L352%20378M408%20426L352%20370M416%20426L352%20362M424%20426L352%20354M432%20426L352%20346M440%20426L352%20338M448%20426L352%20330M456%20426L360%20330M464%20426L368%20330M472%20426L376%20330M480%20426L384%20330M488%20426L392%20330M496%20426L400%20330M504%20426L408%20330M512%20426L416%20330M520%20426L424%20330M528%20426L432%20330M536%20426L440%20330M544%20426L448%20330'%20stroke-opacity='0.35'%20clip-path='url%28%23cp%29'/%3E%3CclipPath%20id='cp'%3E%3Crect%20x='352'%20y='330'%20width='104'%20height='96'%20rx='6'/%3E%3C/clipPath%3E%3Ccircle%20cx='364.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='390.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='416.0'%20cy='318.0'%20r='2.6'/%3E%3Ccircle%20cx='442.0'%20cy='318.0'%20r='2.6'/%3E%3Crect%20x='112'%20y='250'%20width='40'%20height='48'%20rx='3'/%3E%3Ccircle%20cx='118'%20cy='256'%20r='1.6'/%3E%3Ctext%20x='132'%20y='277.5'%20font-size='10'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EU3%3C/text%3E%3Ccircle%20cx='95.0'%20cy='258.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='266.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='274.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='282.0'%20r='2.6'/%3E%3Ccircle%20cx='95.0'%20cy='290.0'%20r='2.6'/%3E%3Ccircle%20cx='188.0'%20cy='226.4'%20r='2.6'/%3E%3Ccircle%20cx='196.0'%20cy='226.4'%20r='2.6'/%3E%3Ccircle%20cx='204.0'%20cy='226.4'%20r='2.6'/%3E%3Ctext%20x='404'%20y='344'%20font-size='8'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='middle'%3EGND%3C/text%3E%3Ccircle%20cx='24'%20cy='456'%20r='9'/%3E%3Ccircle%20cx='24'%20cy='456'%20r='4.5'/%3E%3Ccircle%20cx='458'%20cy='454'%20r='9'/%3E%3Ccircle%20cx='458'%20cy='454'%20r='4.5'/%3E%3Ctext%20x='46'%20y='470'%20font-size='8'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3EENGRAM-01%20REV%200.3%3C/text%3E%3Ctext%20x='6'%20y='50'%20font-size='7'%20font-family='monospace'%20fill='%23000'%20stroke='none'%20text-anchor='start'%3E%2B3V3%3C/text%3E%3C/svg%3E")
+    0 0 / 480px 480px repeat;
+}
+/* Beim Scannen liegt das Kamerabild nativ HINTER der transparenten WebView → kein Muster darüber. */
+html.scan-open body::before {
+  display: none;
+}
+/* Eck-Klammern an jeder Karte (oben links + unten rechts), folgen der Rundung der Karte —
+   gleiche Formsprache wie die Rahmenecken im Scanner. */
+main .rounded-lg.bg-surface {
+  position: relative;
+}
+main .rounded-lg.bg-surface::before,
+main .rounded-lg.bg-surface::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border: 0 solid rgb(var(--c-accent) / 0.7);
+}
+main .rounded-lg.bg-surface::before {
+  top: -1px;
+  left: -1px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  border-top-left-radius: 0.5rem;
+}
+main .rounded-lg.bg-surface::after {
+  right: -1px;
+  bottom: -1px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+  border-bottom-right-radius: 0.5rem;
+}
+/* Strom läuft über den aktiven Reiter */
+.app-nav [aria-current='page'] {
+  position: relative;
+  overflow: hidden;
+}
+.app-nav [aria-current='page']::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-on-accent) / 0.9), transparent) -50% 0 / 50% 100% no-repeat;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-nav [aria-current='page']::after {
+    animation: fxCurrent 1.8s linear infinite;
+  }
+}
+@keyframes fxCurrent {
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
+
+/* ---------- Bewegung: Inhalte gleiten herein, Knöpfe reagieren, Balken schimmern ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  main > section,
+  main > div:not([data-boot]) {
+    animation: fxIn 0.38s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  main > :nth-child(4) { animation-delay: 0.03s; }
+  main > :nth-child(5) { animation-delay: 0.07s; }
+  main > :nth-child(6) { animation-delay: 0.11s; }
+  main > :nth-child(7) { animation-delay: 0.15s; }
+  main > :nth-child(8) { animation-delay: 0.19s; }
+  main > :nth-child(n + 9) { animation-delay: 0.23s; }
+  button {
+    transition:
+      transform 0.08s ease,
+      background-color 0.2s,
+      color 0.2s,
+      box-shadow 0.2s;
+  }
+  button:active {
+    transform: scale(0.96);
+  }
+  .app-nav [aria-current='page'] svg {
+    animation: fxHop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  main .h-full.rounded-full {
+    background-image: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+    background-size: 220% 100%;
+    animation: fxShimmer 2.6s linear infinite;
+  }
+}
+@keyframes fxIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fxHop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-4px) scale(1.12);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes fxShimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/*
+ * ---------- Scanner-Start (ui/ScanOverlay.tsx, Klasse `scan-boot` für ~1,3 s) ----------
+ * 1. Blende öffnet sich (zwei Hälften gleiten nach oben/unten, Kante leuchtet im Akzent),
+ * 2. die vier Rahmenecken fliegen ein und rasten ein (Vibrations-Tick in der Komponente),
+ * 3. ein Scan-Strahl läuft einmal durch den Rahmen.
+ */
+.scan-shutter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  pointer-events: none;
+  background: rgb(var(--c-bg));
+  animation: scanShutter 0.5s cubic-bezier(0.7, 0, 0.3, 1) 0.12s both;
+}
+.scan-shutter[data-side='top'] {
+  top: 0;
+  border-bottom: 2px solid rgb(var(--c-accent));
+  box-shadow: 0 0 18px rgb(var(--c-accent) / 0.8);
+  --shut: -100%;
+}
+.scan-shutter[data-side='bottom'] {
+  bottom: 0;
+  border-top: 2px solid rgb(var(--c-accent));
+  box-shadow: 0 0 18px rgb(var(--c-accent) / 0.8);
+  --shut: 100%;
+}
+@keyframes scanShutter {
+  to {
+    transform: translateY(var(--shut));
+  }
+}
+.scan-boot .scan-reticle [data-corner] {
+  animation: scanCornerIn 0.42s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation-delay: 0.42s;
+}
+.scan-boot .scan-reticle [data-corner='tl'] { --cx: -36px; --cy: -36px; }
+.scan-boot .scan-reticle [data-corner='tr'] { --cx: 36px; --cy: -36px; }
+.scan-boot .scan-reticle [data-corner='bl'] { --cx: -36px; --cy: 36px; }
+.scan-boot .scan-reticle [data-corner='br'] { --cx: 36px; --cy: 36px; }
+@keyframes scanCornerIn {
+  from {
+    opacity: 0;
+    transform: translate(var(--cx), var(--cy)) scale(1.5);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.scan-boot .scan-reticle::after {
+  content: '';
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-accent)), transparent);
+  box-shadow: 0 0 16px rgb(var(--c-accent));
+  animation: scanBeam 0.55s ease-in-out 0.78s both;
+}
+@keyframes scanBeam {
+  0% {
+    top: 2%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 96%;
+    opacity: 0;
+  }
+}

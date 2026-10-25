@@ -30,21 +30,21 @@ import { UpdateBanner } from './ui/UpdateBanner';
 import { BackupReminder } from './ui/BackupReminder';
 import { DeckEditor } from './ui/DeckEditor';
 import { ScannerPanel } from './ui/ScannerPanel';
+import { NavIcon } from './ui/NavIcon';
 import { t, tk } from './i18n';
 
 /**
  * App-Rahmen mit mobiltauglicher Navigation. Aufgeräumt in klare Bereiche:
- * Scannen · Erfassen · Sammlung (inkl. Solver) · Deck · Synergie · Mehr.
+ * Sammlung (inkl. Solver) · Deck · Erfassen (Scanner + Schnellerfassung) · Synergie · Mehr.
  */
 const isPlaceholderData = catalog.length > 0 && catalog[0].setCode === 'SYN';
 
-type Tab = 'scannen' | 'erfassen' | 'sammlung' | 'deck' | 'synergie' | 'mehr';
+type Tab = 'erfassen' | 'sammlung' | 'deck' | 'synergie' | 'mehr';
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'sammlung', label: tk('Sammlung') },
   { id: 'deck', label: tk('Deck') },
   { id: 'erfassen', label: tk('Erfassen') },
-  { id: 'scannen', label: tk('Scannen') },
   { id: 'synergie', label: tk('Synergie') },
   { id: 'mehr', label: tk('Mehr') },
 ];
@@ -58,7 +58,7 @@ export default function App() {
 
   // Willkommenskarte: zum passenden Tab springen (Backup liegt unter „Mehr").
   const goWelcome = (target: WelcomeTarget) => {
-    if (target !== 'backup') return setTab(target);
+    if (target !== 'backup') return setTab('erfassen'); // Scannen + Suche liegen im selben Reiter
     setTab('mehr');
     window.setTimeout(() => document.getElementById('backup')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
@@ -69,7 +69,7 @@ export default function App() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24 sm:p-6">
+    <main className="mx-auto max-w-3xl space-y-4 p-4 pb-28 sm:p-6">
       {booting && <BootSplash onDone={endBoot} />}
       <Fragment key={lang}>
         <AchievementToasts />
@@ -91,25 +91,27 @@ export default function App() {
 
         {/* Navigation: unten fixiert auf Mobil (Daumen-erreichbar), oben ab sm. */}
         <nav
-          className="fixed inset-x-0 bottom-0 z-10 flex justify-center gap-1 border-t border-white/10 bg-surface/95 px-2 py-1.5 backdrop-blur sm:static sm:justify-start sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
-          style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}
+          className="app-nav fixed inset-x-0 bottom-0 z-10 flex justify-center gap-1 border-t border-white/10 bg-surface/95 px-2 pt-2 backdrop-blur sm:static sm:justify-start sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
+          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
         >
           {tabs.map((tb) => (
             <button
               key={tb.id}
               onClick={() => setTab(tb.id)}
-              className={`flex-1 whitespace-nowrap rounded-md px-1.5 py-2 text-center font-mono text-[11px] sm:flex-none sm:px-3 sm:text-sm ${
+              aria-current={tab === tb.id ? 'page' : undefined}
+              className={`flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1 py-2 text-center font-mono text-[11px] transition-colors sm:min-h-0 sm:flex-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${
                 tab === tb.id ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'
               }`}
             >
+              <NavIcon name={tb.id} className="h-6 w-6 shrink-0 sm:h-5 sm:w-5" />
               {t(tb.label)}
             </button>
           ))}
         </nav>
 
-        {tab === 'scannen' && <ScannerPanel />}
         {tab === 'erfassen' && (
           <>
+            <ScannerPanel />
             <QuickAdd />
             <StarterQuickadd />
           </>
