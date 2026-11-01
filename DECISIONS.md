@@ -1317,3 +1317,37 @@ Gerät und Schrift anders aus (Emojis bunt, manche Zeichen fehlen in der Mono-Sc
 kleines Icon-Set (`ui/Icon.tsx`) in der Formsprache der Navigations-Icons ersetzt sie, ebenso
 eine eigene Checkbox und der Pfeil der `<details>`-Abschnitte. Die Symbole stehen dadurch nicht
 mehr in den übersetzbaren Texten; die englischen Schlüssel wurden mitgezogen.
+
+## 2026-11-01 — v0.4: Updates aus der App, Daten auf Knopfdruck
+
+**App-Update: APK in der App laden, Android-Installer öffnen.** Wunsch war, dass sich die App
+selbst aktualisiert. Still installieren dürfen Apps außerhalb des Play Stores nicht; ein Tipp im
+Android-Installer bleibt. Die App prüft beim Start, beim Zurückholen und stündlich (höchstens
+1×/Std., gegen das GitHub-Limit von 60 Anfragen/Std.), lädt die APK nativ (GitHub-Downloads haben
+kein CORS) und prüft vor dem Installer Paket, Version und Signierschlüssel. Verworfen: ein
+Live-Update nur des Web-Teils (Fremd-Plugin, Risiko eines kaputten Bundles, native Änderungen
+bräuchten trotzdem die APK). Updates setzen denselben Schlüssel voraus — heute der Debug-Schlüssel
+dieses PCs; der eigene Release-Schlüssel bleibt Roadmap-Punkt 1.
+
+**Neue Karten direkt von NetDeck, nicht als Datei von uns.** Kartentexte gehören CD PROJEKT RED;
+sie einzeln auf GitHub zu veröffentlichen widerspräche § 8 / der .gitignore-Regel. Die App holt
+neue Karten deshalb von derselben Quelle wie die Bilder, mit derselben Normalisierung wie
+`fetch_cards.py`, und nur additiv (bekannte Karten bleiben, eine halbe API-Antwort kann nichts
+kaputtmachen). Preis: Scanner-Hashes und Synergie-Merkmale neuer Karten kommen erst mit der
+nächsten APK.
+
+**Korpus und Meta-Decks als Datenpaket im Release `data`.** Beides sind nur Kartenkürzel und
+Stückzahlen; das Release ist EIN laufend ersetzter Eintrag, kein App-Release. Das Asset-Label
+trägt die Erstellungszeit, so erkennt die App ohne Download, ob es Neueres gibt. Nachgeladenes
+liegt in Dexie und gilt nach dem Neuladen; nach einem App-Update mit frischeren Daten gewinnt
+wieder die mitgelieferte Fassung (`pickNewer`).
+
+**Eigener Release-Schlüssel ab v0.4.0.** Mit den Updates in der App wurde der Schlüssel zur
+Voraussetzung: Android installiert ein Update nur bei gleichem Signierschlüssel, und der
+Debug-Schlüssel hängt an diesem PC. Der neue Schlüssel (`CN=engram, O=LordCookie`, RSA 4096,
+gültig bis 2054) liegt außerhalb des Repos in `~/.engram-signing/` (`build.gradle` liest die
+`keystore.properties`, Pfad per `ENGRAM_SIGNING` änderbar; ohne Datei bleibt `assembleRelease`
+unsigniert, CI baut keine APK). Veröffentlicht wird ab jetzt `assembleRelease` als `engram.apk`.
+Der Zeitpunkt passt: auf v0.4.0 muss ohnehin einmal von Hand aktualisiert werden, weil v0.3.1 das
+Update in der App noch nicht kann. Der Umstieg von der Debug-APK braucht einmal Komplett-Backup,
+Deinstallieren, Installieren, Zurückspielen; danach laufen Updates in der App.

@@ -31,18 +31,35 @@ export interface ReleaseInfo {
   tag_name?: string;
   html_url?: string;
   draft?: boolean;
+  assets?: { name?: string; browser_download_url?: string; size?: number; updated_at?: string }[];
 }
+
+export interface LatestRelease {
+  tag: string;
+  url: string;
+  /** Die APK des Releases (für das Update in der App), falls angehängt. */
+  apk?: { url: string; size: number };
+}
+
+/** Nur App-Versionen („v0.4.0"), nicht etwa das laufend aktualisierte Daten-Release „data". */
+const VERSION_TAG = /^v?\d+\.\d+(\.\d+)?$/i;
 
 /**
  * Höchste veröffentlichte Version aus der Release-Liste. Pre-Releases zählen mit —
  * engram veröffentlicht seine APKs als Pre-Release, und GitHubs `releases/latest`
  * überspringt die (daher erschien der Update-Hinweis nie). Entwürfe zählen nicht.
  */
-export function pickLatestRelease(releases: readonly ReleaseInfo[]): { tag: string; url: string } | null {
-  let best: { tag: string; url: string } | null = null;
+export function pickLatestRelease(releases: readonly ReleaseInfo[]): LatestRelease | null {
+  let best: { r: ReleaseInfo; tag: string; url: string } | null = null;
   for (const r of releases) {
-    if (r.draft || !r.tag_name || !r.html_url) continue;
-    if (!best || compareVersions(r.tag_name, best.tag) > 0) best = { tag: r.tag_name, url: r.html_url };
+    if (r.draft || !r.tag_name || !r.html_url || !VERSION_TAG.test(r.tag_name)) continue;
+    if (!best || compareVersions(r.tag_name, best.tag) > 0) best = { r, tag: r.tag_name, url: r.html_url };
   }
-  return best;
+  if (!best) return null;
+  const a = best.r.assets?.find((x) => x.name?.toLowerCase().endsWith('.apk') && x.browser_download_url);
+  return {
+    tag: best.tag,
+    url: best.url,
+    apk: a?.browser_download_url ? { url: a.browser_download_url, size: a.size ?? 0 } : undefined,
+  };
 }

@@ -41,4 +41,27 @@ describe('semver', () => {
     expect(pickLatestRelease(r)?.tag).toBe('v0.1.10');
     expect(pickLatestRelease([])).toBeNull();
   });
+
+  it('pickLatestRelease: ignoriert Nicht-Versions-Tags (Daten-Release „data")', () => {
+    const r = [
+      { tag_name: 'data', html_url: 'd' },
+      { tag_name: 'v0.3.1', html_url: 'a' },
+    ];
+    expect(pickLatestRelease(r)?.tag).toBe('v0.3.1');
+    expect(pickLatestRelease([{ tag_name: 'data', html_url: 'd' }])).toBeNull();
+  });
+
+  it('pickLatestRelease: liefert die angehängte APK mit Größe', () => {
+    const r = pickLatestRelease([
+      {
+        tag_name: 'v0.4.0',
+        html_url: 'a',
+        assets: [
+          { name: 'notes.txt', browser_download_url: 'n' },
+          { name: 'engram-debug.apk', browser_download_url: 'https://x/engram-debug.apk', size: 123 },
+        ],
+      },
+    ]);
+    expect(r?.apk).toEqual({ url: 'https://x/engram-debug.apk', size: 123 });
+  });
 });

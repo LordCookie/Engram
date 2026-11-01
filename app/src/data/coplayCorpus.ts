@@ -1,4 +1,6 @@
 import { corpusFromIngest, type Corpus } from '../domain/coplay';
+import { pickNewer } from '../domain/dataBundle';
+import { loadedBundle } from './overrides';
 
 /**
  * Vorab aggregiertes Co-Play-Korpus aus der Ingest-Pipeline (PLAN.md § 12 C,
@@ -20,6 +22,8 @@ export interface IngestedCorpus {
   sources: Record<string, number>;
   /** Legend-Trios → Zahl der Decks (für den Legend-Explorer). */
   trios: ReadonlyMap<string, number>;
+  /** Stand der gewählten Fassung (mitgeliefert oder nachgeladen), falls bekannt. */
+  generated?: string;
 }
 
 const EMPTY: IngestedCorpus = { corpus: null, count: 0, sources: {}, trios: new Map() };
@@ -29,17 +33,32 @@ const loaders = import.meta.glob<{ default: unknown }>('./coplay.json');
 
 let cache: IngestedCorpus | null = null;
 
-/** Lädt das Ingest-Korpus einmalig (eigener Chunk). Fehlt die Datei, ist es leer. */
+/** Erstellungszeit eines ingest-v2-Korpus (`generated`, seit v0.4 von ingest_decks.py). */
+const generatedOf = (x: unknown): string | undefined =>
+  typeof x === 'object' && x !== null && typeof (x as { generated?: unknown }).generated === 'string'
+    ? (x as { generated: string }).generated
+    : undefined;
+
+/**
+ * Lädt das Ingest-Korpus einmalig (eigener Chunk). Fehlt die Datei, ist es leer. Hat
+ * „Daten aktualisieren" ein neueres Datenpaket geladen, gilt dessen Korpus.
+ */
 export async function loadIngestedCorpus(): Promise<IngestedCorpus> {
   if (cache) return cache;
   const load = Object.values(loaders)[0];
-  if (!load) {
-    cache = EMPTY;
-    return cache;
-  }
+  const loaded = loadedBundle();
   try {
-    const { corpus, sources, trios } = corpusFromIngest((await load()).default);
-    cache = corpus ? { corpus, count: corpus.n, sources, trios } : EMPTY;
+    const bundledRaw = load ? (await load()).default : undefined;
+    const loadedRaw = loaded?.coplay;
+    const loadedStamp = generatedOf(loadedRaw) ?? loaded?.created;
+    const raw = pickNewer(bundledRaw, generatedOf(bundledRaw), loadedRaw, loadedStamp);
+    if (raw === undefined) {
+      cache = EMPTY;
+      return cache;
+    }
+    const { corpus, sources, trios } = corpusFromIngest(raw);
+    const generated = raw === loadedRaw ? loadedStamp : generatedOf(raw);
+    cache = corpus ? { corpus, count: corpus.n, sources, trios, generated } : EMPTY;
   } catch {
     cache = EMPTY;
   }

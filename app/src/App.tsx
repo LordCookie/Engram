@@ -28,6 +28,7 @@ import { LegendExplorer } from './ui/LegendExplorer';
 import { MetaDecksPanel } from './ui/MetaDecksPanel';
 import { Welcome, type WelcomeTarget } from './ui/Welcome';
 import { UpdateBanner } from './ui/UpdateBanner';
+import { UpdatesPanel } from './ui/UpdatesPanel';
 import { BackupReminder } from './ui/BackupReminder';
 import { DeckEditor } from './ui/DeckEditor';
 import { ScannerPanel } from './ui/ScannerPanel';
@@ -171,6 +172,7 @@ export default function App() {
         )}
         {tab === 'mehr' && (
           <>
+            <UpdatesPanel />
             <DeckTestPanel />
             <PlaytestPanel />
             <HowToPlay />

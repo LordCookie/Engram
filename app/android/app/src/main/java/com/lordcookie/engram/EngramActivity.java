@@ -17,6 +17,8 @@ public class EngramActivity extends BridgeActivity {
         registerPlugin(EngramCameraPlugin.class);
         // App-Icon passend zum Farbthema (Launcher-Aliase).
         registerPlugin(EngramIconPlugin.class);
+        // App-Update aus der App: APK laden, prüfen, Android-Installer öffnen.
+        registerPlugin(EngramUpdatePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

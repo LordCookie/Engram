@@ -34,6 +34,7 @@ Lauf:  python pipeline/ingest_decks.py
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from itertools import combinations
 from pathlib import Path
 from typing import Any
@@ -112,6 +113,8 @@ def aggregate(decks: list[dict], min_co: int = 1) -> dict[str, Any]:
     return {
         "version": "ingest-v2",
         "generatedBy": "ingest_decks.py",
+        # Stand des Korpus: die App vergleicht ihn mit nachgeladenen Datenpaketen (neuere gewinnt).
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "n": len(decks),
         "sources": dict(sorted(sources.items())),
         "minCo": min_co,

@@ -16,8 +16,9 @@ Card data is sourced from the **NetDeck API** (`api.netdeck.gg`), the same data 
 the official card lists. No card images are stored in this repository or the app bundle —
 they are linked from the official CDN and cached locally on your device for offline use.
 
-> **Android:** an unsigned debug APK is attached to each
-> [Release](https://github.com/LordCookie/Engram/releases), for personal use.
+> **Android:** a signed APK is attached to each
+> [Release](https://github.com/LordCookie/Engram/releases), for personal use. From v0.4 the app
+> checks for new versions itself and installs them with one tap in the Android installer.
 
 ## 📸 Screenshots
 
@@ -162,7 +163,7 @@ combinations. engram provides:
   scanner v2 adds a pHash index + fusion, and on Android **CameraX + ML Kit** through a
   Kotlin Capacitor plugin.
 - **PWA / offline:** `vite-plugin-pwa` (Workbox) for the app shell and a runtime image cache.
-- **Native mobile:** wrapped for **Android** via **Capacitor** (`app/android/`); debug APKs
+- **Native mobile:** wrapped for **Android** via **Capacitor** (`app/android/`); signed APKs
   are published in [Releases](https://github.com/LordCookie/Engram/releases). iOS is a later
   step.
 - **Data pipeline (offline, Python stdlib):** scripts to fetch card data from the NetDeck API,
@@ -209,7 +210,10 @@ from a phone on your LAN: `LAN=1 npm run dev` serves over self-signed HTTPS on p
 
 Building the Android APK needs **JDK 17** (up to 21; a newer JDK 25 is not yet supported by
 the Android Gradle plugin): `npm run cap:sync` builds the web app and copies it into the
-native shell, then Android Studio or `gradlew assembleDebug` produces the APK.
+native shell, then `gradlew assembleRelease` produces the APK, signed with your own key from
+`~/.engram-signing/keystore.properties` (kept outside the repo, path overridable via
+`ENGRAM_SIGNING`; without it the release APK stays unsigned). `gradlew assembleDebug` works for
+development.
 
 ### 🧪 Deck simulation (developer tool)
 
@@ -248,31 +252,27 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
   ~950 legal decklists (meta decks + public community decks from the official deckbuilder) into a
   co-play corpus with Legend trios that ships with the app — powering empirical synergy and the
   Legend explorer. A FastAPI service is no longer needed for that.
-- **Phase 5 — Native mobile app:** ✅ Android debug APK available in
+- **Phase 5 — Native mobile app:** ✅ signed Android APK available in
   [Releases](https://github.com/LordCookie/Engram/releases) (built from `app/android/` via
   Capacitor). iOS is a later step.
 - **Deck testing & playtest:** ✅ Live (under **More**). The v2 combat model runs client-side to
   compare two legal decks (rough model, labelled), alongside a **manual practice-turn sandbox**
   (real zones, you move the cards, no forced rule engine).
-- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3. **Meta decks, own icons:** ✅ v0.3.1.
+- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3. **Meta decks, own icons:** ✅ v0.3.1. **In-app updates, data refresh, signed APK:** ✅ v0.4.
 
 ### What's next
 
-1. **Signed release builds** — a proper signing key instead of the debug key, so updates keep
-   working even on a new PC (one-time reinstall, restore from the full backup).
-2. **Scanner calibration with real scan logs** — tune thresholds and name zones on actual phone
+1. **Scanner calibration with real scan logs** — tune thresholds and name zones on actual phone
    scans (glare, foils, alt arts, low light).
-3. **Trade matching via QR** — two players show each other a want/trade QR code; the app lists
+2. **Trade matching via QR** — two players show each other a want/trade QR code; the app lists
    what each can give the other. Offline, built on the deck-QR code.
-4. **Booster mode** — scan a booster card by card, then get a summary (new cards, rarities, alt
+3. **Booster mode** — scan a booster card by card, then get a summary (new cards, rarities, alt
    arts) and running pull statistics.
-5. **Ready for the next set** — carry the set code through set progress, binder and achievements
+4. **Ready for the next set** — carry the set code through set progress, binder and achievements
    so a second set doesn't need a rebuild of those views.
-6. **Corpus refresh without a new APK** — optionally download a fresh co-play corpus from the
-   latest release instead of waiting for the next app version.
-7. **Faster start** — split the ~600 KB main bundle (deck test, playtest and synergy views load
+5. **Faster start** — split the ~600 KB main bundle (deck test, playtest and synergy views load
    on demand).
-8. **iOS** — Capacitor iOS shell plus a native camera plugin.
+6. **iOS** — Capacitor iOS shell plus a native camera plugin.
 
 ## 📄 License
 

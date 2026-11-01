@@ -390,8 +390,14 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   neueste CLI v8 verlangt Node ≥22, wir haben Node 20.9). `app/capacitor.config.ts`
   (appId `com.lordcookie.engram`, `webDir: dist`), Android-Projekt in `app/android/`
   (build/.gradle/local.properties/kopierte Web-Assets sind gitignored). Bauen:
-  `npm run cap:sync` (Web-Build + Copy in die Shell) → Android Studio oder
-  `gradlew assembleDebug`; `npm run cap:open` öffnet das Projekt. **Lokaler Blocker:**
+  `npm run cap:sync` (Web-Build + Copy in die Shell) → `gradlew assembleRelease`
+  (**signiert mit dem eigenen Release-Schlüssel** aus `~/.engram-signing/keystore.properties`,
+  außerhalb des Repos, Pfad überschreibbar per `ENGRAM_SIGNING`; fehlt er, bleibt die APK
+  unsigniert) bzw. `assembleDebug` zum Entwickeln; `npm run cap:open` öffnet das Projekt.
+  Seit v0.4.0 werden nur noch **signierte Release-APKs** veröffentlicht (`releases/engram.apk`,
+  Zertifikat `CN=engram, O=LordCookie`, SHA-256 `08:A9:5F:85:…:D6:24`, gültig bis 2054). Den
+  Ordner `~/.engram-signing/` verwahrt der Nutzer — geht er verloren, gehen keine Updates über
+  die installierte App mehr. **Lokaler Blocker:**
   installiert ist nur die Android-Studio-**JBR Java 25.0.2**; AGP/Gradle unterstützen
   **JDK 17–21** → der APK-Build braucht ein JDK 17 (oder Build via Android Studio mit
   dort heruntergeladenem JDK 17). Kein Code-Problem, reine Toolchain-Version.
@@ -510,14 +516,39 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `ui/ScanOverlay.tsx`, ~1,4 s): Blende öffnet sich, Rahmenecken rasten ein (Vibrations-Tick),
   Scan-Strahl läuft einmal durch. Alles nur über Theme-Tokens; Animationen aus bei
   „Bewegung reduzieren". Verworfen: Glitch, Scanlines, Theme-Motive.
-- **Auto-Update-Hinweis**: `ui/UpdateBanner.tsx` prüft beim Start das neueste
-  GitHub-Release (öffentlicher GET, keine Nutzerdaten) und zeigt einen dezenten,
-  schließbaren Banner, wenn `isNewer(tag, APP_VERSION)` (`domain/semver.ts`, getestet).
+- **Updates & Daten (v0.4)** (`ui/updates.ts` Zustand, `ui/UpdateBanner.tsx` Hinweis oben,
+  `ui/UpdatesPanel.tsx` unter „Mehr"): **Prüfen** beim Start, beim Zurückholen (`App` `resume` /
+  `visibilitychange`) und alle 10 Min., aber höchstens **1×/Std.** (`domain/dataBundle.ts`
+  `shouldCheck`, letzte Prüfung + Ergebnis in Dexie `meta` `updateCheck`); zwei öffentliche GETs
+  (Release-Liste + Release `data`). **App-Update in der App** (nur nativ): Kotlin-Plugin
+  `EngramUpdatePlugin.kt` (Brücke `native/engramUpdate.ts`) lädt die APK des neuesten Releases
+  (`pickLatestRelease` liefert jetzt `apk`, ignoriert Nicht-Versions-Tags wie `data`) mit
+  Fortschritt in den Cache, prüft **Paket, höhere versionCode, gleichen Signierschlüssel**
+  (sonst verständliche Meldung statt Android-Fehler) und öffnet den **Android-Installer**
+  (`REQUEST_INSTALL_PACKAGES`, FileProvider; beim ersten Mal Erlaubnis „Apps installieren", nach
+  `resume` geht es von selbst weiter). Still installieren geht außerhalb des Play Stores nicht.
+  Im Browser bleibt „Zum Download". **Daten aktualisieren** (Knopf): (1) **neue Karten direkt
+  von NetDeck** (`data/netdeck.ts`, dieselbe Liste wie für die Bilder, einmal pro Start geteilt;
+  `domain/cardImport.ts` = TS-Port von `fetch_cards.py`-Normalisierung, Test mit demselben
+  Beispiel) — **nur additiv** (bekannte Karten bleiben unverändert, unbekannter Typ/Farbe wird
+  übersprungen); Scanner erkennt sie bis zur nächsten APK nur am Namen, keine Merkmale.
+  (2) **Datenpaket** `engram-data.json` (Korpus + Meta-Decks, Format `engram-data-v1`) aus dem
+  laufend ersetzten Release **`data`** — nur nativ (`fetchText` im Plugin, GitHub-Downloads
+  haben kein CORS). Gespeichert in Dexie (`cardExtra`, `dataBundle`; nicht im Backup),
+  **wirksam nach Neuladen**: `main.tsx` liest es per `initDataOverrides` (`data/dataStore.ts` →
+  `data/overrides.ts`) **bevor** die App dynamisch importiert wird; `catalog.ts` hängt neue
+  Karten an, `printingLinks.ts`/`metaDecks.ts`/`coplayCorpus.ts` nehmen per `pickNewer` die
+  neuere Fassung (Stempel: `coplay.json` `generated` — schreibt `ingest_decks.py` seit v0.4 —,
+  `metaDecks.updated`, Paket `created`). „Nachgeladene Daten verwerfen" setzt zurück.
+  Veröffentlichen: **`python pipeline/publish_data.py --publish`** (baut aus `coplay.json` +
+  `metaDecks.json`, ersetzt das Asset im Release `data`, Label = Erstellungszeit → die App sieht
+  ohne Download, ob es neuer ist; Token aus `git credential fill`). Ohne `--publish` nur
+  `pipeline/out/engram-data.json` (gitignored).
   **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen** — die
   Android-`versionName`/`versionCode` liest `app/android/app/build.gradle` daraus (0.2.0 → 200). Abfrage über
   die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
   `releases/latest` die überspringt (sonst 404).
-- 310 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 325 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -537,6 +568,7 @@ python pipeline/test_hash_images.py   # u. a. Paritäts-Vektoren (müssen zu ima
 python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> features.json, aus features_curated.json
 python pipeline/fetch_community_decks.py  # öffentliche Community-Decks (NetDeck) -> pipeline/decklists/netdeck-community.json
 python pipeline/ingest_decks.py       # Decklisten (decklists/ + sim/meta-decks/) -> coplay.json (ingest-v2, mit Quellen)
+python pipeline/publish_data.py --publish  # Korpus + Meta-Decks als Datenpaket ins Release „data" (App: Daten aktualisieren)
 python pipeline/test_ingest_decks.py
 python pipeline/test_fetch_cards.py
 # bootstrap_features.py = Heuristik-Fallback (überschreibt features.json!) — nur ohne kuratierte Quelle nutzen
@@ -549,8 +581,8 @@ cd sim && npm run build-meta-decks    # Meta-Decks prüfen + bauen: meta-decks-s
 ```
 
 ## Nächste Schritte (Roadmap nach v0.3, Reihenfolge = Vorschlag)
-1. **Release-Signierschlüssel** statt Debug-Key (Updates überleben einen PC-Wechsel; einmalig
-   neu installieren, vorher Komplett-Backup). Schlüssel + Passwort verwahrt der Nutzer.
+1. ~~Release-Signierschlüssel~~ — erledigt in v0.4.0 (`~/.engram-signing/`, verwahrt der Nutzer;
+   Umstieg von der Debug-APK = einmal Komplett-Backup → deinstallieren → installieren → zurückspielen).
 2. **Scanner-Kalibrierung** mit echten Scan-Protokollen (Schwellen in `FUSE_DEFAULTS`,
    Namenszonen in `cardText.ts`; Glanz, Foils, Alt-Arts, wenig Licht).
 3. **Tausch-Abgleich per QR** — Want- + Tausch-Liste als QR (wie `deckQr.ts`), das andere
@@ -559,7 +591,7 @@ cd sim && npm run build-meta-decks    # Meta-Decks prüfen + bauen: meta-decks-s
    Raritäten, Alt-Arts) + Statistik über alle geöffneten Booster.
 5. **Bereit fürs nächste Set** — Set-Code durch Set-Fortschritt, Binder, Erfolge ziehen
    (heute fest auf die 151 Karten von Set 1).
-6. **Korpus ohne neue APK auffrischen** — optional `coplay.json` aus dem neuesten Release laden.
+6. ~~Korpus ohne neue APK auffrischen~~ — erledigt in v0.4 (Release `data` + „Daten aktualisieren").
 7. **Schnellerer Start** — Haupt-Bundle (~600 KB) aufteilen, Deck-Test/Playtest/Synergie lazy.
 8. **iOS** — Capacitor-iOS-Hülle + natives Kamera-Plugin (Spike 0.1).
-Laufend: Korpus auffrischen (`fetch_community_decks.py` + `ingest_decks.py`).
+Laufend: Korpus auffrischen (`fetch_community_decks.py` + `ingest_decks.py` + `publish_data.py --publish`).

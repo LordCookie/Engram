@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { db } from '../db/db';
+import { loadNetdeckList } from './netdeck';
 
 /**
  * Frische, signierte Karten-Bild-URLs von der NetDeck-API. Die in
@@ -17,9 +18,7 @@ import { db } from '../db/db';
  * Timeout aktualisieren. Hängt/streikt die API, bleibt die App auf dem letzten Stand
  * statt leer. Einmal „Alle Bilder offline laden" gedrückt → dauerhaft offline-fest.
  */
-const API = 'https://api.netdeck.gg/api/cards/cyberpunk';
 const META_KEY = 'cardImageUrls';
-const FETCH_TIMEOUT_MS = 8000;
 
 let cache: Map<string, string> | null = null;
 let inflight: Promise<Map<string, string>> | null = null;
@@ -42,17 +41,6 @@ async function loadPersisted(): Promise<Map<string, string>> {
   }
 }
 
-/** fetch mit hartem Timeout — eine hängende API darf die Bildanzeige nicht blockieren. */
-async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { signal: ctrl.signal });
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 export async function loadCardImages(): Promise<Map<string, string>> {
   if (cache) return cache;
   if (!inflight) {
@@ -62,23 +50,11 @@ export async function loadCardImages(): Promise<Map<string, string>> {
       const persisted = await loadPersisted();
       if (persisted.size > 0 && !cache) cache = persisted;
 
+      // Kartenliste der API (mit Timeout, geteilt mit der Update-Prüfung); offline /
+      // Timeout / API-Absturz → leer, dann bleibt das Persistierte.
       const map = new Map<string, string>();
-      try {
-        const limit = 100;
-        for (let offset = 0; ; offset += limit) {
-          const res = await fetchWithTimeout(`${API}?limit=${limit}&offset=${offset}`, FETCH_TIMEOUT_MS);
-          if (!res.ok) break;
-          const json = (await res.json()) as {
-            total?: number;
-            items?: { slug?: string; image_url?: string }[];
-          };
-          for (const it of json.items ?? []) {
-            if (it.slug && it.image_url) map.set(it.slug, it.image_url);
-          }
-          if (offset + limit >= (json.total ?? 0)) break;
-        }
-      } catch {
-        /* offline / Timeout / API-Absturz → das Persistierte behalten */
+      for (const it of (await loadNetdeckList()).items) {
+        if (it.slug && it.image_url) map.set(it.slug, it.image_url);
       }
       if (map.size > 0) {
         cache = map;

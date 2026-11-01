@@ -1,15 +1,23 @@
 import { buildCardIndex, type Card, type Printing } from '../domain/types';
 import cardsJson from './cards.json';
 import fixtureJson from '../../tests/fixtures/synthetic-set.json';
+import { extraCards } from './overrides';
 
 /**
  * Kartenkatalog — die einzige Stelle, die entscheidet, woher die Kartendaten
  * kommen. Solange keine echten Daten vorliegen (`cards.json` leer, Spike 0.2
  * offen), dient das synthetische Fixture als Katalog. Sobald `pipeline/fetch_cards.py`
  * echte Daten schreibt, greift automatisch `cards.json`.
+ *
+ * Dazu kommen Karten, die „Daten aktualisieren" von NetDeck nachgeladen hat (`overrides.ts`)
+ * — nur solche, die die App noch nicht kennt; mitgelieferte Karten bleiben unverändert.
  */
 const real = cardsJson as Card[];
-export const catalog: Card[] = real.length > 0 ? real : (fixtureJson as Card[]);
+const bundled: Card[] = real.length > 0 ? real : (fixtureJson as Card[]);
+const bundledIds = new Set(bundled.map((c) => c.id));
+export const catalog: Card[] = [...bundled, ...extraCards().filter((c) => !bundledIds.has(c.id))];
+/** Mit der App ausgelieferte Karten (der Rest kam per „Daten aktualisieren"). */
+export const bundledCardCount = bundled.length;
 
 export const cardIndex = buildCardIndex(catalog);
 

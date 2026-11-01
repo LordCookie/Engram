@@ -6,6 +6,18 @@ apply plugin: 'kotlin-android'
 def appVersion = (file('../../src/version.ts').text =~ /APP_VERSION = '(\d+\.\d+\.\d+)'/)[0][1]
 def appVersionParts = appVersion.tokenize('.').collect { it as int }
 
+// Release-Signierschlüssel liegt bewusst AUSSERHALB des Repos: Standard
+// ~/.engram-signing/keystore.properties, sonst Pfad in der Umgebungsvariable ENGRAM_SIGNING.
+// Updates in der App setzen denselben Schlüssel voraus. Fehlt die Datei, bleibt der
+// Release-Build unsigniert (Debug-Builds nutzen wie immer den Debug-Schlüssel).
+def signingFile = file(System.getenv('ENGRAM_SIGNING') ?: "${System.getProperty('user.home')}/.engram-signing/keystore.properties")
+def signingProps = new Properties()
+if (signingFile.exists()) {
+    signingFile.withInputStream { signingProps.load(it) }
+} else {
+    logger.warn("Kein Release-Schlüssel unter ${signingFile} — assembleRelease bleibt unsigniert.")
+}
+
 android {
     namespace "com.lordcookie.engram"
     compileSdk rootProject.ext.compileSdkVersion
@@ -27,8 +39,21 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (signingFile.exists()) {
+            release {
+                storeFile file(signingProps['storeFile'])
+                storePassword signingProps['storePassword']
+                keyAlias signingProps['keyAlias']
+                keyPassword signingProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (signingFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

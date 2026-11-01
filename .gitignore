@@ -59,3 +59,5 @@ Thumbs.db
 .vscode/
 # NetDeck-Community-Decks: Abruf-Cache (nur Slugs/Zahlen, trotzdem fremde Deckdaten) → nur lokal.
 pipeline/.cache/
+# Datenpaket für das Release „data" (publish_data.py) — fremde Deckdaten, nur als Release-Asset.
+pipeline/out/

@@ -90,6 +90,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- App-Update aus der App: den Android-Installer für die geladene APK öffnen. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Scanner: Live-Kamera via getUserMedia im WebView (OCR). -->
     <uses-permission android:name="android.permission.CAMERA" />
 
