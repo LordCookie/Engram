@@ -106,7 +106,8 @@ async function activeDataStamp(): Promise<string | undefined> {
 async function applyCheck(c: StoredCheck): Promise<void> {
   const appUpdate = c.latest && isNewer(c.latest.tag, APP_VERSION) ? c.latest : undefined;
   const dataAsset = c.dataAsset ?? undefined;
-  const dataNew = !!dataAsset && isNewerStamp(dataAsset.created, await activeDataStamp());
+  // Das Paket lässt sich nur in der App laden (kein CORS) → im Browser nicht als „neu" melden.
+  const dataNew = nativeUpdates() && !!dataAsset && isNewerStamp(dataAsset.created, await activeDataStamp());
   set({ checkedAt: c.checkedAt, appUpdate, dataAsset, dataNew });
 }
 
@@ -268,10 +269,10 @@ export async function updateData(): Promise<void> {
   const asset = state.dataAsset;
   if (!asset) {
     msgs.push({ key: tk('Kein Datenpaket bei GitHub gefunden.') });
-  } else if (!state.dataNew) {
-    msgs.push({ key: tk('Korpus und Meta-Decks sind aktuell.') });
   } else if (!nativeUpdates()) {
     msgs.push({ key: tk('Korpus und Meta-Decks lassen sich nur in der App nachladen.') });
+  } else if (!state.dataNew) {
+    msgs.push({ key: tk('Korpus und Meta-Decks sind aktuell.') });
   } else {
     try {
       const { text } = await EngramUpdate.fetchText({ url: asset.url });
