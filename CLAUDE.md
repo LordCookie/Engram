@@ -117,7 +117,10 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   schreibt die JSON in den Cache, `@capacitor/share` teilt die Datei-URI (Drive/Files/
   Senden an …). Gated über `Capacitor.isNativePlatform()`, Plugins per dynamischem Import.
   Im **Web** Web-Share (Dateien) → sonst Blob-Download. Zusätzlich **Kopieren/Einfügen**
-  über die Zwischenablage. Wiederherstellen (ersetzt) **fragt vorher nach**. (Der Web-
+  über die Zwischenablage. **Einfügen in der App über ein Textfeld** (v0.4.1): die Android-WebView
+  lehnt `navigator.clipboard.readText` ab → „Aus Zwischenablage" öffnet nativ (und wenn das Lesen
+  scheitert) ein Feld zum Einfügen per langem Druck; die Dateiauswahl filtert in der App nicht nach
+  Typ (Android graut .json je nach Speicherort sonst aus), geprüft wird der Inhalt. Wiederherstellen (ersetzt) **fragt vorher nach**. (Der Web-
   `navigator.share` griff im nativen WebView nicht zuverlässig → daher die Plugins.)
 - **Farbthemen** (`ui/ThemePanel.tsx` unter „Mehr", `ui/theme.ts`): Standard (Gelb),
   **Violett** (#6A00F4 + #FFD6A5) und **Synthwave** (#FF4696 + #1E1033) — vom UI-Designer

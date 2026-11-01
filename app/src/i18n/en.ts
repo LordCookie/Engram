@@ -141,9 +141,7 @@ export const EN: Record<string, string> = {
   "aus Datei wiederhergestellt": "restored from file",
   "Import fehlgeschlagen: {err}": "Import failed: {err}",
   "Import fehlgeschlagen.": "Import failed.",
-  "Zwischenablage ist leer.": "Clipboard is empty.",
   "aus Zwischenablage eingefügt": "pasted from clipboard",
-  "Einfügen fehlgeschlagen (Zwischenablage/Format).": "Paste failed (clipboard/format).",
   "Backup": "Backup",
   "Sichert alles als JSON: Sammlung, Want-Liste, Decks und Einstellungen (Farbthema, Sprache, Vibration, Erfolge). Am Handy legt „Sichern / Teilen\" die Datei über das Share-Menü ab (Files/Drive). „CSV\" exportiert nur die Sammlung als Tabelle (Excel/Sheets, zum Tauschen).": "Backs up everything as JSON: collection, want list, decks and settings (color theme, language, vibration, achievements). On a phone, \"Back up / Share\" saves the file via the share menu (Files/Drive). \"CSV\" exports only the collection as a spreadsheet (Excel/Sheets, for trading).",
   "Noch kein Backup auf diesem Gerät.": "No backup on this device yet.",
@@ -654,4 +652,7 @@ export const EN: Record<string, string> = {
   "{n} Decks · Stand {date}": "{n} decks · as of {date}",
   "Neue Karten erkennt der Scanner bis zur nächsten App-Version nur am Namen, Synergie-Merkmale bekommen sie erst mit der App.": "Until the next app version, the scanner recognizes new cards by name only, and they get synergy features only with the app.",
   "Nachgeladene Daten verwerfen": "Discard downloaded data",
+  // v0.4.1: Backup einfügen
+  "Backup hier einfügen: ins Feld tippen, lange drücken, „Einfügen\" wählen.": "Paste your backup here: tap the field, long-press, choose \"Paste\".",
+  "Abbrechen": "Cancel",
 };

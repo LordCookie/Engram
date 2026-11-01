@@ -61,3 +61,5 @@ Thumbs.db
 pipeline/.cache/
 # Datenpaket für das Release „data" (publish_data.py) — fremde Deckdaten, nur als Release-Asset.
 pipeline/out/
+# Persönliche Backups, falls sie im Repo-Ordner landen (Sammlung/Decks des Nutzers).
+engram-backup-*.json
