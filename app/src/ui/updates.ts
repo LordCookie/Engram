@@ -1,17 +1,20 @@
 import { useSyncExternalStore } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { catalog } from '../data/catalog';
-import { loadIngestedCorpus } from '../data/coplayCorpus';
-import { saveDataBundle, saveExtraCards, storedBundleStamp } from '../data/dataStore';
+import { activeDataStamp } from '../data/dataStamp';
+import { saveDataBundle, saveExtraCards } from '../data/dataStore';
 import { loadNetdeckList } from '../data/netdeck';
-import { extraCards, extraLinks, loadedBundle } from '../data/overrides';
+import { extraCards, extraLinks } from '../data/overrides';
 import { db } from '../db/db';
 import { newCardsFromNetdeck } from '../domain/cardImport';
 import { DATA_TAG, findDataAsset, isNewerStamp, shouldCheck, type DataAsset } from '../domain/dataBundle';
-import { isNewer, pickLatestRelease, type LatestRelease, type ReleaseInfo } from '../domain/semver';
+import { isUpgrade } from '../domain/releaseNotes';
+import { isNewer, parseSha256, pickLatestRelease, type LatestRelease, type ReleaseInfo } from '../domain/semver';
 import { t, tk } from '../i18n';
 import { EngramUpdate, nativeUpdates } from '../native/engramUpdate';
 import { APP_VERSION } from '../version';
+import { autoBackup } from './autoBackup';
+import { syncDailyCheck } from './dailyCheck';
 
 /**
  * Updates aus GitHub und neue Daten — ein gemeinsamer Zustand für die Hinweisleiste oben
@@ -21,7 +24,10 @@ import { APP_VERSION } from '../version';
  *   höchstens einmal pro Stunde (`shouldCheck`, letzte Prüfung in Dexie). Zwei öffentliche
  *   GETs an die GitHub-API (Release-Liste + Release „data"), keine Nutzerdaten. Neue Karten
  *   erkennt die App an der NetDeck-Liste, die sie für die Bilder ohnehin lädt.
- * - **App-Update** (nur nativ): APK laden → prüfen → Android-Installer (ein Tipp).
+ * - **App-Update** (nur nativ, Ablauf wie in ScryGlass): automatisch sichern → Prüfsumme aus
+ *   der `.sha256` im Release holen → APK laden und prüfen (Prüfsumme, Paket, Version,
+ *   Signierschlüssel) → Android-Installer (ein Tipp). Die Release-Notes werden gemerkt und
+ *   nach dem Update einmal als „Was ist neu" gezeigt.
  * - **Daten aktualisieren** (Knopf): neue Karten von NetDeck + Datenpaket (Korpus, Meta-Decks),
  *   gespeichert in Dexie, wirksam nach dem Neuladen.
  *
@@ -39,7 +45,7 @@ export interface Msg {
 /** Meldung in der aktuellen Sprache. */
 export const msgText = (m: Msg): string => t(m.key, m.vars);
 
-export type AppPhase = 'idle' | 'downloading' | 'needsPermission' | 'installing' | 'error';
+export type AppPhase = 'idle' | 'backup' | 'downloading' | 'needsPermission' | 'installing' | 'error';
 export type DataPhase = 'idle' | 'loading' | 'done' | 'error';
 
 export interface UpdateState {
@@ -94,13 +100,6 @@ async function getJson<T>(url: string): Promise<T | null> {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
-}
-
-/** Stand der Daten, die die App gerade nutzt (mitgeliefert oder nachgeladen). */
-async function activeDataStamp(): Promise<string | undefined> {
-  const corpus = await loadIngestedCorpus();
-  const candidates = [corpus.generated, loadedBundle()?.created, await storedBundleStamp()];
-  return candidates.reduce<string | undefined>((best, s) => (isNewerStamp(s, best) ? s : best), undefined);
 }
 
 async function applyCheck(c: StoredCheck): Promise<void> {
@@ -181,7 +180,10 @@ export function initUpdateChecks(): void {
 
 // --- App-Update --------------------------------------------------------------------
 
-/** „Jetzt aktualisieren": APK laden, prüfen, Installer öffnen (nur nativ). */
+const WHATS_NEW_KEY = 'whatsNew';
+const LAST_RUN_KEY = 'lastRunVersion';
+
+/** „Jetzt aktualisieren": sichern, Prüfsumme holen, APK laden + prüfen, Installer öffnen (nur nativ). */
 export async function startAppUpdate(): Promise<void> {
   const up = state.appUpdate;
   if (!up) return;
@@ -189,12 +191,31 @@ export async function startAppUpdate(): Promise<void> {
     window.open(up.url, '_blank', 'noopener');
     return;
   }
-  set({ appPhase: 'downloading', progress: { done: 0, total: up.apk.size }, appMsg: undefined });
+  // Ohne Prüfsumme keine Installation (jedes Release ab v0.5 hat eine `.sha256`).
+  if (!up.sha256Url) return fail(tk('Dem Release fehlt die Prüfsumme — bitte über die Release-Seite laden.'));
+
+  set({ appPhase: 'backup', progress: undefined, appMsg: undefined });
+  try {
+    await autoBackup(`vor-${up.tag}`);
+  } catch {
+    return fail(tk('Die automatische Sicherung ist fehlgeschlagen — Update abgebrochen. Bitte erst unter Mehr → Backup sichern.'));
+  }
+  await db.meta.put({ key: WHATS_NEW_KEY, value: { version: up.tag.replace(/^v/i, ''), notes: up.notes ?? '' } });
+
+  let sha256: string | null = null;
+  try {
+    sha256 = parseSha256((await EngramUpdate.fetchText({ url: up.sha256Url })).text);
+  } catch {
+    sha256 = null;
+  }
+  if (!sha256) return fail(tk('Prüfsumme nicht lesbar — später noch einmal versuchen.'));
+
+  set({ appPhase: 'downloading', progress: { done: 0, total: up.apk.size } });
   const sub = await EngramUpdate.addListener('progress', (p) =>
     set({ progress: { done: p.done, total: p.total > 0 ? p.total : (up.apk?.size ?? 0) } }),
   );
   try {
-    const info = await EngramUpdate.download({ url: up.apk.url });
+    const info = await EngramUpdate.download({ url: up.apk.url, sha256 });
     if (!info.samePackage) return fail(tk('Die geladene Datei ist keine engram-App.'));
     if (!info.newer) return fail(tk('Diese Version ist schon installiert.'));
     if (info.sameSigner === false)
@@ -204,8 +225,10 @@ export async function startAppUpdate(): Promise<void> {
         ),
       );
     await continueInstall();
-  } catch {
-    fail(tk('Download fehlgeschlagen — Verbindung prüfen und noch einmal versuchen.'));
+  } catch (e) {
+    if ((e as { code?: string })?.code === 'CHECKSUM')
+      fail(tk('Die geladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte noch einmal laden.'));
+    else fail(tk('Download fehlgeschlagen — Verbindung prüfen und noch einmal versuchen.'));
   } finally {
     void sub.remove();
   }
@@ -232,6 +255,45 @@ export async function continueInstall(): Promise<void> {
 
 export async function openInstallSettings(): Promise<void> {
   await EngramUpdate.openInstallSettings();
+}
+
+// --- Was ist neu -------------------------------------------------------------------
+
+export interface WhatsNew {
+  version: string;
+  notes: string;
+}
+
+/**
+ * Nach einem Update einmal die Release-Notes zeigen. Gemerkt werden sie beim Update in der
+ * App; fehlen sie (Update von Hand, oder von v0.4, das sie noch nicht merkte), kommen sie vom
+ * Release. Vor v0.5 gab es `lastRunVersion` nicht — ein vorhandener `updateCheck` (seit v0.4)
+ * zeigt dann eine ältere Installation an. Bei der Erstinstallation nichts.
+ */
+export async function pendingWhatsNew(): Promise<WhatsNew | null> {
+  const [last, stored, check] = await db.meta.bulkGet([LAST_RUN_KEY, WHATS_NEW_KEY, CHECK_KEY]);
+  const prev = typeof last?.value === 'string' ? last.value : check ? '0.4.0' : undefined;
+  if (!isUpgrade(prev, APP_VERSION)) {
+    await markWhatsNewSeen();
+    return null;
+  }
+  const wn = stored?.value as WhatsNew | undefined;
+  if (wn?.version === APP_VERSION && wn.notes) return wn;
+  try {
+    const rel = await getJson<ReleaseInfo>(`${API}/releases/tags/v${APP_VERSION}`);
+    const notes = rel?.body?.trim();
+    if (notes) return { version: APP_VERSION, notes };
+    await markWhatsNewSeen(); // Release ohne Text → nichts zu zeigen
+  } catch {
+    // offline → beim nächsten Start noch einmal
+  }
+  return null;
+}
+
+/** „Was ist neu" gesehen (oder nichts zu zeigen): ab jetzt gilt diese Version als gelaufen. */
+export async function markWhatsNewSeen(): Promise<void> {
+  await db.meta.put({ key: LAST_RUN_KEY, value: APP_VERSION });
+  await db.meta.delete(WHATS_NEW_KEY);
 }
 
 // --- Daten aktualisieren -------------------------------------------------------------
@@ -287,6 +349,7 @@ export async function updateData(): Promise<void> {
   }
 
   set({ dataPhase: failed && !saved ? 'error' : 'done', dataMsgs: msgs, needsReload: state.needsReload || saved });
+  if (saved) void syncDailyCheck().catch(() => {}); // Hintergrund-Blick vergleicht mit dem neuen Stand
 }
 
 /** Neu laden, damit Katalog, Korpus und Meta-Decks die nachgeladenen Daten übernehmen. */

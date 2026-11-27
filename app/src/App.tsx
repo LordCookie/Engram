@@ -29,6 +29,9 @@ import { MetaDecksPanel } from './ui/MetaDecksPanel';
 import { Welcome, type WelcomeTarget } from './ui/Welcome';
 import { UpdateBanner } from './ui/UpdateBanner';
 import { UpdatesPanel } from './ui/UpdatesPanel';
+import { useUpdates } from './ui/updates';
+import { initDailyCheck, syncDailyCheck, watchUpdateLaunch } from './ui/dailyCheck';
+import { WhatsNew } from './ui/WhatsNew';
 import { BackupReminder } from './ui/BackupReminder';
 import { DeckEditor } from './ui/DeckEditor';
 import { ScannerPanel } from './ui/ScannerPanel';
@@ -66,13 +69,39 @@ export default function App() {
   const [booting, setBooting] = useState(true); // Boot-Animation einmal pro App-Start
   const endBoot = useCallback(() => setBooting(false), []);
   const lang = useLang(); // Sprachwechsel → Inhalt neu aufbauen (alle Texte frisch)
+  const u = useUpdates();
+  const updateDot = !!u.appUpdate || u.dataNew || u.newCards > 0 || u.needsReload;
+
+  // Unter „Mehr" zu einem Abschnitt springen (Backup, Updates).
+  const goMehr = (anchor: string) => {
+    setTab('mehr');
+    window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
 
   // Willkommenskarte: zum passenden Tab springen (Backup liegt unter „Mehr").
   const goWelcome = (target: WelcomeTarget) => {
     if (target !== 'backup') return setTab('erfassen'); // Scannen + Suche liegen im selben Reiter
-    setTab('mehr');
-    window.setTimeout(() => document.getElementById('backup')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    goMehr('backup');
   };
+
+  // Täglicher Update-Blick (nur App): einmal planen, ggf. Erlaubnis holen; Sprache der Texte mitteilen.
+  useEffect(() => {
+    void initDailyCheck().catch(() => {});
+  }, []);
+  useEffect(() => {
+    void syncDailyCheck().catch(() => {});
+  }, [lang]);
+
+  // Über die Update-Benachrichtigung geöffnet → Mehr → Updates & Daten.
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    let gone = false;
+    void watchUpdateLaunch(() => goMehr('updates')).then((f) => (gone ? f() : (off = f)));
+    return () => {
+      gone = true;
+      off?.();
+    };
+  }, []);
 
   // Gespeichertes Farbthema beim Start anwenden (Dexie-Präferenz).
   useEffect(() => {
@@ -82,6 +111,7 @@ export default function App() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-28 sm:p-6">
       {booting && <BootSplash onDone={endBoot} />}
+      {!booting && <WhatsNew />}
       <Fragment key={lang}>
         <AchievementToasts />
         <header className="flex items-baseline justify-between gap-2">
@@ -110,12 +140,17 @@ export default function App() {
               key={tb.id}
               onClick={() => setTab(tb.id)}
               aria-current={tab === tb.id ? 'page' : undefined}
-              className={`flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1 py-2 text-center font-mono text-[11px] transition-colors sm:min-h-0 sm:flex-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${
+              className={`relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1 py-2 text-center font-mono text-[11px] transition-colors sm:min-h-0 sm:flex-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${
                 tab === tb.id ? 'bg-accent text-on-accent' : 'text-muted hover:text-text'
               }`}
             >
               <NavIcon name={tb.id} className="h-6 w-6 shrink-0 sm:h-5 sm:w-5" />
               {t(tb.label)}
+              {tb.id === 'mehr' && updateDot && tab !== 'mehr' && (
+                <span className="absolute right-3 top-2 h-2 w-2 rounded-full bg-accent sm:right-1 sm:top-1">
+                  <span className="sr-only">{t('Update verfügbar')}</span>
+                </span>
+              )}
             </button>
           ))}
         </nav>

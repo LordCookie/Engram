@@ -24,7 +24,8 @@ import java.util.concurrent.Executors
  * öffnet den Android-Installer (der Nutzer bestätigt dort mit einem Tipp — still installieren
  * dürfen Apps außerhalb des Play Stores nicht).
  *
- * Geprüft wird vor dem Installer: gleiches Paket, höhere Version, gleicher Signierschlüssel.
+ * Geprüft wird vor dem Installer: Prüfsumme (SHA-256 aus der `.sha256` im Release, seit v0.5),
+ * gleiches Paket, höhere Version, gleicher Signierschlüssel.
  * Ein anderer Schlüssel (z. B. APK auf einem anderen PC gebaut) ließe Android die Installation
  * ohnehin ablehnen — so gibt es vorher eine verständliche Meldung.
  *
@@ -53,16 +54,27 @@ class EngramUpdatePlugin : Plugin() {
         return conn
     }
 
-    /** APK laden (mit `progress`-Events), danach prüfen. */
+    /**
+     * APK laden (mit `progress`-Events), danach prüfen. Mit `sha256` (aus der `.sha256` im
+     * Release) wird die Prüfsumme beim Laden mitgerechnet — passt sie nicht, ist die Datei weg
+     * (Code CHECKSUM). Liegt die passende APK schon da (zweiter Versuch), wird nicht neu geladen.
+     */
     @PluginMethod
     fun download(call: PluginCall) {
         val url = call.getString("url")
+        val expected = call.getString("sha256")?.lowercase()
         if (url.isNullOrBlank() || !url.startsWith("https://")) {
             call.reject("Ungültige Adresse", "BAD_URL")
             return
         }
         io.execute {
             try {
+                val apk = apkFile()
+                if (expected != null && apk.isFile && sha256(apk) == expected) {
+                    notifyListeners("progress", JSObject().put("done", apk.length()).put("total", apk.length()))
+                    call.resolve(inspect(apk).put("reused", true))
+                    return@execute
+                }
                 val dir = updateDir().apply { mkdirs() }
                 val tmp = File(dir, "engram-update.part")
                 val conn = open(url)
@@ -73,6 +85,7 @@ class EngramUpdatePlugin : Plugin() {
                 val total = conn.contentLengthLong
                 var done = 0L
                 var lastEmit = 0L
+                val md = MessageDigest.getInstance("SHA-256")
                 conn.inputStream.use { input ->
                     tmp.outputStream().use { out ->
                         val buf = ByteArray(64 * 1024)
@@ -80,6 +93,7 @@ class EngramUpdatePlugin : Plugin() {
                             val n = input.read(buf)
                             if (n < 0) break
                             out.write(buf, 0, n)
+                            md.update(buf, 0, n)
                             done += n
                             val now = System.currentTimeMillis()
                             if (now - lastEmit > 200) {
@@ -94,7 +108,11 @@ class EngramUpdatePlugin : Plugin() {
                     call.reject("Download unvollständig", "INCOMPLETE")
                     return@execute
                 }
-                val apk = apkFile()
+                if (expected != null && hex(md.digest()) != expected) {
+                    tmp.delete()
+                    call.reject("Prüfsumme stimmt nicht", "CHECKSUM")
+                    return@execute
+                }
                 apk.delete()
                 tmp.renameTo(apk)
                 notifyListeners("progress", JSObject().put("done", done).put("total", done))
@@ -183,6 +201,21 @@ class EngramUpdatePlugin : Plugin() {
     }
 
     // --- Prüfung der geladenen APK -----------------------------------------------------
+
+    private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
+
+    private fun sha256(file: File): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buf)
+                if (n <= 0) break
+                md.update(buf, 0, n)
+            }
+        }
+        return hex(md.digest())
+    }
 
     @Suppress("DEPRECATION")
     private fun sigFlags(): Int =

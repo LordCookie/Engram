@@ -655,4 +655,23 @@ export const EN: Record<string, string> = {
   // v0.4.1: Backup einfügen
   "Backup hier einfügen: ins Feld tippen, lange drücken, „Einfügen\" wählen.": "Paste your backup here: tap the field, long-press, choose \"Paste\".",
   "Abbrechen": "Cancel",
+  // v0.5: Updates wie in ScryGlass
+  "Update verfügbar": "Update available",
+  "vor dem Wiederherstellen": "before restoring",
+  "vor dem Update auf {v}": "before updating to {v}",
+  "aus automatischer Sicherung wiederhergestellt": "restored from automatic backup",
+  "Automatische Sicherungen": "Automatic backups",
+  "Vor jedem Update und jedem Wiederherstellen sichert engram selbst (die letzten drei, dazu eine Kopie in Dokumente/engram).": "Before every update and every restore, engram backs up on its own (the last three, plus a copy in Documents/engram).",
+  "Teilen": "Share",
+  "Sichere deine Sammlung …": "Backing up your collection …",
+  "Release-Seite": "Release page",
+  "Dem Release fehlt die Prüfsumme — bitte über die Release-Seite laden.": "This release has no checksum — please download it from the release page.",
+  "Die automatische Sicherung ist fehlgeschlagen — Update abgebrochen. Bitte erst unter Mehr → Backup sichern.": "The automatic backup failed — update cancelled. Please back up first under More → Backup.",
+  "Prüfsumme nicht lesbar — später noch einmal versuchen.": "Checksum unreadable — please try again later.",
+  "Die geladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte noch einmal laden.": "The downloaded file is damaged (checksum mismatch). Please download it again.",
+  "Benachrichtigung bei Updates": "Update notifications",
+  "Schaut täglich gegen 12 Uhr nach, auch wenn engram zu ist, und meldet neue Versionen und Daten.": "Checks daily around noon, even when engram is closed, and reports new versions and data.",
+  "Android erlaubt engram gerade keine Benachrichtigungen — in den App-Einstellungen freigeben.": "Android currently doesn't allow notifications for engram — enable them in the app settings.",
+  "Was ist neu in v{v}": "What's new in v{v}",
+  "Weiter": "Continue",
 };

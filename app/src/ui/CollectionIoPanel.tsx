@@ -1,14 +1,34 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getBackupTimes } from '../db/db';
 import { cardIndex, printingIndex } from '../data/catalog';
+import type { AutoBackupInfo } from '../domain/autoBackups';
 import { CollectionImportError } from '../domain/collectionIo';
 import { collectionToCsv } from '../domain/collectionCsv';
 import type { CollectionEntry, WantEntry } from '../domain/types';
 import type { DeckDraft } from '../domain/deckDraft';
-import { t, tn } from '../i18n';
+import { getLang, t, tn } from '../i18n';
+import { autoBackup, listAutoBackups, readAutoBackup, shareAutoBackup } from './autoBackup';
 import { backupSummary, copyBackup, exportBackup, restoreFromJson, restoreMessage, shareOrDownload, today } from './backup';
+
+/** Zeitpunkt einer automatischen Sicherung, in der UI-Sprache. */
+function fmtWhen(at: number): string {
+  return new Date(at).toLocaleString(getLang() === 'de' ? 'de-DE' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** Grund aus dem Dateinamen lesbar machen. */
+function reasonText(reason: string): string {
+  if (reason === 'vor-wiederherstellen') return t('vor dem Wiederherstellen');
+  const m = /^vor-(v\d+\.\d+\.\d+)$/.exec(reason);
+  return m ? t('vor dem Update auf {v}', { v: m[1] }) : reason;
+}
 
 /**
  * Komplett-Backup (Format v3): Sammlung, Want-Liste, Decks und Einstellungen als
@@ -22,6 +42,9 @@ import { backupSummary, copyBackup, exportBackup, restoreFromJson, restoreMessag
  * → in der App (und wenn das Lesen scheitert) ein Textfeld zum Einfügen per langem
  * Druck. Die Dateiauswahl filtert in der App nicht nach Typ: Android kennt .json-Dateien
  * je nach Speicherort nur als „unbekannt" und graut sie sonst aus; geprüft wird der Inhalt.
+ *
+ * Automatische Sicherungen (v0.5, nur App): vor jedem Update und vor jedem Wiederherstellen
+ * legt die App selbst eine an (`ui/autoBackup.ts`); hier lassen sie sich zurückspielen/teilen.
  */
 export function CollectionIoPanel() {
   const entries = useLiveQuery(() => db.collection.toArray(), [], [] as CollectionEntry[]);
@@ -31,8 +54,12 @@ export function CollectionIoPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const [autos, setAutos] = useState<AutoBackupInfo[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const native = Capacitor.isNativePlatform();
+  const refreshAutos = () => void listAutoBackups().then(setAutos);
+
+  useEffect(refreshAutos, []);
 
   const deckCount = decks.filter((d) => d.legendIds.length > 0 || d.cards.length > 0).length;
   const empty = entries.length === 0 && wants.length === 0 && deckCount === 0;
@@ -82,6 +109,14 @@ export function CollectionIoPanel() {
     if (!empty && !window.confirm(t('Wiederherstellen ersetzt deine Sammlung, Want-Liste und Decks. Fortfahren?'))) {
       return false;
     }
+    if (native && !empty) {
+      try {
+        await autoBackup('vor-wiederherstellen'); // der jetzige Stand bleibt zurückholbar
+      } catch {
+        // Sicherung ist ein Zusatz — Wiederherstellen geht trotzdem
+      }
+      refreshAutos();
+    }
     try {
       setMsg(restoreMessage(await restoreFromJson(json), how));
       return true;
@@ -122,6 +157,14 @@ export function CollectionIoPanel() {
       return;
     }
     await restore(text, t('aus Zwischenablage eingefügt'));
+  }
+
+  async function restoreAuto(b: AutoBackupInfo) {
+    try {
+      await restore(await readAutoBackup(b.name), t('aus automatischer Sicherung wiederhergestellt'));
+    } catch {
+      setMsg(t('Import fehlgeschlagen.'));
+    }
   }
 
   async function restorePasted() {
@@ -215,6 +258,33 @@ export function CollectionIoPanel() {
               {t('Abbrechen')}
             </button>
           </div>
+        </div>
+      )}
+
+      {native && autos.length > 0 && (
+        <div className="mt-4">
+          <p className="font-mono text-xs text-muted">{t('Automatische Sicherungen')}</p>
+          <p className="mb-2 text-[11px] text-muted">
+            {t('Vor jedem Update und jedem Wiederherstellen sichert engram selbst (die letzten drei, dazu eine Kopie in Dokumente/engram).')}
+          </p>
+          <ul className="space-y-1.5">
+            {autos.map((b) => (
+              <li key={b.name} className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                <span className="min-w-0 flex-1">
+                  {fmtWhen(b.at)} · <span className="text-muted">{reasonText(b.reason)}</span>
+                </span>
+                <button onClick={() => void restoreAuto(b)} className="rounded border border-white/10 px-2 py-1.5 hover:border-accent">
+                  {t('Wiederherstellen')}
+                </button>
+                <button
+                  onClick={() => void shareAutoBackup(b.name).catch(() => {})}
+                  className="rounded border border-white/10 px-2 py-1.5 hover:border-accent"
+                >
+                  {t('Teilen')}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

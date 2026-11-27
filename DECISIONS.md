@@ -1351,3 +1351,19 @@ unsigniert, CI baut keine APK). Veröffentlicht wird ab jetzt `assembleRelease` 
 Der Zeitpunkt passt: auf v0.4.0 muss ohnehin einmal von Hand aktualisiert werden, weil v0.3.1 das
 Update in der App noch nicht kann. Der Umstieg von der Debug-APK braucht einmal Komplett-Backup,
 Deinstallieren, Installieren, Zurückspielen; danach laufen Updates in der App.
+
+## 2026-11-27 — v0.5: Updates nach dem Muster von ScryGlass
+
+Der Nutzer hat in ScryGlass ein ausgereifteres Update-System gebaut; engram übernimmt dessen
+Bausteine, angepasst an die eigene Struktur:
+- **Prüfsumme statt Vertrauen in den Download:** jede APK mit `.sha256` im Release, die App
+  installiert nur bei exakter Übereinstimmung (fehlt sie, kein Update aus der App).
+- **Automatische Sicherung vor dem Update** (die letzten drei im App-Speicher, Kopie in
+  „Dokumente/engram") — eine kaputte neue Version kann den Bestand nicht mehr allein gefährden; die
+  Kopie in Dokumente hätte auch den Schlüsselwechsel in v0.4.0 entschärft.
+- **„Was ist neu"** nach dem Update, aus dem Release-Text.
+- **Täglicher Blick gegen 12 Uhr mit Benachrichtigung** über den eingebauten JobScheduler (keine
+  Bibliothek). Abweichend von ScryGlass zählen Pre-Releases (engram veröffentlicht so), und
+  geprüft wird das Datenpaket statt eines Katalogs.
+- **Bewusst anders als ScryGlass:** in der App bleibt die stündliche Prüfung (Nutzerwunsch v0.4)
+  statt einmal am Tag; Kartendaten kommen weiter direkt von NetDeck (§ 8), kein Katalog-Release.

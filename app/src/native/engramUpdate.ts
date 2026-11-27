@@ -16,10 +16,13 @@ export interface DownloadedApk {
   newer: boolean;
   /** Fehlt, wenn sich die Signatur nicht lesen ließ. */
   sameSigner?: boolean;
+  /** Die passende APK lag schon da (zweiter Versuch) — nicht neu geladen. */
+  reused?: boolean;
 }
 
 interface EngramUpdatePlugin {
-  download(opts: { url: string }): Promise<DownloadedApk>;
+  /** Mit `sha256` prüft das Plugin die Prüfsumme (sonst Fehlercode CHECKSUM). */
+  download(opts: { url: string; sha256?: string }): Promise<DownloadedApk>;
   canInstall(): Promise<{ allowed: boolean }>;
   openInstallSettings(): Promise<void>;
   install(): Promise<void>;

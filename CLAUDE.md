@@ -547,11 +547,32 @@ Geschlossener Kreis läuft auf **echten 151 Karten**: erfassen → Sammlung → 
   `metaDecks.json`, ersetzt das Asset im Release `data`, Label = Erstellungszeit → die App sieht
   ohne Download, ob es neuer ist; Token aus `git credential fill`). Ohne `--publish` nur
   `pipeline/out/engram-data.json` (gitignored).
+- **Updates wie in ScryGlass (v0.5)** — Muster aus dem Schwesterprojekt übernommen:
+  **Prüfsumme:** Releases tragen `engram-X.Y.Z.apk` + `engram-X.Y.Z.apk.sha256` (sha256sum-Format,
+  hochgeladen von **`pipeline/publish_release.py`** — Version aus `version.ts`, APK aus `releases/engram.apk`);
+  `pickLatestRelease` liefert `sha256Url` + `notes` (Release-Text), die App holt die Prüfsumme per
+  `fetchText`, das Plugin rechnet sie beim Laden mit (`download({url, sha256})`, Code CHECKSUM) und
+  nimmt eine passende, schon geladene APK beim zweiten Versuch wieder. **Ohne `.sha256` installiert
+  die App nicht** (Release-Seite verlinkt). **Automatische Sicherung** vor jedem App-Update und vor
+  jedem Wiederherstellen (`ui/autoBackup.ts`, Regeln rein/getestet in `domain/autoBackups.ts`):
+  Komplett-Backup in den App-Speicher (`sicherungen/`, die letzten drei) + Kopie in
+  „Dokumente/engram/Automatisch" (übersteht das Deinstallieren, ab Android 11 ohne Erlaubnis;
+  sonst still nicht); zweiter Anlauf binnen 1 Std. sichert nicht erneut; im Backup-Panel Liste mit
+  Wiederherstellen/Teilen. **„Was ist neu"** (`ui/WhatsNew.tsx`, `domain/releaseNotes.ts`): nach einem
+  Update einmal die Release-Notes (beim Update gemerkt, sonst vom Release geholt; Dexie `meta`
+  `lastRunVersion`/`whatsNew`; Erstinstallation zeigt nichts). **Täglicher Blick gegen 12 Uhr**
+  (`EngramNotifier.kt` + `UpdateCheckJob.kt` = JobScheduler, wartet auf Netz, übersteht Neustarts;
+  Brücke `EngramNotifierPlugin.kt`/`native/engramNotifier.ts`, Logik `ui/dailyCheck.ts`): prüft
+  App-Release (Pre-Releases zählen) und Label des Datenpakets gegen den Stand, den die App mitteilt
+  (`data/dataStamp.ts`), meldet jede Version einmal per Benachrichtigung (Texte de/en, Symbol
+  `ic_stat_engram.xml` aus `logoShape.ts`), Antippen öffnet Mehr → Updates. Schalter im Panel
+  (Standard an, Dexie `meta` `dailyUpdateCheck`), Android 13+ fragt einmal (`POST_NOTIFICATIONS`).
+  **Punkt am Reiter „Mehr"**, solange etwas Neues da ist. In der App weiter stündlich (Nutzerwunsch).
   **`app/src/version.ts` (`APP_VERSION`) bei jedem Release mit dem Git-Tag mitziehen** — die
   Android-`versionName`/`versionCode` liest `app/android/app/build.gradle` daraus (0.2.0 → 200). Abfrage über
   die Release-LISTE (`pickLatestRelease`), weil die APKs als Pre-Release erscheinen und
   `releases/latest` die überspringt (sonst 404).
-- 325 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
+- 335 App-JS-Tests + Python-Tests (3 + 7 + 5) grün; **sim: 7 v1 + 18 v2 (vite-node)**. **Alle Deckbau-Aufgaben aus § 5 erledigt.**
 
 ## Regeln gegen offizielles Rulebook verifiziert (2026-09-04)
 Der „Printable Gameplay Guide" (S. 10) bestätigt WÖRTLICH alle vier § 1-Regeln,
@@ -572,6 +593,7 @@ python pipeline/build_features.py     # Synergie-Merkmale (kuratiert) -> feature
 python pipeline/fetch_community_decks.py  # öffentliche Community-Decks (NetDeck) -> pipeline/decklists/netdeck-community.json
 python pipeline/ingest_decks.py       # Decklisten (decklists/ + sim/meta-decks/) -> coplay.json (ingest-v2, mit Quellen)
 python pipeline/publish_data.py --publish  # Korpus + Meta-Decks als Datenpaket ins Release „data" (App: Daten aktualisieren)
+python pipeline/publish_release.py --notes notes.md --publish  # App-Release vX.Y.Z: engram-X.Y.Z.apk + .sha256 (Pre-Release)
 python pipeline/test_ingest_decks.py
 python pipeline/test_fetch_cards.py
 # bootstrap_features.py = Heuristik-Fallback (überschreibt features.json!) — nur ohne kuratierte Quelle nutzen

@@ -85,6 +85,12 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Täglicher Update-Blick gegen 12 Uhr (EngramNotifier, JobScheduler). -->
+        <service
+            android:name=".UpdateCheckJob"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->
@@ -92,6 +98,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- App-Update aus der App: den Android-Installer für die geladene APK öffnen. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Täglicher Update-Blick: Benachrichtigung (Android 13+ fragt) und Job über Neustarts. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Scanner: Live-Kamera via getUserMedia im WebView (OCR). -->
     <uses-permission android:name="android.permission.CAMERA" />
 

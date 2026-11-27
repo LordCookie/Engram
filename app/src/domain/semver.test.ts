@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareVersions, isNewer, parseVersion, pickLatestRelease } from './semver';
+import { compareVersions, isNewer, parseSha256, parseVersion, pickLatestRelease } from './semver';
 
 describe('semver', () => {
   it('parst mit/ohne v-Präfix', () => {
@@ -62,6 +62,32 @@ describe('semver', () => {
         ],
       },
     ]);
-    expect(r?.apk).toEqual({ url: 'https://x/engram-debug.apk', size: 123 });
+    expect(r?.apk).toEqual({ url: 'https://x/engram-debug.apk', size: 123, name: 'engram-debug.apk' });
+    expect(r?.sha256Url).toBeUndefined();
+  });
+
+  it('pickLatestRelease: nimmt engram-X.Y.Z.apk samt Prüfsumme und Release-Text', () => {
+    const r = pickLatestRelease([
+      {
+        tag_name: 'v0.5.0',
+        html_url: 'a',
+        body: '  **Neu**\n- Punkt  ',
+        assets: [
+          { name: 'engram-0.5.0.apk.sha256', browser_download_url: 'https://x/s' },
+          { name: 'alt.apk', browser_download_url: 'https://x/alt.apk', size: 1 },
+          { name: 'engram-0.5.0.apk', browser_download_url: 'https://x/e.apk', size: 9 },
+        ],
+      },
+    ]);
+    expect(r?.apk).toEqual({ url: 'https://x/e.apk', size: 9, name: 'engram-0.5.0.apk' });
+    expect(r?.sha256Url).toBe('https://x/s');
+    expect(r?.notes).toBe('**Neu**\n- Punkt');
+  });
+
+  it('parseSha256: liest das sha256sum-Format, sonst null', () => {
+    const hex = 'AB'.repeat(32);
+    expect(parseSha256(`${hex}  engram-0.5.0.apk\n`)).toBe(hex.toLowerCase());
+    expect(parseSha256('kaputt')).toBeNull();
+    expect(parseSha256('ab'.repeat(31))).toBeNull();
   });
 });

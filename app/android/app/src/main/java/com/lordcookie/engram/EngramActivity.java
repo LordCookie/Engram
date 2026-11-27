@@ -19,6 +19,8 @@ public class EngramActivity extends BridgeActivity {
         registerPlugin(EngramIconPlugin.class);
         // App-Update aus der App: APK laden, prüfen, Android-Installer öffnen.
         registerPlugin(EngramUpdatePlugin.class);
+        // Täglicher Update-Blick gegen 12 Uhr mit Benachrichtigung.
+        registerPlugin(EngramNotifierPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

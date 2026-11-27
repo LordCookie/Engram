@@ -75,6 +75,7 @@ export function AppUpdateAction() {
             </a>
           ))}
       </div>
+      {u.appPhase === 'backup' && <p className="text-xs text-muted">{t('Sichere deine Sammlung …')}</p>}
       {u.appPhase === 'downloading' && (
         <div>
           <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -96,7 +97,14 @@ export function AppUpdateAction() {
       {u.appPhase === 'installing' && (
         <p className="text-xs text-text">{t('Android-Installer geöffnet — dort „Installieren" tippen. Deine Sammlung bleibt erhalten.')}</p>
       )}
-      {u.appPhase === 'error' && u.appMsg && <p className="text-xs text-card-red">{msgText(u.appMsg)}</p>}
+      {u.appPhase === 'error' && u.appMsg && (
+        <p className="text-xs">
+          <span className="text-card-red">{msgText(u.appMsg)}</span>{' '}
+          <a href={up.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted underline hover:text-accent">
+            {t('Release-Seite')} <Icon name="external" className="h-3 w-3" />
+          </a>
+        </p>
+      )}
     </div>
   );
 }

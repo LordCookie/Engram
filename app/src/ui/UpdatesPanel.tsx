@@ -7,6 +7,7 @@ import { extraCards, loadedBundle } from '../data/overrides';
 import { fmtNum, getLang, t } from '../i18n';
 import { APP_VERSION } from '../version';
 import { AppUpdateAction, DataUpdateAction } from './UpdateBanner';
+import { dailyCheckAvailable, dailyCheckEnabled, setDailyCheck } from './dailyCheck';
 import { checkForUpdates, msgText, useUpdates } from './updates';
 
 /**
@@ -43,7 +44,7 @@ export function UpdatesPanel() {
   const row = 'flex justify-between gap-3';
 
   return (
-    <section className="rounded-lg bg-surface p-4">
+    <section id="updates" className="scroll-mt-4 rounded-lg bg-surface p-4">
       <h2 className="mb-1 font-mono text-lg">{t('Updates & Daten')}</h2>
       <p className="mb-3 text-xs text-muted">
         {t('engram schaut beim Start und dann stündlich auf GitHub nach einer neuen Version. Neue Karten kommen direkt von NetDeck.')}
@@ -77,6 +78,7 @@ export function UpdatesPanel() {
           <AppUpdateAction />
         </div>
       )}
+      {dailyCheckAvailable() && <DailyCheckToggle />}
 
       <h3 className="mb-1 mt-5 font-mono text-sm">{t('Daten')}</h3>
       <div className="space-y-1 font-mono text-xs">
@@ -115,5 +117,48 @@ export function UpdatesPanel() {
         </button>
       )}
     </section>
+  );
+}
+
+/** Täglich gegen 12 Uhr im Hintergrund nachsehen und per Benachrichtigung melden (nur App). */
+function DailyCheckToggle() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [denied, setDenied] = useState(false);
+
+  useEffect(() => {
+    void dailyCheckEnabled().then(setOn);
+  }, []);
+
+  async function toggle() {
+    const next = !on;
+    setOn(next);
+    setDenied(!(await setDailyCheck(next)));
+  }
+
+  if (on === null) return null;
+  return (
+    <div className="mt-3 flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-sm">{t('Benachrichtigung bei Updates')}</p>
+        <p className="text-xs text-muted">
+          {t('Schaut täglich gegen 12 Uhr nach, auch wenn engram zu ist, und meldet neue Versionen und Daten.')}
+        </p>
+        {on && denied && (
+          <p className="text-xs text-card-red">
+            {t('Android erlaubt engram gerade keine Benachrichtigungen — in den App-Einstellungen freigeben.')}
+          </p>
+        )}
+      </div>
+      <button
+        onClick={() => void toggle()}
+        role="switch"
+        aria-checked={on}
+        className={`shrink-0 rounded-md px-4 py-2 font-mono text-sm ${
+          on ? 'bg-accent text-on-accent' : 'border border-white/10 text-muted hover:border-accent'
+        }`}
+      >
+        {on ? t('An') : t('Aus')}
+      </button>
+    </div>
   );
 }

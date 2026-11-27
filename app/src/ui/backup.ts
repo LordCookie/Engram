@@ -71,10 +71,11 @@ export function backupSummary(b: { entries: unknown[]; wants: unknown[]; decks: 
 }
 
 /** Komplett-Backup als JSON-Text (für Datei und Zwischenablage). */
-export async function buildBackupJson(): Promise<{ json: string; summary: string }> {
+export async function buildBackupJson(): Promise<{ json: string; summary: string; empty: boolean }> {
   const data = await readBackupData();
   const json = serializeCollection(data.entries, data.wants, Date.now(), { decks: data.decks, settings: data.settings });
-  return { json, summary: backupSummary(data) };
+  const empty = data.entries.length === 0 && data.wants.length === 0 && data.decks.length === 0;
+  return { json, summary: backupSummary(data), empty };
 }
 
 /** Sichern / Teilen: Datei erzeugen, teilen bzw. laden, Zeitpunkt merken. */

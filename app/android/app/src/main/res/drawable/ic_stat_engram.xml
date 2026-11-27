@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Benachrichtigungs-Symbol: das engram-Logo („Platine 45°") einfarbig, Geometrie aus
+     app/src/domain/logoShape.ts (viewBox 40 18 120 180, hier quadratisch zentriert). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="180"
+    android:viewportHeight="180">
+    <group android:translateX="-10" android:translateY="-18">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M70 24 H130 L154 48 V90 L138 106 V118 H62 V106 L46 90 V48 Z M66 62 H92 V80 L84 88 H66 Z M108 62 H134 V88 H116 L108 80 Z M100 90 L106 98 L100 106 L94 98 Z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="6"
+            android:pathData="M52 167 V146 L70 128 V117 M76 175 V149 L85 140 V117 M100 183 V117 M124 175 V149 L115 140 V117 M148 167 V146 L130 128 V117" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M47 166 h10 v10 h-10 Z M71 174 h10 v10 h-10 Z M95 182 h10 v10 h-10 Z M119 174 h10 v10 h-10 Z M143 166 h10 v10 h-10 Z" />
+    </group>
+</vector>

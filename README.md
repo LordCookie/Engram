@@ -258,7 +258,7 @@ npm test                             # engine tests (determinism, mirror ≈ 50%
 - **Deck testing & playtest:** ✅ Live (under **More**). The v2 combat model runs client-side to
   compare two legal decks (rough model, labelled), alongside a **manual practice-turn sandbox**
   (real zones, you move the cards, no forced rule engine).
-- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3. **Meta decks, own icons:** ✅ v0.3.1. **In-app updates, data refresh, signed APK:** ✅ v0.4.
+- **English UI, full backup, Legend explorer:** ✅ v0.2. **Unified Add tab, effects, back button:** ✅ v0.3. **Meta decks, own icons:** ✅ v0.3.1. **In-app updates, data refresh, signed APK:** ✅ v0.4. **Checksums, automatic backups, "What's new", daily update notification:** ✅ v0.5.
 
 ### What's next
 

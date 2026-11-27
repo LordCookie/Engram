@@ -31,14 +31,20 @@ export interface ReleaseInfo {
   tag_name?: string;
   html_url?: string;
   draft?: boolean;
+  /** Release-Text (Markdown) — wird nach dem Update als „Was ist neu" gezeigt. */
+  body?: string | null;
   assets?: { name?: string; browser_download_url?: string; size?: number; updated_at?: string }[];
 }
 
 export interface LatestRelease {
   tag: string;
   url: string;
+  /** Release-Text (Markdown), falls vorhanden. */
+  notes?: string;
   /** Die APK des Releases (für das Update in der App), falls angehängt. */
-  apk?: { url: string; size: number };
+  apk?: { url: string; size: number; name?: string };
+  /** `<apk>.sha256` im selben Release (Format von sha256sum) — ohne sie installiert die App nicht. */
+  sha256Url?: string;
 }
 
 /** Nur App-Versionen („v0.4.0"), nicht etwa das laufend aktualisierte Daten-Release „data". */
@@ -56,10 +62,24 @@ export function pickLatestRelease(releases: readonly ReleaseInfo[]): LatestRelea
     if (!best || compareVersions(r.tag_name, best.tag) > 0) best = { r, tag: r.tag_name, url: r.html_url };
   }
   if (!best) return null;
-  const a = best.r.assets?.find((x) => x.name?.toLowerCase().endsWith('.apk') && x.browser_download_url);
+  // Seit v0.5 heißt die APK `engram-X.Y.Z.apk` (daneben `.sha256`); ältere Releases: irgendeine `.apk`.
+  const assets = (best.r.assets ?? []).filter((x) => x.browser_download_url);
+  const version = best.tag.replace(/^v/i, '');
+  const a =
+    assets.find((x) => x.name === `engram-${version}.apk`) ??
+    assets.find((x) => x.name?.toLowerCase().endsWith('.apk'));
+  const sha = a?.name ? assets.find((x) => x.name === `${a.name}.sha256`) : undefined;
   return {
     tag: best.tag,
     url: best.url,
-    apk: a?.browser_download_url ? { url: a.browser_download_url, size: a.size ?? 0 } : undefined,
+    notes: (best.r.body ?? '').trim() || undefined,
+    apk: a?.browser_download_url ? { url: a.browser_download_url, size: a.size ?? 0, name: a.name } : undefined,
+    sha256Url: sha?.browser_download_url,
   };
+}
+
+/** Inhalt einer `.sha256`-Datei (Format von sha256sum) → 64 Hex-Zeichen, klein; sonst null. */
+export function parseSha256(text: string): string | null {
+  const m = /\b([0-9a-fA-F]{64})\b/.exec(text);
+  return m ? m[1].toLowerCase() : null;
 }
